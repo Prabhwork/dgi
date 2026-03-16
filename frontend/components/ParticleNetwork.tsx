@@ -17,8 +17,8 @@ export default function ParticleNetwork({ className = "" }: { className?: string
         
         // Responsive particle count and connection distance
         const isMobile = window.innerWidth < 768;
-        const PARTICLE_COUNT = isMobile ? 40 : 120;
-        const CONNECTION_DISTANCE = isMobile ? 150 : 220;
+        const PARTICLE_COUNT = isMobile ? 15 : 100;
+        const CONNECTION_DISTANCE = isMobile ? 90 : 220;
 
         // Colors based on theme
         const particleColor = theme === "light" 

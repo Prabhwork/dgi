@@ -16,7 +16,8 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
   'https://www.digitalbookofindia.com',
-  'https://digitalbookofindia.com'
+  'https://digitalbookofindia.com',
+  'https://dgi-bpu3.onrender.com'
 ];
 
 app.use(cors({
