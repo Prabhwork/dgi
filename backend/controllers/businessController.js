@@ -4,7 +4,7 @@ const OTP = require('../models/OTP');
 const sendEmail = require('../utils/sendEmail');
 const { getOTPTemplate, getRegistrationSuccessTemplate, getRejectionTemplate } = require('../utils/emailTemplates');
 
-// Helper to handle business files
+
 const handleBusinessFiles = (req, existingData = {}) => {
     const businessData = { ...existingData };
     if (req.files) {
