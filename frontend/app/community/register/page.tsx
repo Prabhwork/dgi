@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Building2, MapPin, Clock, ShieldCheck, Image as ImageIcon, Users,
@@ -26,7 +26,7 @@ const steps = [
     { id: 6, title: "Community", icon: Users },
 ];
 
-export default function RegisterPage() {
+function RegisterPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const isUpdateMode = searchParams.get("mode") === "update";
@@ -972,5 +972,17 @@ export default function RegisterPage() {
 
             <Footer />
         </div>
+    );
+}
+
+export default function RegisterPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-center p-6">
+                <Loader2 className="w-16 h-16 text-primary animate-spin mx-auto" />
+            </div>
+        }>
+            <RegisterPageContent />
+        </Suspense>
     );
 }

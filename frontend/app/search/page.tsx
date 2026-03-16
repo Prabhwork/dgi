@@ -75,7 +75,7 @@ function SearchResults() {
                 ) : error ? (
                     <div className="text-center py-20">
                         <p className="text-red-400 mb-4">{error}</p>
-                        <Button onClick={() => window.location.reload()} variant="primary">Try Again</Button>
+                        <Button onClick={() => window.location.reload()} className="bg-primary text-white hover:bg-primary/80">Try Again</Button>
                     </div>
                 ) : results.length === 0 ? (
                     <div className="text-center py-20 bg-white/5 rounded-3xl border border-white/10 border-dashed">
@@ -96,7 +96,7 @@ function SearchResults() {
                             >
                                 <div className="h-48 overflow-hidden relative">
                                     <img 
-                                        src={item.coverImage ? `${process.env.NEXT_PUBLIC_API_URL.replace('/api', '')}/${item.coverImage}` : '/assets/business-placeholder.jpg'} 
+                                        src={item.coverImage ? `${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}/${item.coverImage}` : '/assets/business-placeholder.jpg'} 
                                         alt={item.businessName}
                                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                                     />

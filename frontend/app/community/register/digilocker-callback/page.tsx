@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 
-export default function DigiLockerCallback() {
+import { Suspense } from "react";
+
+function DigiLockerCallbackContent() {
     const searchParams = useSearchParams();
     const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
     const [error, setError] = useState<string | null>(null);
@@ -90,5 +92,17 @@ export default function DigiLockerCallback() {
                 )}
             </div>
         </div>
+    );
+}
+
+export default function DigiLockerCallback() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-center p-6">
+                <Loader2 className="w-16 h-16 text-primary animate-spin mx-auto" />
+            </div>
+        }>
+            <DigiLockerCallbackContent />
+        </Suspense>
     );
 }
