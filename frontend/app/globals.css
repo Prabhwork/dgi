@@ -1,0 +1,398 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 225 45% 8%;
+    --foreground: 210 40% 98%;
+    --card: 225 45% 10%;
+    --card-foreground: 210 40% 98%;
+    --popover: 225 45% 10%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 100% 65%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 225 45% 12%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 225 45% 14%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 185 100% 50%;
+    --accent-foreground: 225 80% 6%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 225 45% 16%;
+    --input: 225 30% 20%;
+    --ring: 210 100% 56%;
+    --radius: 0.75rem;
+
+    --glow-purple: 255 60% 69%;
+    --glow-cyan: 185 100% 50%;
+    --glow-blue: 210 100% 56%;
+
+    --sidebar-background: 225 80% 6%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 210 100% 56%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 225 50% 15%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 225 30% 20%;
+    --sidebar-ring: 210 100% 56%;
+  }
+
+  /* ── Light / Sky-Blue theme ───────────────────────────── */
+  .light {
+    --background: 205 100% 97%;
+    --foreground: 220 70% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 70% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 70% 10%;
+    --primary: 210 100% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 98%;
+    --secondary-foreground: 220 70% 12%;
+    --muted: 210 20% 98%;
+    --muted-foreground: 220 20% 40%;
+    --accent: 210 100% 45%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 210 20% 90%;
+    --input: 210 20% 95%;
+    --ring: 210 100% 45%;
+    --glow-purple: 255 60% 60%;
+    --glow-cyan: 190 100% 45%;
+    --glow-blue: 210 100% 45%;
+  }
+}
+
+/* ── Light mode component overrides ─────────────────────── */
+.light html,
+.light body {
+  background: hsl(var(--background)) !important;
+  min-height: 100vh;
+}
+
+.light .glass {
+  background: rgba(255, 255, 255, 0.8) !important;
+  border-color: rgba(0, 0, 0, 0.05) !important;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+}
+
+.light nav {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+  backdrop-filter: blur(20px) !important;
+}
+
+.light .glass-strong {
+  background: white !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  backdrop-filter: blur(20px) !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Category card specific light mode overrides */
+.light .glass.cursor-pointer {
+  background: rgba(255, 255, 255, 0.85) !important;
+  border-color: rgba(0, 149, 255, 0.3) !important;
+  box-shadow: 0 4px 15px rgba(0, 100, 255, 0.08) !important;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+  position: relative;
+}
+
+/* Unique "Different" pulsing indicator dots for light mode */
+.light .glass.cursor-pointer::after {
+  content: '';
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 6px;
+  height: 6px;
+  background: #0095ff;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #0095ff;
+  animation: pulse-vivid 2s infinite ease-in-out;
+  z-index: 5;
+}
+
+@keyframes pulse-vivid {
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+
+  50% {
+    transform: scale(1.6);
+    opacity: 1;
+  }
+}
+
+.light .glass.cursor-pointer:hover {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border-color: #0095ff !important;
+  box-shadow: 0 0 30px rgba(0, 149, 255, 0.3),
+    0 15px 40px rgba(0, 100, 255, 0.15) !important;
+  transform: translateY(-8px) scale(1.06) !important;
+}
+
+.light .glass.cursor-pointer p {
+  color: #004488 !important;
+  font-weight: 800 !important;
+  text-shadow: 0 1px 2px rgba(0, 80, 200, 0.1) !important;
+}
+
+/* PlatformIntro specific light mode fixes */
+.light #about .glass {
+  background: rgba(255, 255, 255, 0.9) !important;
+  color: #0066cc !important;
+  font-weight: 700 !important;
+  border-color: rgba(0, 149, 255, 0.3) !important;
+}
+
+.light #about h2 {
+  color: #001a33 !important;
+}
+
+.light #about p {
+  color: #003366 !important;
+}
+
+.light #about span.gradient-text {
+  text-shadow: 0 0 20px rgba(0, 149, 255, 0.2);
+}
+
+/* BrowseByNeed specific light mode fixes */
+.light #categories h2 {
+  color: #001a33 !important;
+}
+
+.light #categories p {
+  color: #003366 !important;
+  font-weight: 500 !important;
+}
+
+.light #categories .glass.rounded-full {
+  background: rgba(255, 255, 255, 0.9) !important;
+  color: #0066cc !important;
+  font-weight: 800 !important;
+  border-color: rgba(0, 149, 255, 0.4) !important;
+}
+
+/* Arrow icon background in category cards */
+.light .bg-white\/5 {
+  background: rgba(210, 235, 255, 0.6) !important;
+}
+
+.light .border-white\/10 {
+  border-color: rgba(100, 160, 240, 0.25) !important;
+}
+
+/* Scrollbar light mode */
+::-webkit-scrollbar-track {
+  background: hsl(231 95% 3%);
+}
+
+/* BrowseByNeed category card light mode overrides */
+.light #categories .glass {
+  background: rgba(255, 255, 255, 0.4) !important;
+  border-color: rgba(0, 149, 255, 0.4) !important;
+  box-shadow: none !important;
+}
+
+.light #categories .glass:hover {
+  background: rgba(255, 255, 255, 0.6) !important;
+  border-color: rgba(0, 149, 255, 0.8) !important;
+  box-shadow: none !important;
+}
+
+
+.light #categories .bg-muted {
+  background: #f0f8ff !important;
+  border-color: rgba(0, 149, 255, 0.2) !important;
+}
+
+.light #categories .group:hover .bg-muted {
+  background: #0095ff !important;
+  box-shadow: 0 0 20px rgba(0, 149, 255, 0.4) !important;
+}
+
+.light ::-webkit-scrollbar-track {
+  background: #d0e8f8;
+}
+
+.light ::-webkit-scrollbar-thumb {
+  background: rgba(0, 120, 220, 0.35);
+}
+
+/* Section headings maintain good contrast in light */
+.light .gradient-text {
+  background-image: linear-gradient(135deg, hsl(210 100% 35%), hsl(200 100% 30%)) !important;
+}
+
+/* HeroSection top bar link */
+.light .bg-white\/5 {
+  background: rgba(200, 230, 255, 0.5) !important;
+}
+
+/* 3D Modeling (particles) contrast in light mode */
+.light .particle-canvas {
+  opacity: 0.6 !important;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-family: 'Inter', sans-serif;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-card/30 backdrop-blur-xl border border-border/30;
+  }
+
+  .glass-strong {
+    @apply bg-card/60 backdrop-blur-2xl border border-border/40;
+  }
+
+  .glow-border {
+    box-shadow: 0 0 15px hsl(var(--primary) / 0.3), inset 0 0 15px hsl(var(--primary) / 0.05);
+  }
+
+  .glow-border-hover:hover {
+    box-shadow: 0 0 25px hsl(var(--primary) / 0.5), inset 0 0 25px hsl(var(--primary) / 0.1);
+  }
+
+  .glow-text {
+    text-shadow: 0 0 20px hsl(var(--accent) / 0.6), 0 0 40px hsl(var(--accent) / 0.3);
+  }
+
+  .gradient-primary {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--glow-purple)));
+  }
+
+  .gradient-text {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+  }
+
+  .gradient-text-accent {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(var(--accent)), hsl(var(--glow-purple)));
+  }
+
+  .font-display {
+    font-family: 'Space Grotesk', sans-serif;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(231 95% 3%);
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(210 100% 56% / 0.4);
+  border-radius: 3px;
+}
+
+/* Cursor glow */
+.cursor-glow {
+  position: fixed;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  background: radial-gradient(circle, hsl(210 100% 56% / 0.08) 0%, transparent 70%);
+  transform: translate(-50%, -50%);
+  transition: opacity 0.3s;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Animations */
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+  width: max-content;
+}
+
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.6;
+    transform: scale(1.05);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 12s linear infinite;
+}
+
+/* Autofill Fix */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus {
+  -webkit-text-fill-color: #ffffff !important;
+  -webkit-box-shadow: 0 0 0px 1000px #0f172a inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+  caret-color: white;
+}

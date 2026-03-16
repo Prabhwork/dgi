@@ -1,0 +1,349 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Search, MapPin, Store, CheckCircle2, User, Compass, ChevronDown, Loader2 } from "lucide-react";
+import { useTheme } from "./ThemeProvider";
+import { useRouter } from "next/navigation";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import dynamic from "next/dynamic";
+
+const MiniGlobe = dynamic(() => import("./MiniGlobe"), { ssr: false });
+
+const leftCategories = [
+    { name: "Logistics", img: "/assets/cat-logistics.jpg", delay: 0 },
+    { name: "Automobile", img: "/assets/cat-automobile.jpg", delay: 0.1 },
+    { name: "Real Estate", img: "/assets/cat-realestate.jpg", delay: 0.2 },
+    { name: "Tech", img: "/assets/cat-tech.jpg", delay: 0.3 },
+];
+
+const rightCategories = [
+    { name: "Salon", img: "/assets/cat-salon.jpg", delay: 0.4 },
+    { name: "Restaurant", img: "/assets/cat-restaurant.jpg", delay: 0.5 },
+    { name: "Beauty & Spa", img: "/assets/cat-beautyspa.jpg", delay: 0.6 },
+];
+
+const allCategories = [...leftCategories, ...rightCategories];
+
+export default function HeroSection() {
+    const { theme } = useTheme();
+    const router = useRouter();
+    const [locationInput, setLocationInput] = useState("");
+    const [isLocating, setIsLocating] = useState(false);
+    const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+
+    const handleSearch = () => {
+        let url = `/search?q=${encodeURIComponent(locationInput)}`;
+        if (userCoords) {
+            url += `&lat=${userCoords.lat}&lng=${userCoords.lng}`;
+        }
+        router.push(url);
+    };
+
+    useEffect(() => {
+        const autoLocate = async () => {
+            if (!navigator.geolocation) return;
+
+            setIsLocating(true);
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const { latitude, longitude } = position.coords;
+                    setUserCoords({ lat: latitude, lng: longitude });
+
+                    try {
+                        const response = await fetch(
+                            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`
+                        );
+                        const data = await response.json();
+                        // Extract city/town/village
+                        const address = data.address;
+                        const locationName = address.city || address.town || address.village || address.state || "Detected Location";
+                        setLocationInput(locationName);
+                    } catch (err) {
+                        console.error("Auto-location name fetch failed:", err);
+                    } finally {
+                        setIsLocating(false);
+                    }
+                },
+                (err) => {
+                    console.error("Auto-location permission/fetch failed:", err);
+                    setIsLocating(false);
+                },
+                { enableHighAccuracy: false, timeout: 5000 }
+            );
+        };
+
+        autoLocate();
+    }, []);
+
+    return (
+        <section className="relative min-h-screen flex flex-col overflow-hidden" id="home">
+
+            {/* Top bar */}
+            <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.6 }}
+                className="relative z-20 mt-24 sm:mt-32 lg:mt-24 px-4"
+            >
+                <div className="container mx-auto flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-0 w-full sm:w-auto sm:flex-1 sm:max-w-md group">
+                        <div className={`flex items-center flex-1 backdrop-blur-md border rounded-l-lg px-3 py-2.5 transition-all ${theme === 'light'
+                            ? 'bg-white/80 border-slate-200 group-hover:border-primary/50'
+                            : 'bg-black/40 border-white/20 group-hover:border-primary/50'
+                            }`}>
+                            <input
+                                type="text"
+                                placeholder={isLocating ? "Fetching location..." : "Search location..."}
+                                value={locationInput}
+                                onChange={(e) => setLocationInput(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                className={`bg-transparent text-sm outline-none w-full ${theme === 'light'
+                                    ? 'text-slate-900 placeholder:text-slate-400'
+                                    : 'text-white placeholder:text-white/60'
+                                    }`}
+                            />
+                            {isLocating ? (
+                                <Loader2 size={18} className="text-primary animate-spin ml-2 shrink-0" />
+                            ) : (
+                                <Search 
+                                    size={18} 
+                                    className={`${theme === 'light' ? 'text-slate-400' : 'text-white'} ml-2 shrink-0 cursor-pointer hover:text-primary transition-colors`} 
+                                    onClick={handleSearch}
+                                />
+                            )}
+                        </div>
+                        <button className="flex items-center gap-1.5 bg-primary text-white px-5 py-2.5 rounded-r-lg text-sm font-bold hover:bg-primary/80 transition-all whitespace-nowrap shadow-lg shadow-primary/20">
+                            <MapPin size={15} />
+                            <span className="hidden sm:inline">See On Map</span>
+                            <span className="sm:hidden">Map</span>
+                        </button>
+                    </div>
+                    {/* Quick links — visible on all screens */}
+                    <div className="flex items-center justify-center sm:justify-end gap-3 sm:gap-5 text-[10px] sm:text-sm text-foreground w-full md:w-auto">
+
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <button className="flex items-center gap-1 hover:text-primary transition-colors whitespace-nowrap outline-none">
+                                    DBI for Business <ChevronDown size={14} />
+                                </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className={`border border-solid p-2 min-w-[240px] z-[60] shadow-[0_8px_32px_rgba(0,0,0,0.2)] backdrop-blur-2xl ${theme === 'light' ? 'bg-white/60 border-white/80' : 'bg-white/10 border-white/30'}`}>
+                                <DropdownMenuItem className="focus:bg-primary/20 focus:text-white cursor-pointer py-3 rounded-lg group" asChild>
+                                    <Link href="/community/register" className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                                            <Store size={18} className="text-primary" />
+                                        </div>
+                                        <span className="font-medium">Add your business</span>
+                                    </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="focus:bg-primary/20 focus:text-white cursor-pointer py-3 rounded-lg group" asChild>
+                                    <Link href="/community/register" className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                                            <CheckCircle2 size={18} className="text-primary" />
+                                        </div>
+                                        <span className="font-medium">claim business just 1/- a day</span>
+                                    </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="focus:bg-primary/20 focus:text-white cursor-pointer py-3 rounded-lg group" asChild>
+                                    <Link href="/community/login" className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                                            <User size={18} className="text-primary" />
+                                        </div>
+                                        <span className="font-medium">login to business account</span>
+                                    </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="focus:bg-primary/20 focus:text-white cursor-pointer py-3 rounded-lg group" asChild>
+                                    <Link href="/community/login" className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                                            <User size={18} className="text-primary" />
+                                        </div>
+                                        <span className="font-medium">login to suite account</span>
+                                    </Link>
+                                </DropdownMenuItem>
+                                <div className="h-px bg-white/10 my-1 px-2" />
+                                <DropdownMenuItem className="focus:bg-primary/20 focus:text-white cursor-pointer py-3 rounded-lg group" asChild>
+                                    <Link href="/why-dbi" className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                                            <Compass size={18} className="text-primary" />
+                                        </div>
+                                        <span className="font-medium">Explore DBI for business</span>
+                                    </Link>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        <Link href="/write-a-review" className="hover:text-primary transition-colors whitespace-nowrap outline-none">
+                            Write a Review
+                        </Link>
+
+                        <Link href="/community/register" className={`backdrop-blur-md border px-3 py-1.5 rounded-lg transition-all font-medium whitespace-nowrap text-[11px] sm:text-sm ${theme === 'light'
+                            ? 'bg-primary/5 border-primary/20 text-primary hover:bg-primary/10'
+                            : 'bg-white/5 border-white/10 text-accent hover:text-accent/80 hover:bg-white/10'
+                            }`}>
+                            claim business just 1/- a day
+                        </Link>
+                    </div>
+                </div>
+            </motion.div>
+
+            {/* Main hero content */}
+            <div className="relative z-10 flex-1 flex items-center justify-center px-1 sm:px-4 py-3 sm:py-8">
+                <div className="w-full max-w-[1400px] mx-auto flex flex-col lg:flex-row items-center justify-center lg:justify-between gap-1 sm:gap-6 lg:gap-x-16">
+
+                    {/* Left category cards — desktop only */}
+                    <div className="hidden lg:grid grid-cols-2 gap-x-12 gap-y-5 shrink-0">
+                        {leftCategories.map((cat) => (
+                            <motion.div
+                                key={cat.name}
+                                initial={{ opacity: 0, x: -30 }} // animate from left
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 1 + cat.delay, duration: 0.5 }}
+                                className={`rounded-[1.5rem] flex flex-col items-center justify-center cursor-pointer hover:scale-105 transition-all duration-500 w-[140px] h-[120px] shadow-[0_4px_24px_rgba(0,0,0,0.2)] hover:shadow-[0_8px_32px_rgba(255,255,255,0.15)] group relative overflow-hidden backdrop-blur-[2px] border border-solid ${theme === 'light'
+                                    ? 'bg-white border-slate-200 hover:border-primary/40'
+                                    : 'bg-white/[0.01] border-white/20 hover:bg-white/[0.05] hover:border-white/40'
+                                    }`}
+                            >
+                                {/* Shiny glass specular highlight */}
+                                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
+                                <div className={`w-14 h-14 rounded-full overflow-hidden mb-2 border-[1.5px] transition-transform duration-500 group-hover:-translate-y-1 shadow-[0_0_15px_rgba(255,255,255,0.1)] relative z-10 ${theme === 'light' ? 'border-primary/30' : 'border-white/40 group-hover:border-white/80'
+                                    }`}>
+                                    <img src={cat.img} alt={cat.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                </div>
+                                <p className={`text-[11px] font-bold text-center transition-colors z-10 ${theme === 'light' ? 'text-slate-900 group-hover:text-primary' : 'text-white/80 group-hover:text-white'
+                                    }`}>
+                                    {cat.name}
+                                </p>
+                            </motion.div>
+                        ))}
+                    </div>
+
+                    {/* Center portal — Globe */}
+                    <div className="w-full flex flex-col items-center text-center mt-8 sm:mt-0">
+                        <motion.div
+                            initial={{ scale: 0, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ duration: 1, ease: "easeOut" }}
+                            className="relative w-72 h-72 sm:w-[300px] sm:h-[300px] md:w-[340px] md:h-[340px] lg:w-[420px] lg:h-[420px] rounded-full mt-6 sm:mt-0 overflow-hidden"
+                        >
+                            {/* Rotating Globe fills the circle */}
+                            <div className="absolute inset-0">
+                                <MiniGlobe />
+                            </div>
+
+                            {/* Text overlay on top of globe */}
+                            <div className="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none select-none px-3">
+                                <motion.h1
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.5, duration: 0.8 }}
+                                    className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-white tracking-tighter leading-tight uppercase"
+                                    style={{ textShadow: "0 0 30px rgba(0,120,255,0.8), 0 2px 8px rgba(0,0,0,0.9)" }}
+                                >
+                                    PRE LAUNCH
+                                </motion.h1>
+                                <motion.p
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.8 }}
+                                    className="mt-1 sm:mt-2 text-xs sm:text-sm font-semibold"
+                                    style={{ color: "#00d4ff", textShadow: "0 0 15px rgba(0,200,255,0.8)" }}
+                                >
+                                    Prepared To Be Amazed!!
+                                </motion.p>
+                                <motion.p
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 1.2 }}
+                                    className="mt-2 font-bold max-w-[180px] sm:max-w-[240px] md:max-w-[300px] mx-auto text-[10px] sm:text-xs leading-snug"
+                                    style={{ color: "#facc15", textShadow: "0 1px 6px rgba(0,0,0,0.95)" }}
+                                >
+                                    Digital Book Of India is on its way to make your way of living more easier..stay tuned.
+                                </motion.p>
+                            </div>
+                        </motion.div>
+
+
+
+
+                        {/* Mobile category auto-scroll strip */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 1.5 }}
+                            className="flex lg:hidden mt-8 w-full overflow-hidden"
+                        >
+                            {/* Duplicate array so it loops seamlessly */}
+                            <div className="flex animate-marquee gap-2">
+                                {[...allCategories, ...allCategories].map((cat, i) => (
+                                    <div
+                                        key={i}
+                                        className={`flex flex-col items-center justify-center p-4 rounded-2xl border transition-all duration-300 ${theme === 'light'
+                                            ? 'bg-white border-blue-600 shadow-none active:scale-95'
+                                            : 'bg-white/5 border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.06)] active:scale-95'
+                                            }`}
+                                    >
+                                        <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-active:opacity-100 pointer-events-none transition-opacity" />
+
+                                        <div className={`w-12 h-12 rounded-full overflow-hidden mb-1.5 border-[1.5px] shadow-[0_0_10px_rgba(255,255,255,0.1)] relative z-10 ${theme === 'light' ? 'border-primary/30' : 'border-white/40'
+                                            }`}>
+                                            <img src={cat.img} alt={cat.name} className="w-full h-full object-cover" />
+                                        </div>
+                                        <p className={`text-[10px] sm:text-[11px] font-bold text-center transition-colors z-10 ${theme === 'light' ? 'text-slate-900' : 'text-white/80'
+                                            }`}>
+                                            {cat.name}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        </motion.div>
+                    </div>
+
+                    {/* Right category cards — desktop only */}
+                    <div className="hidden lg:grid grid-cols-2 gap-x-12 gap-y-5 shrink-0">
+                        {rightCategories.map((cat) => (
+                            <motion.div
+                                key={cat.name}
+                                initial={{ opacity: 0, x: 30 }} // animate from right
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 1 + cat.delay, duration: 0.5 }}
+                                className={`rounded-[1.5rem] flex flex-col items-center justify-center cursor-pointer hover:scale-105 transition-all duration-500 w-[140px] h-[120px] shadow-[0_4px_24px_rgba(0,0,0,0.2)] hover:shadow-[0_8px_32px_rgba(255,255,255,0.15)] group relative overflow-hidden backdrop-blur-[2px] border border-solid ${theme === 'light'
+                                    ? 'bg-white border-slate-200 hover:border-primary/40'
+                                    : 'bg-white/[0.01] border-white/20 hover:bg-white/[0.05] hover:border-white/40'
+                                    }`}
+                            >
+                                {/* Shiny glass specular highlight */}
+                                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
+                                <div className={`w-14 h-14 rounded-full overflow-hidden mb-2 border-[1.5px] transition-transform duration-500 group-hover:-translate-y-1 shadow-[0_0_15px_rgba(255,255,255,0.1)] relative z-10 ${theme === 'light' ? 'border-primary/30' : 'border-white/40 group-hover:border-white/80'
+                                    }`}>
+                                    <img src={cat.img} alt={cat.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                </div>
+                                <p className={`text-[11px] font-bold text-center transition-colors z-10 ${theme === 'light' ? 'text-slate-900 group-hover:text-primary' : 'text-white/80 group-hover:text-white'
+                                    }`}>
+                                    {cat.name}
+                                </p>
+                            </motion.div>
+                        ))}
+                    </div>
+
+                </div>
+            </div>
+
+        </section>
+    );
+}

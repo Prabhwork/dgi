@@ -1,0 +1,515 @@
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { motion, AnimatePresence } from "framer-motion";
+import { Menu, X, Sun, Moon, ChevronDown, ChevronRight, Rocket, Map, ShieldCheck, PieChart, Search, Building2, Store, Handshake, Briefcase, Globe, Zap, Target, Sparkles, Circle } from "lucide-react";
+import Link from "next/link";
+import { useTheme } from "@/components/ThemeProvider";
+
+const navItems = [
+    { name: "Home", href: "/" },
+    { name: "Why DBI", href: "/why-dbi" },
+    { name: "Become a Part (DBI)", href: "/become-a-part" },
+    { name: "Join Community", href: "/join-community" },
+    { name: "Mapping Plans", href: "/mapping-plans" },
+];
+
+const FEATURE_ICONS = [Building2, Map, ShieldCheck, PieChart, Search, Globe, Zap, Target, Sparkles, Rocket];
+const SOLUTION_ICONS = [Rocket, Store, Handshake, Briefcase, Globe, Zap, Target, Sparkles, Building2, Map];
+
+interface NavDropdownProps {
+    title: string;
+    items: NavItem[];
+    isOpen: boolean;
+    onMouseEnter: () => void;
+    onMouseLeave: () => void;
+    expandedCat: string | null;
+    setExpandedCat: (id: string | null) => void;
+    isLight: boolean;
+    flyoutY: number;
+    setFlyoutY: (y: number) => void;
+}
+
+const NavDropdown = ({
+    title,
+    items,
+    isOpen,
+    onMouseEnter,
+    onMouseLeave,
+    expandedCat,
+    setExpandedCat,
+    isLight,
+    flyoutY,
+    setFlyoutY
+}: NavDropdownProps) => {
+    const activeItem = items.find(i => i.categoryId === expandedCat);
+
+    return (
+        <div
+            className="relative py-2"
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
+        >
+            <button
+                type="button"
+                className={`flex items-center gap-1 text-sm font-medium transition-colors duration-300 cursor-pointer ${isOpen ? 'text-primary' : 'text-foreground/80 hover:text-primary'}`}
+            >
+                {title}
+                <ChevronDown size={14} className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            <AnimatePresence>
+                {isOpen && items.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 8 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute top-full left-0 mt-1 z-50 flex"
+                    >
+                        {/* Left Panel — Categories */}
+                        <div className={`w-80 p-2 rounded-2xl border border-solid shadow-2xl backdrop-blur-xl ${isLight 
+                            ? 'bg-white/80 border-slate-200/50 shadow-blue-500/10' 
+                            : 'bg-slate-900/80 border-white/10 shadow-black/40'
+                            }`}>
+                            <div className="max-h-[65vh] overflow-y-auto custom-scrollbar relative">
+                                {items.map((item) => {
+                                    const isActive = expandedCat === item.categoryId;
+                                    const hasSubs = item.subcategories.length > 0;
+
+                                    return (
+                                        <div
+                                            key={item.name}
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                if (hasSubs) setExpandedCat(isActive ? null : item.categoryId);
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                setExpandedCat(hasSubs ? item.categoryId : null);
+                                                if (hasSubs) {
+                                                    const rect = e.currentTarget.getBoundingClientRect();
+                                                    // Get relative Y position within the container
+                                                    const parent = e.currentTarget.offsetParent as HTMLElement;
+                                                    if (parent) {
+                                                        setFlyoutY(e.currentTarget.offsetTop);
+                                                    }
+                                                }
+                                            }}
+                                            className={`flex items-center gap-4 p-3 rounded-xl transition-all duration-200 cursor-pointer ${isActive
+                                                ? isLight ? 'bg-primary/10' : 'bg-white/10'
+                                                : 'hover:bg-transparent'
+                                                }`}
+                                        >
+                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 ${isActive
+                                                ? 'bg-primary text-white scale-110 shadow-lg shadow-primary/20'
+                                                : isLight ? 'bg-slate-100/50 text-slate-500' : 'bg-slate-800/50 text-slate-400'
+                                                }`}>
+                                                <item.icon size={18} />
+                                            </div>
+                                            <div className={`flex-1 text-[14px] font-semibold tracking-tight transition-colors ${isActive ? (isLight ? 'text-primary' : 'text-white') : (isLight ? 'text-slate-600' : 'text-slate-300')}`}>
+                                                {item.name}
+                                            </div>
+                                            {hasSubs && (
+                                                <ChevronRight size={14} className={`transition-all duration-300 ${isActive ? 'translate-x-1 text-primary' : 'text-slate-500'}`} />
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Right Panel — Subcategories flyout */}
+                        <div className="relative pointer-events-none">
+                            <AnimatePresence>
+                                {activeItem && activeItem.subcategories.length > 0 && (
+                                    <motion.div
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0, y: flyoutY }}
+                                        exit={{ opacity: 0, x: -10 }}
+                                        transition={{ 
+                                            opacity: { duration: 0.2 },
+                                            x: { duration: 0.2 },
+                                            y: { type: "spring", stiffness: 300, damping: 30 } 
+                                        }}
+                                        className={`w-72 ml-2 p-2 rounded-2xl border border-solid shadow-2xl h-fit backdrop-blur-xl pointer-events-auto ${isLight 
+                                            ? 'bg-white/80 border-slate-200/50 shadow-blue-500/10' 
+                                            : 'bg-slate-900/80 border-white/10 shadow-black/40'
+                                            }`}
+                                    >
+                                        <div className={`px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] opacity-40 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                                            {activeItem.name}
+                                        </div>
+                                        <div className="max-h-[60vh] overflow-y-auto custom-scrollbar">
+                                            {activeItem.subcategories.map((sub) => (
+                                                <Link
+                                                    key={sub}
+                                                    href="#"
+                                                    onClick={(e) => e.preventDefault()}
+                                                    className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-200 ${isLight
+                                                        ? 'text-slate-600 hover:text-primary hover:bg-primary/5'
+                                                        : 'text-slate-300 hover:text-white hover:bg-white/5'
+                                                        }`}
+                                                >
+                                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isLight ? 'bg-slate-100/50 text-slate-400' : 'bg-slate-800/50 text-slate-500'
+                                                        }`}>
+                                                        <Circle size={8} fill="currentColor" />
+                                                    </div>
+                                                    <div className="flex-1 text-[13px] font-medium transition-colors">
+                                                        {sub}
+                                                    </div>
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
+
+interface NavItem {
+    name: string;
+    subcategories: string[];
+    icon: any;
+    categoryId: string;
+}
+
+export default function Navbar() {
+    const [scrolled, setScrolled] = useState(false);
+    const [mobileOpen, setMobileOpen] = useState(false);
+    const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+    const { theme, toggle } = useTheme();
+    const isLight = theme === "light";
+    const [features, setFeatures] = useState<NavItem[]>([]);
+    const [solutions, setSolutions] = useState<NavItem[]>([]);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+    const [expandedCat, setExpandedCat] = useState<string | null>(null);
+    const [flyoutY, setFlyoutY] = useState(0);
+    const [mobileExpandedCat, setMobileExpandedCat] = useState<string | null>(null);
+
+    useEffect(() => {
+        const handler = () => setScrolled(window.scrollY > 50);
+        handler();
+        window.addEventListener("scroll", handler);
+        return () => window.removeEventListener("scroll", handler);
+    }, []);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+                setOpenDropdown(null);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    useEffect(() => {
+        const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+
+        const fetchData = async () => {
+            try {
+                const [featRes, solRes, subRes] = await Promise.all([
+                    fetch(`${API}/features`).then(r => r.json()),
+                    fetch(`${API}/solutions`).then(r => r.json()),
+                    fetch(`${API}/subcategories`).then(r => r.json()),
+                ]);
+
+                // Group subcategories by category ID
+                const subcatMap: Record<string, string[]> = {};
+                if (subRes.success && subRes.data) {
+                    subRes.data
+                        .filter((s: any) => s.isActive)
+                        .forEach((s: any) => {
+                            const catId = typeof s.category === 'object' ? s.category._id : s.category;
+                            if (!subcatMap[catId]) subcatMap[catId] = [];
+                            subcatMap[catId].push(s.name);
+                        });
+                }
+
+                if (featRes.success && featRes.data?.length > 0) {
+                    setFeatures(featRes.data
+                        .filter((f: any) => f.isActive && f.category)
+                        .map((f: any, i: number) => ({
+                            name: f.category.name,
+                            categoryId: f.category._id,
+                            subcategories: subcatMap[f.category._id] || [],
+                            icon: FEATURE_ICONS[i % FEATURE_ICONS.length],
+                        }))
+                    );
+                }
+
+                if (solRes.success && solRes.data?.length > 0) {
+                    setSolutions(solRes.data
+                        .filter((s: any) => s.isActive && s.category)
+                        .map((s: any, i: number) => ({
+                            name: s.category.name,
+                            categoryId: s.category._id,
+                            subcategories: subcatMap[s.category._id] || [],
+                            icon: SOLUTION_ICONS[i % SOLUTION_ICONS.length],
+                        }))
+                    );
+                }
+            } catch (err) {
+                console.error('Failed to fetch nav data:', err);
+            }
+        };
+
+        fetchData();
+    }, []);
+
+    return (
+        <motion.nav
+            initial={{ y: -100 }}
+            animate={{ y: 0 }}
+            transition={{ duration: 0.6 }}
+            className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled
+                ? isLight ? "bg-white/80 border-b border-blue-100 backdrop-blur-md shadow-lg shadow-blue-500/5" : "bg-background border-b border-border/10 shadow-lg shadow-primary/5"
+                : "bg-transparent border-b border-border/5"
+                }`}
+        >
+            <div className="container mx-auto flex items-center justify-between h-20 px-4">
+                <Link href="/" className="flex items-center gap-3 min-w-0 flex-shrink hover:opacity-80 transition-opacity">
+                    <div className="relative w-20 h-10 sm:w-32 sm:h-16 shrink-0 flex items-center justify-center overflow-hidden">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                            src={isLight ? "/assets/DLOGO1.png" : "/assets/DLOGO.png"}
+                            alt="Logo"
+                            className="w-full h-full object-contain"
+                        />
+                    </div>
+                    <span className={`font-display font-bold text-lg sm:text-xl hidden sm:block tracking-tight truncate transition-colors ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                        Digital Book Of India
+                    </span>
+                </Link>
+
+                <div className="hidden lg:flex items-center gap-6">
+                    {navItems.slice(0, 1).map((item) => (
+                        <Link
+                            key={item.name}
+                            href={item.href}
+                            className={`text-sm font-medium transition-colors duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[1px] after:bg-primary hover:after:w-full after:transition-all after:duration-300 ${isLight ? 'text-slate-700 hover:text-primary' : 'text-foreground/80 hover:text-primary'}`}
+                        >
+                            {item.name}
+                        </Link>
+                    ))}
+                    <NavDropdown
+                        title="Features"
+                        items={features}
+                        isOpen={openDropdown === "Features"}
+                        onMouseEnter={() => { setOpenDropdown("Features"); setExpandedCat(null); }}
+                        onMouseLeave={() => { setOpenDropdown(null); setExpandedCat(null); }}
+                        expandedCat={expandedCat}
+                        setExpandedCat={setExpandedCat}
+                        isLight={isLight}
+                        flyoutY={flyoutY}
+                        setFlyoutY={setFlyoutY}
+                    />
+                    <NavDropdown
+                        title="Solutions"
+                        items={solutions}
+                        isOpen={openDropdown === "Solutions"}
+                        onMouseEnter={() => { setOpenDropdown("Solutions"); setExpandedCat(null); setFlyoutY(0); }}
+                        onMouseLeave={() => { setOpenDropdown(null); setExpandedCat(null); setFlyoutY(0); }}
+                        expandedCat={expandedCat}
+                        setExpandedCat={setExpandedCat}
+                        isLight={isLight}
+                        flyoutY={flyoutY}
+                        setFlyoutY={setFlyoutY}
+                    />
+                    {navItems.slice(1).map((item) => (
+                        <Link
+                            key={item.name}
+                            href={item.href}
+                            className={`text-sm font-medium transition-colors duration-300 relative after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[1px] after:bg-primary hover:after:w-full after:transition-all after:duration-300 ${isLight ? 'text-slate-700 hover:text-primary' : 'text-foreground/80 hover:text-primary'}`}
+                        >
+                            {item.name}
+                        </Link>
+                    ))}
+                </div>
+
+                <div className="hidden lg:flex items-center gap-3">
+                    {/* Theme Toggle */}
+                    <button
+                        onClick={toggle}
+                        aria-label="Toggle theme"
+                        className={`relative w-14 h-7 rounded-full border border-solid transition-all duration-300 flex items-center px-1 cursor-pointer ${isLight ? 'border-primary/20 bg-blue-50' : 'border-border/50 bg-slate-900'}`}
+                        style={{
+                            boxShadow: theme === "dark"
+                                ? "0 0 12px rgba(59,130,246,0.3)"
+                                : "0 0 12px rgba(100,150,255,0.25)",
+                        }}
+                    >
+                        <motion.div
+                            layout
+                            transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                            className="w-5 h-5 rounded-full flex items-center justify-center shadow-md bg-white dark:bg-slate-700"
+                            style={{
+                                marginLeft: isLight ? "28px" : "0px",
+                            }}
+                        >
+                            {theme === "dark"
+                                ? <Moon size={11} className="text-blue-400" />
+                                : <Sun size={11} className="text-yellow-500" />
+                            }
+                        </motion.div>
+                    </button>
+
+                    <Button variant="outline-glow" size="sm" className={isLight ? "text-primary border-primary/20 hover:bg-primary/5" : ""} asChild>
+                        <Link href="/community/login">Log In</Link>
+                    </Button>
+                    <Button
+                        variant={isLight ? 'default' : 'glow'}
+                        size="sm"
+                        className={isLight ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20 font-bold" : ""}
+                        asChild
+                    >
+                        <Link href="/community/register">Sign Up</Link>
+                    </Button>
+                </div>
+
+                <div className="flex lg:hidden items-center gap-3">
+                    <button
+                        onClick={toggle}
+                        aria-label="Toggle theme"
+                        className={`w-8 h-8 rounded-full border border-solid flex items-center justify-center transition-all ${isLight ? 'bg-blue-50 border-primary/20' : 'bg-slate-900 border-border/50'}`}
+                    >
+                        {theme === "dark"
+                            ? <Moon size={14} className="text-blue-400" />
+                            : <Sun size={14} className="text-yellow-500" />
+                        }
+                    </button>
+                    <button className={isLight ? 'text-slate-900' : 'text-foreground'} onClick={() => setMobileOpen(!mobileOpen)}>
+                        {mobileOpen ? <X size={24} /> : <Menu size={24} />}
+                    </button>
+                </div>
+            </div>
+
+            <AnimatePresence>
+                {mobileOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className={`lg:hidden border-t border-solid transition-colors duration-500 px-4 pb-10 overflow-y-auto max-h-[85vh] ${isLight ? 'bg-white/95 border-blue-50 shadow-xl backdrop-blur-xl' : 'bg-slate-900/95 border-white/5 shadow-2xl backdrop-blur-xl'}`}
+                    >
+                        <div className="pt-6 grid gap-6">
+                            {/* Mobile Sections */}
+                            {[
+                                { title: "Features", data: features },
+                                { title: "Solutions", data: solutions }
+                            ].map((section) => (
+                                <div key={section.title} className="space-y-3">
+                                    <div className="text-[11px] font-black uppercase tracking-[0.2em] text-primary opacity-50 px-2">{section.title}</div>
+                                    <div className="grid gap-1">
+                                        {section.data.map((item) => {
+                                            const isExpanded = mobileExpandedCat === item.categoryId;
+                                            const hasSubs = item.subcategories.length > 0;
+
+                                            return (
+                                                <div key={item.name} className="overflow-hidden">
+                                                    <button
+                                                        onClick={() => setMobileExpandedCat(isExpanded ? null : item.categoryId)}
+                                                        className={`w-full flex items-center justify-between p-3.5 rounded-2xl transition-all duration-300 ${isExpanded
+                                                            ? isLight ? 'bg-primary/5' : 'bg-white/5'
+                                                            : 'hover:bg-transparent'
+                                                            }`}
+                                                    >
+                                                        <div className="flex items-center gap-4">
+                                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 ${isExpanded
+                                                                ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                                                                : isLight ? 'bg-slate-100/50 text-slate-500' : 'bg-slate-800/50 text-slate-400'
+                                                                }`}>
+                                                                <item.icon size={18} />
+                                                            </div>
+                                                            <span className={`text-[15px] font-bold tracking-tight ${isExpanded ? isLight ? 'text-primary' : 'text-white' : isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+                                                                {item.name}
+                                                            </span>
+                                                        </div>
+                                                        {hasSubs && (
+                                                            <ChevronRight size={16} className={`transition-transform duration-300 ${isExpanded ? 'rotate-90 text-primary' : 'text-slate-400'}`} />
+                                                        )}
+                                                    </button>
+                                                    
+                                                    <AnimatePresence>
+                                                        {isExpanded && hasSubs && (
+                                                            <motion.div
+                                                                initial={{ height: 0, opacity: 0 }}
+                                                                animate={{ height: 'auto', opacity: 1 }}
+                                                                exit={{ height: 0, opacity: 0 }}
+                                                                transition={{ duration: 0.3, ease: "easeInOut" }}
+                                                                className="overflow-hidden"
+                                                            >
+                                                                <div className="mt-1 ml-6 pl-4 border-l border-solid border-primary/10 grid gap-1 py-1">
+                                                                    {item.subcategories.map((sub) => (
+                                                                        <Link
+                                                                            key={sub}
+                                                                            href="#"
+                                                                            onClick={() => {
+                                                                                setMobileOpen(false);
+                                                                                setMobileExpandedCat(null);
+                                                                            }}
+                                                                            className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-200 ${isLight
+                                                                                ? 'text-slate-600 active:bg-primary/5'
+                                                                                : 'text-slate-300 active:bg-white/5'
+                                                                                }`}
+                                                                        >
+                                                                            <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${isLight ? 'bg-slate-100/50 text-slate-400' : 'bg-slate-800/50 text-slate-500'
+                                                                                }`}>
+                                                                                <Circle size={6} fill="currentColor" />
+                                                                            </div>
+                                                                            <span className="text-[13px] font-medium">{sub}</span>
+                                                                        </Link>
+                                                                    ))}
+                                                                </div>
+                                                            </motion.div>
+                                                        )}
+                                                    </AnimatePresence>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+
+                            <div className="h-px bg-border/5 my-2" />
+
+                            <div className="grid gap-1">
+                                {navItems.map((item) => (
+                                    <Link
+                                        key={item.name}
+                                        href={item.href}
+                                        className={`block py-4 px-4 text-[15px] font-bold tracking-tight rounded-2xl transition-colors ${isLight ? 'text-slate-700 hover:text-primary active:bg-primary/5' : 'text-slate-300 hover:text-white active:bg-white/5'}`}
+                                        onClick={() => setMobileOpen(false)}
+                                    >
+                                        {item.name}
+                                    </Link>
+                                ))}
+                            </div>
+                            <div className="flex gap-3 mt-4">
+                                <Button variant="outline-glow" size="lg" className="flex-1" asChild onClick={() => setMobileOpen(false)}>
+                                    <Link href="/community/login">Log In</Link>
+                                </Button>
+                                <Button
+                                    variant={isLight ? 'default' : 'glow'}
+                                    size="lg"
+                                    className={`flex-1 ${isLight ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20 font-bold" : ""}`}
+                                    asChild
+                                    onClick={() => setMobileOpen(false)}
+                                >
+                                    <Link href="/community/register">Sign Up</Link>
+                                </Button>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </motion.nav>
+    );
+}
