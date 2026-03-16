@@ -108,7 +108,7 @@ export default function BrowseByNeed() {
                                 : 'bg-white/[0.01] border-white/20 hover:bg-white/[0.05] hover:border-white/40 shadow-[0_4px_24px_rgba(0,0,0,0.2)] hover:shadow-[0_8px_32px_rgba(255,255,255,0.15)]'
                                 }`}
                         >
-                            {/* Inner shiny highlight */}
+                           
                             <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none z-10" />
 
                             <div className="relative h-48 sm:h-64 overflow-hidden z-0">
