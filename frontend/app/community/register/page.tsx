@@ -66,12 +66,10 @@ function RegisterPageContent() {
         joinFraudAlerts: false
     });
 
-    const [isAadhaarVerified, setIsAadhaarVerified] = useState(false);
-    const [isDigiLockerVerifying, setIsDigiLockerVerifying] = useState(false);
-    const [showDigiLockerModal, setShowDigiLockerModal] = useState(false);
 
     // File State
     const [files, setFiles] = useState<{ [key: string]: File | File[] | null }>({
+        aadhaarCard: null,
         ownerIdentityProof: null,
         establishmentProof: null,
         coverImage: null,
@@ -156,7 +154,7 @@ function RegisterPageContent() {
     useEffect(() => {
         const fetchMainCategories = async () => {
             try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/main-categories`);
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/main-categories?limit=100`);
                 const data = await res.json();
                 if (data.success && data.data) {
                     setMainCategories(data.data.filter((c: any) => c.isActive));
@@ -203,7 +201,6 @@ function RegisterPageContent() {
                             joinFraudAlerts: b.joinFraudAlerts || false
                         });
                         setIsEmailVerified(true);
-                        if (b.aadhaarVerified) setIsAadhaarVerified(true);
                         if (b.rejectionReason) setRejectionReason(b.rejectionReason);
                     }
                 } catch (err) {
@@ -216,39 +213,9 @@ function RegisterPageContent() {
         }
     }, [isUpdateMode, router]);
 
-    useEffect(() => {
-        const handleMessage = (event: MessageEvent) => {
-            if (event.data.type === "DIGILOCKER_SUCCESS") {
-                setIsAadhaarVerified(true);
-                setFormData(prev => ({ ...prev, aadhaarNumber: event.data.data.aadhaarNumber }));
-            }
-        };
-        window.addEventListener("message", handleMessage);
-        return () => window.removeEventListener("message", handleMessage);
-    }, []);
+    // Removed DigiLocker message listener
 
-    const handleDigiLockerVerify = async () => {
-        try {
-            setIsDigiLockerVerifying(true);
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/business/digilocker/authorize`);
-            const data = await res.json();
-            if (data.success && data.url) {
-                // Open DigiLocker in a popup
-                const width = 600;
-                const height = 700;
-                const left = window.screenX + (window.outerWidth - width) / 2;
-                const top = window.screenY + (window.outerHeight - height) / 2;
-                window.open(data.url, "DigiLocker", `width=${width},height=${height},left=${left},top=${top}`);
-            } else {
-                setError("Failed to initiate DigiLocker authorization");
-            }
-        } catch (err) {
-            setError("Connection error");
-        } finally {
-            setIsDigiLockerVerifying(false);
-            setShowDigiLockerModal(false);
-        }
-    };
+    // Removed handleDigiLockerVerify
 
     const handleLocateMe = () => {
         if (!navigator.geolocation) {
@@ -314,8 +281,12 @@ function RegisterPageContent() {
                 setError("Please verify your email address to continue");
                 return;
             }
-            if (currentStep === 4 && !isAadhaarVerified) {
-                setError("Please verify your Aadhaar number to continue");
+            if (currentStep === 4 && formData.aadhaarNumber.length !== 12) {
+                setError("Please enter a valid 12-digit Aadhaar number");
+                return;
+            }
+            if (currentStep === 4 && !files.aadhaarCard) {
+                setError("Please upload your Aadhaar card copy");
                 return;
             }
         }
@@ -367,15 +338,22 @@ function RegisterPageContent() {
                 body: apiBody
             });
 
-            const data = await res.json();
-
-            if (data.success) {
-                setSuccess(true);
+            const contentType = res.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+                const data = await res.json();
+                if (data.success) {
+                    setSuccess(true);
+                } else {
+                    setError(data.error || (isUpdateMode ? "Update failed" : "Registration failed"));
+                }
             } else {
-                setError(data.error || (isUpdateMode ? "Update failed" : "Registration failed"));
+                const text = await res.text();
+                console.error("Non-JSON response:", text);
+                setError(`Server Error: ${res.status} ${res.statusText}`);
             }
         } catch (err) {
-            setError("Something went wrong. Please try again.");
+            console.error("Submission error:", err);
+            setError("Network error or server connection failed. Please check your internet and try again.");
         } finally {
             setLoading(false);
         }
@@ -591,46 +569,24 @@ function RegisterPageContent() {
                         </div>
                         <div className="space-y-6">
                             <div className="grid gap-4">
-                                <Label className="text-white/70">Aadhaar Number</Label>
-                                <div className="space-y-4">
-                                    <Input 
-                                        name="aadhaarNumber" 
-                                        maxLength={12}
-                                        placeholder="12-digit Aadhaar Number"
-                                        value={formData.aadhaarNumber} 
-                                        onChange={handleInputChange} 
-                                        disabled={isAadhaarVerified}
-                                        className="bg-white/5 border-white/10 text-white h-12" 
-                                    />
-                                    
-                                    {!isAadhaarVerified ? (
-                                        <Button 
-                                            type="button"
-                                            onClick={() => setShowDigiLockerModal(true)}
-                                            disabled={isDigiLockerVerifying || formData.aadhaarNumber.length !== 12}
-                                            className="w-full bg-[#0052cc] hover:bg-[#0747a6] text-white flex items-center justify-center gap-3 h-14 rounded-2xl transition-all shadow-lg active:scale-95 group overflow-hidden relative"
-                                        >
-                                            <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover:translate-x-0 transition-transform duration-500" />
-                                            <Fingerprint className="w-6 h-6" />
-                                            <div className="text-left">
-                                                <p className="text-[10px] uppercase font-bold tracking-widest opacity-70 leading-none">Safe & Secure via Gov.in</p>
-                                                <p className="text-sm font-bold">Verify with DigiLocker</p>
-                                            </div>
-                                            <ChevronRight className="w-5 h-5 ml-auto group-hover:translate-x-1 transition-transform" />
-                                        </Button>
-                                    ) : (
-                                        <div className="flex items-center justify-between p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl animate-in zoom-in-95">
-                                            <div className="flex items-center gap-3 text-emerald-400">
-                                                <CheckCircle className="w-6 h-6" />
-                                                <div className="text-left">
-                                                    <p className="text-[10px] uppercase font-bold tracking-widest leading-none">e-KYC Completed</p>
-                                                    <p className="text-sm font-bold">Verified via DigiLocker</p>
-                                                </div>
-                                            </div>
-                                            <ShieldCheck className="text-emerald-500/50 w-8 h-8" />
-                                        </div>
-                                    )}
-                                </div>
+                                <Label className="text-white/70">Aadhaar Number <span className="text-red-500">*</span></Label>
+                                <Input 
+                                    name="aadhaarNumber" 
+                                    maxLength={12}
+                                    placeholder="12-digit Aadhaar Number"
+                                    value={formData.aadhaarNumber} 
+                                    onChange={handleInputChange} 
+                                    className="bg-white/5 border-white/10 text-white h-12" 
+                                    required
+                                />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label className="text-white/70">Upload Aadhaar Card <span className="text-red-500">*</span></Label>
+                                <Input type="file" onChange={(e) => handleFileChange(e, 'aadhaarCard')} className="bg-white/5 border-white/10 text-white file:bg-primary/20 file:text-primary file:border-0" required />
+                                <p className="text-[10px] text-primary/70 uppercase tracking-widest font-bold mt-1 italic">
+                                    Note: Our team will check your Aadhaar card manually.
+                                </p>
                             </div>
 
                             <div className="grid gap-2">
@@ -640,12 +596,13 @@ function RegisterPageContent() {
 
                             <div className="grid md:grid-cols-2 gap-4">
                                 <div className="grid gap-2">
-                                    <Label className="text-white/70">Owner's Identity Proof</Label>
-                                    <Input type="file" onChange={(e) => handleFileChange(e, 'ownerIdentityProof')} className="bg-white/5 border-white/10 text-white file:bg-primary/20 file:text-primary file:border-0" />
+                                    <Label className="text-white/70">Owner's PAN Card <span className="text-red-500">*</span></Label>
+                                    <Input type="file" onChange={(e) => handleFileChange(e, 'ownerIdentityProof')} className="bg-white/5 border-white/10 text-white file:bg-primary/20 file:text-primary file:border-0" required />
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label className="text-white/70">Shop/Establishment Proof</Label>
-                                    <Input type="file" onChange={(e) => handleFileChange(e, 'establishmentProof')} className="bg-white/5 border-white/10 text-white file:bg-primary/20 file:text-primary file:border-0" />
+                                    <Label className="text-white/70">Shop/Establishment Proof <span className="text-red-500">*</span></Label>
+                                    <p className="text-[10px] text-white/40 uppercase tracking-tight mb-1">(Partnership deed, Company form, or GST)</p>
+                                    <Input type="file" onChange={(e) => handleFileChange(e, 'establishmentProof')} className="bg-white/5 border-white/10 text-white file:bg-primary/20 file:text-primary file:border-0" required />
                                 </div>
                             </div>
                         </div>
@@ -803,7 +760,7 @@ function RegisterPageContent() {
                     )}
 
                     {/* Progress Bar */}
-                    <div className="max-w-2xl mx-auto mb-16 px-4">
+                    <div className="max-w-2xl mx-auto mb-12 px-4">
                         <div className="relative flex justify-between items-start isolate">
                             <div className="absolute top-5 left-0 w-full h-[1px] bg-white/10 -translate-y-1/2 z-0" />
                             <motion.div
@@ -812,16 +769,17 @@ function RegisterPageContent() {
                                 animate={{ width: `${((currentStep - 1) / (steps.length - 1)) * 100}%` }}
                             />
                             {steps.map((step) => (
-                                <div key={step.id} className="relative z-10 flex flex-col items-center gap-3">
+                                <div key={step.id} className="relative z-10 flex flex-col items-center gap-2">
                                     <button
+                                        type="button"
                                         onClick={() => (isUpdateMode || step.id < currentStep) && setCurrentStep(step.id)}
-                                        className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 border-2 ${currentStep === step.id ? "bg-primary border-primary text-white scale-110 glow-sm" :
+                                        className={`relative w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-500 border-2 ${currentStep === step.id ? "bg-primary border-primary text-white scale-110 glow-sm" :
                                             currentStep > step.id ? "bg-primary/10 border-primary/50 text-primary backdrop-blur-md" : "bg-slate-900 border-white/20 text-white/40"
                                             }`}
                                     >
-                                        <step.icon size={18} />
+                                        <step.icon size={16} className="sm:w-[18px] sm:h-[18px]" />
                                     </button>
-                                    <span className={`text-[10px] font-bold uppercase tracking-widest hidden sm:block ${currentStep === step.id ? "text-primary" : "text-white/40"}`}>
+                                    <span className={`text-[8px] sm:text-[10px] font-bold uppercase tracking-tighter sm:tracking-widest ${currentStep === step.id ? "text-primary" : "text-white/40"}`}>
                                         {step.title}
                                     </span>
                                 </div>
@@ -830,7 +788,7 @@ function RegisterPageContent() {
                     </div>
 
                     {/* Form Container */}
-                    <div className="max-w-2xl mx-auto glass-strong border-white/10 rounded-[2rem] p-8 md:p-12 shadow-2xl relative overflow-hidden">
+                    <div className="max-w-2xl mx-auto glass-strong border-white/10 rounded-2xl sm:rounded-[2rem] p-5 sm:p-8 md:p-12 shadow-2xl relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
 
                         {error && (
@@ -882,93 +840,7 @@ function RegisterPageContent() {
             </main>
 
             {/* DigiLocker Simulation Modal */}
-            <AnimatePresence>
-                {showDigiLockerModal && (
-                    <motion.div 
-                        initial={{ opacity: 0 }} 
-                        animate={{ opacity: 1 }} 
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
-                    >
-                        <motion.div 
-                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                            className="bg-slate-900 border border-white/10 rounded-[2.5rem] w-full max-w-lg overflow-hidden relative shadow-2xl"
-                        >
-                            <div className="absolute top-0 left-0 w-full h-2 bg-[#0052cc]" />
-                            
-                            <div className="p-8 md:p-12">
-                                <div className="flex justify-between items-start mb-8">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 rounded-2xl bg-[#0052cc]/20 flex items-center justify-center text-[#0052cc]">
-                                            <Fingerprint size={28} />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-xl font-bold text-white">DigiLocker</h3>
-                                            <p className="text-xs text-white/50 font-medium uppercase tracking-widest">Digital India Initiative</p>
-                                        </div>
-                                    </div>
-                                    <button 
-                                        onClick={() => setShowDigiLockerModal(false)}
-                                        className="p-2 hover:bg-white/5 rounded-full text-white/40 transition-colors"
-                                    >
-                                        <X size={24} />
-                                    </button>
-                                </div>
-
-                                <div className="space-y-6 mb-10">
-                                    <div className="bg-white/5 rounded-2xl p-6 border border-white/5">
-                                        <h4 className="text-sm font-bold text-white mb-2 flex items-center gap-2">
-                                            <ShieldCheck className="text-[#0052cc] w-4 h-4" />
-                                            Consent Request
-                                        </h4>
-                                        <p className="text-sm text-white/70 leading-relaxed">
-                                            <strong className="text-white">DBI Community</strong> is requesting access to your <strong className="text-white">Aadhaar Card</strong> from your DigiLocker account for identity verification purposes.
-                                        </p>
-                                    </div>
-
-                                    <div className="flex items-start gap-4 p-4 rounded-xl bg-[#0052cc]/10 border border-[#0052cc]/20">
-                                        <AlertCircle className="text-[#0052cc] w-5 h-5 shrink-0 mt-0.5" />
-                                        <p className="text-xs text-white/60 leading-relaxed">
-                                            This is a secure connection. Your data will only be used for business registration and won't be shared with third parties.
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-col gap-3">
-                                    <Button 
-                                        onClick={() => {
-                                            setShowDigiLockerModal(false);
-                                            handleDigiLockerVerify();
-                                        }}
-                                        disabled={isDigiLockerVerifying}
-                                        className="w-full h-14 bg-[#0052cc] hover:bg-[#0747a6] text-white rounded-2xl font-bold text-base shadow-[0_8px_20px_-6px_rgba(0,82,204,0.6)]"
-                                    >
-                                        {isDigiLockerVerifying ? (
-                                            <Loader2 className="animate-spin" />
-                                        ) : (
-                                            "Allow & Verify"
-                                        )}
-                                    </Button>
-                                    <Button 
-                                        variant="ghost"
-                                        onClick={() => setShowDigiLockerModal(false)}
-                                        className="w-full h-12 text-white/40 hover:text-white hover:bg-white/5 rounded-xl font-medium"
-                                    >
-                                        Deny Access
-                                    </Button>
-                                </div>
-
-                                <div className="mt-8 flex items-center justify-center gap-2 opacity-30 grayscale hover:opacity-100 hover:grayscale-0 transition-all">
-                                    <p className="text-[10px] font-bold uppercase tracking-tighter text-white">Powered by National e-Governance Division</p>
-                                    <ExternalLink size={10} className="text-[#0052cc]" />
-                                </div>
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                    {/* DigiLocker Modal Removed */}
 
             <Footer />
         </div>

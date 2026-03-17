@@ -146,14 +146,11 @@ export default function DetailPage() {
                         <p className="text-sm md:text-xl text-white/70 mb-10 max-w-5xl mx-auto leading-relaxed">
                              By listing your business on our platform, you&apos;ll become part of a vibrant community of entrepreneurs and establishments. Leverage our network to connect with potential customers, partners, and collaborators, driving growth and success.
                         </p>
-                        <Link href="/register">
-                            <Button 
-                                variant="glow" 
-                                size="lg" 
-                                className="rounded-xl md:rounded-2xl px-8 md:px-12 h-12 md:h-14 text-sm md:text-lg hover:scale-105 transition-transform duration-300 bg-[#0066ff] shadow-[0_0_30px_rgba(0,102,255,0.4)]"
-                            >
-                                Get Started Today
-                            </Button>
+                        <Link 
+                            href="/community/register"
+                            className="group/btn relative h-12 sm:h-14 px-8 sm:px-12 bg-primary text-white font-bold rounded-2xl overflow-hidden active:scale-95 transition-all text-sm sm:text-base inline-flex items-center justify-center gap-2 shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-0.5"
+                        >
+                            Get Started Today
                         </Link>
                     </motion.section>
                 </div>

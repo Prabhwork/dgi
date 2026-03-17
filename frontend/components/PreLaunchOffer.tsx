@@ -156,7 +156,7 @@ export default function PreLaunchOffer() {
                             className="h-12 px-10 text-sm font-bold uppercase tracking-widest rounded-xl bg-primary hover:bg-primary/80 text-white shadow-[0_0_25px_rgba(59,130,246,0.5)] transition-all shrink-0"
                             asChild
                         >
-                            <Link href="/become-a-part">Claim This Offer</Link>
+                            <Link href="/community/register">Claim This Offer</Link>
                         </Button>
                     </div>
 
@@ -268,7 +268,7 @@ export default function PreLaunchOffer() {
                             className="h-11 px-10 text-sm font-bold uppercase tracking-widest rounded-xl bg-primary hover:bg-primary/80 text-white shadow-[0_0_20px_rgba(59,130,246,0.4)] transition-all"
                             asChild
                         >
-                            <Link href="/become-a-part">Join Now at ₹2,500 →</Link>
+                            <Link href="/community/register">Join Now at ₹2,500 →</Link>
                         </Button>
                         <p className="text-xs text-muted-foreground mt-3">Limited to first 100 members. No hidden charges.</p>
                     </div>

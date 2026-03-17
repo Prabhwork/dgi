@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Sun, Moon, ChevronDown, ChevronRight, Rocket, Map, ShieldCheck, PieChart, Search, Building2, Store, Handshake, Briefcase, Globe, Zap, Target, Sparkles, Circle } from "lucide-react";
+import { Menu, X, Sun, Moon, ChevronDown, ChevronRight, Rocket, Map, ShieldCheck, PieChart, Search, Building2, Store, Handshake, Briefcase, Globe, Zap, Target, Sparkles, Circle, User, Settings, LogOut } from "lucide-react";
 import Link from "next/link";
 import { useTheme } from "@/components/ThemeProvider";
 
@@ -193,6 +193,10 @@ export default function Navbar() {
     const [flyoutY, setFlyoutY] = useState(0);
     const [mobileExpandedCat, setMobileExpandedCat] = useState<string | null>(null);
     const [mobileSectionOpen, setMobileSectionOpen] = useState<string | null>(null);
+    
+    // Auth State
+    const [businessUser, setBusinessUser] = useState<any>(null);
+    const [userMenuOpen, setUserMenuOpen] = useState(false);
 
     useEffect(() => {
         const handler = () => setScrolled(window.scrollY > 50);
@@ -206,6 +210,7 @@ export default function Navbar() {
         const handleClickOutside = (e: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
                 setOpenDropdown(null);
+                setUserMenuOpen(false);
             }
         };
         document.addEventListener("mousedown", handleClickOutside);
@@ -274,8 +279,33 @@ export default function Navbar() {
             }
         };
 
+        const fetchUser = async () => {
+            const token = localStorage.getItem("businessToken");
+            if (!token) return;
+            try {
+                const res = await fetch(`${API}/business/me`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    setBusinessUser(data.data);
+                } else {
+                    localStorage.removeItem("businessToken");
+                }
+            } catch (err) {
+                console.error("Failed to fetch user:", err);
+            }
+        };
+
         fetchData();
+        fetchUser();
     }, []);
+
+    const handleLogout = () => {
+        localStorage.removeItem("businessToken");
+        setBusinessUser(null);
+        window.location.href = '/';
+    };
 
     return (
         <motion.nav
@@ -374,17 +404,82 @@ export default function Navbar() {
                         </motion.div>
                     </button>
 
-                    <Button variant="outline-glow" size="sm" className={isLight ? "text-primary border-primary/20 hover:bg-primary/5" : ""} asChild>
-                        <Link href="/community/login">Log In</Link>
-                    </Button>
-                    <Button
-                        variant={isLight ? 'default' : 'glow'}
-                        size="sm"
-                        className={isLight ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20 font-bold" : "bg-primary text-white hover:opacity-90 shadow-[0_0_20px_rgba(59,130,246,0.5)] border-none"}
-                        asChild
-                    >
-                        <Link href="/community/register">Sign Up</Link>
-                    </Button>
+                    {businessUser ? (
+                        <div className="relative isolate" ref={dropdownRef}>
+                            <button
+                                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all border ${isLight ? 'bg-white border-slate-200 hover:border-primary/50 text-slate-900 shadow-sm' : 'bg-white/5 border-white/10 hover:border-white/30 text-white'}`}
+                            >
+                                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${isLight ? 'bg-primary/10 text-primary' : 'bg-primary/20 text-white'}`}>
+                                    {(businessUser.brandName || businessUser.businessName || 'B').charAt(0).toUpperCase()}
+                                </div>
+                                <span className="text-sm font-bold truncate max-w-[120px]">
+                                    {businessUser.brandName || businessUser.businessName}
+                                </span>
+                                <ChevronDown size={14} className={`transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
+                            </button>
+                            
+                            <AnimatePresence>
+                                {userMenuOpen && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                        className={`absolute right-0 top-full mt-2 w-56 p-2 rounded-2xl border backdrop-blur-xl shadow-2xl z-[100] ${isLight ? 'bg-white/90 border-slate-200' : 'bg-slate-900/90 border-white/10'}`}
+                                    >
+                                        <div className="px-3 py-2 border-b border-solid mb-2 pb-3 pt-1">
+                                            <p className={`text-xs uppercase tracking-wider font-bold opacity-50 ${isLight ? 'text-slate-500 border-slate-100' : 'text-slate-400 border-white/10'}`}>Signed in as</p>
+                                            <p className={`text-sm font-bold truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>{businessUser.officialEmailAddress}</p>
+                                        </div>
+                                        
+                                        <div className="space-y-1">
+                                            <Link 
+                                                href="/profile"
+                                                className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${isLight ? 'text-slate-700 hover:bg-slate-100 hover:text-primary' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}
+                                            >
+                                                <User size={16} /> Profile
+                                            </Link>
+                                            <Link 
+                                                href="#"
+                                                className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${isLight ? 'text-slate-700 hover:bg-slate-100 hover:text-primary' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}
+                                            >
+                                                <Settings size={16} /> Settings
+                                            </Link>
+                                            <Link 
+                                                href="#"
+                                                className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${isLight ? 'text-slate-700 hover:bg-slate-100 hover:text-primary' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}
+                                            >
+                                                <ShieldCheck size={16} /> 2-Step Verification
+                                            </Link>
+                                        </div>
+                                        
+                                        <div className={`mt-2 pt-2 border-t border-solid ${isLight ? 'border-slate-100' : 'border-white/10'}`}>
+                                            <button 
+                                                onClick={handleLogout}
+                                                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold text-red-500 hover:bg-red-500/10 transition-colors"
+                                            >
+                                                <LogOut size={16} /> Logout
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    ) : (
+                        <>
+                            <Button variant="outline-glow" size="sm" className={isLight ? "text-primary border-primary/20 hover:bg-primary/5" : ""} asChild>
+                                <Link href="/community/login">Log In</Link>
+                            </Button>
+                            <Button
+                                variant={isLight ? 'default' : 'glow'}
+                                size="sm"
+                                className={isLight ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20 font-bold" : "bg-primary text-white hover:opacity-90 shadow-[0_0_20px_rgba(59,130,246,0.5)] border-none"}
+                                asChild
+                            >
+                                <Link href="/community/register">Sign Up</Link>
+                            </Button>
+                        </>
+                    )}
                 </div>
 
                 <div className="flex lg:hidden items-center gap-3">
@@ -538,18 +633,60 @@ export default function Navbar() {
                                 ))}
                             </div>
                             <div className="flex gap-3 mt-4">
-                                <Button variant="outline-glow" size="lg" className="flex-1" asChild onClick={() => setMobileOpen(false)}>
-                                    <Link href="/community/login">Log In</Link>
-                                </Button>
-                                <Button
-                                    variant={isLight ? 'default' : 'glow'}
-                                    size="lg"
-                                    className={`flex-1 ${isLight ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20 font-bold" : ""}`}
-                                    asChild
-                                    onClick={() => setMobileOpen(false)}
-                                >
-                                    <Link href="/community/register">Sign Up</Link>
-                                </Button>
+                                {businessUser ? (
+                                    <div className="w-full flex flex-col gap-2">
+                                        <div className={`p-3 rounded-2xl flex items-center justify-between border ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-white/5 border-white/10'}`}>
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${isLight ? 'bg-primary/10 text-primary' : 'bg-primary/20 text-white'}`}>
+                                                    {(businessUser.brandName || businessUser.businessName || 'B').charAt(0).toUpperCase()}
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className={`text-sm font-bold max-w-[120px] truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                                                        {businessUser.brandName || businessUser.businessName}
+                                                    </span>
+                                                    <span className={`text-[10px] truncate max-w-[120px] ${isLight ? 'text-slate-500' : 'text-white/40'}`}>
+                                                        {businessUser.officialEmailAddress}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <button 
+                                                onClick={handleLogout}
+                                                className="text-red-500 p-2 rounded-xl hover:bg-red-500/10"
+                                            >
+                                                <LogOut size={16} />
+                                            </button>
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-2">
+                                            <Link href="/community/register?mode=update" className={`flex flex-col items-center gap-1 p-3 rounded-xl border ${isLight ? 'bg-white border-slate-200 text-slate-700' : 'bg-white/5 border-white/10 text-slate-300'}`}>
+                                                <User size={16} />
+                                                <span className="text-[10px] font-bold">Profile</span>
+                                            </Link>
+                                            <Link href="#" className={`flex flex-col items-center gap-1 p-3 rounded-xl border ${isLight ? 'bg-white border-slate-200 text-slate-700' : 'bg-white/5 border-white/10 text-slate-300'}`}>
+                                                <Settings size={16} />
+                                                <span className="text-[10px] font-bold">Config</span>
+                                            </Link>
+                                            <Link href="#" className={`flex flex-col items-center gap-1 p-3 rounded-xl border ${isLight ? 'bg-white border-slate-200 text-slate-700' : 'bg-white/5 border-white/10 text-slate-300'}`}>
+                                                <ShieldCheck size={16} />
+                                                <span className="text-[10px] font-bold">2-Step</span>
+                                            </Link>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <Button variant="outline-glow" size="lg" className="flex-1" asChild onClick={() => setMobileOpen(false)}>
+                                            <Link href="/community/login">Log In</Link>
+                                        </Button>
+                                        <Button
+                                            variant={isLight ? 'default' : 'glow'}
+                                            size="lg"
+                                            className={`flex-1 ${isLight ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20 font-bold" : ""}`}
+                                            asChild
+                                            onClick={() => setMobileOpen(false)}
+                                        >
+                                            <Link href="/community/register">Sign Up</Link>
+                                        </Button>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </motion.div>

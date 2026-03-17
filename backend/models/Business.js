@@ -59,15 +59,16 @@ const BusinessSchema = new mongoose.Schema({
     // Step 4: Verification & Trust
     aadhaarNumber: {
         type: String,
-        match: [/^\d{12}$/, 'Please add a valid 12-digit Aadhaar number']
+        // Removed exact 12-digit match to allow 'XXXXXXXX1234' masking
     },
+    aadhaarCard: String, // file path for manual upload
     aadhaarVerified: {
         type: Boolean,
         default: false
     },
     website: String,
-    ownerIdentityProof: String, // file path
-    establishmentProof: String, // file path
+    ownerIdentityProof: String, // file path (PAN Card)
+    establishmentProof: String, // file path (Partnership/GST/etc)
 
     // Step 5: Gallery & Catalog
     coverImage: String, // file path

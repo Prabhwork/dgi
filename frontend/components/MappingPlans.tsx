@@ -190,7 +190,7 @@ export default function MappingPlans() {
                                 className={`w-full h-9 text-xs font-semibold uppercase tracking-widest rounded-xl transition-all ${plan.badge === "Most Popular" || plan.badge === "Best Value" ? "bg-primary hover:bg-primary/80 text-white shadow-[0_0_15px_rgba(59,130,246,0.3)]" : "bg-white/10 hover:bg-white/20 text-white"}`}
                                 asChild
                             >
-                                <Link href="/become-a-part">Get Started</Link>
+                                <Link href="/community/register">Get Started</Link>
                             </Button>
                         </motion.div>
                     ))}
@@ -204,7 +204,7 @@ export default function MappingPlans() {
                     className="text-center text-xs text-muted-foreground mt-8"
                 >
                     All plans include a free 14-day trial. No credit card required. &nbsp;
-                    <Link href="/become-a-part" className="text-primary underline underline-offset-2 hover:text-primary/80 transition-colors">
+                    <Link href="/community/register" className="text-primary underline underline-offset-2 hover:text-primary/80 transition-colors">
                         Apply now →
                     </Link>
                 </motion.p>

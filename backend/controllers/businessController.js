@@ -8,7 +8,7 @@ const { getOTPTemplate, getRegistrationSuccessTemplate, getRejectionTemplate } =
 const handleBusinessFiles = (req, existingData = {}) => {
     const businessData = { ...existingData };
     if (req.files) {
-        const fields = ['ownerIdentityProof', 'establishmentProof', 'coverImage', 'catalog'];
+        const fields = ['ownerIdentityProof', 'establishmentProof', 'coverImage', 'catalog', 'aadhaarCard'];
         fields.forEach(field => {
             if (req.files[field]) {
                 businessData[field] = req.files[field][0].path.replace(/\\/g, '/');
@@ -41,8 +41,13 @@ exports.registerBusiness = async (req, res, next) => {
         // Set email as verified (since frontend verified it via OTP)
         businessData.isEmailVerified = true;
         
-        // Aadhaar verified via OTP on frontend
-        businessData.aadhaarVerified = true;
+        // Aadhaar verified is false by default for manual check
+        businessData.aadhaarVerified = false;
+
+        // Mask Aadhaar Number to prevent data leaks (Show only last 4 digits)
+        if (businessData.aadhaarNumber && businessData.aadhaarNumber.length === 12) {
+            businessData.aadhaarNumber = 'XXXXXXXX' + businessData.aadhaarNumber.slice(-4);
+        }
 
         const business = await Business.create(businessData);
         

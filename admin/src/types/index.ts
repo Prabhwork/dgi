@@ -54,6 +54,16 @@ export interface PageDetail {
     createdAt: string;
 }
 
+export interface Contact {
+    _id: string;
+    name: string;
+    email: string;
+    phone: string;
+    subject: string;
+    message: string;
+    createdAt: string;
+}
+
 export interface PaginationInfo {
     page: number;
     limit: number;

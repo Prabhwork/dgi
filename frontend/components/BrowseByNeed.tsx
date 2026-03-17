@@ -18,21 +18,21 @@ export default function BrowseByNeed() {
             const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
             const BASE_URL = API_URL.replace('/api', '');
             try {
-                const res = await fetch(`${API_URL}/categories`);
+                const res = await fetch(`${API_URL}/main-categories?sort=createdAt&limit=100`);
                 const data = await res.json();
                 if (data.success && data.data) {
                     const fetchedCats = data.data
-                        .filter((c: any) => c.isActive)
+                        .filter((c: any) => c.isActive !== false)
                         .map((c: any) => ({
                             title: c.name,
-                            img: c.icon && c.icon !== 'no-photo.jpg' 
-                                ? `${BASE_URL}/uploads/${c.icon}` 
+                            img: c.image && c.image !== 'no-photo.jpg' 
+                                ? `${BASE_URL}/${c.image.startsWith('uploads') ? c.image : 'uploads/' + c.image}` 
                                 : '/assets/placeholder-category.jpg'
                         }));
                     setCategories(fetchedCats);
                 }
             } catch (err) {
-                console.error('Failed to fetch categories:', err);
+                console.error('Failed to fetch main categories:', err);
             }
         };
 
@@ -126,7 +126,7 @@ export default function BrowseByNeed() {
                             key={`${cat.title}-${i}`}
                             whileHover={{ y: -15 }}
                             whileTap={{ scale: 0.98 }}
-                            onClick={() => router.push(`/search?category=${encodeURIComponent(cat.title)}`)}
+                            onClick={() => router.push(`/search?mainCategory=${encodeURIComponent(cat.title)}`)}
                             className={`w-[280px] sm:w-[350px] flex-shrink-0 rounded-[2.5rem] cursor-pointer transition-all duration-500 group relative isolate overflow-hidden backdrop-blur-md border border-solid ${theme === 'light'
                                 ? 'bg-white/60 border-blue-600/20 hover:border-blue-600/40 shadow-none'
                                 : 'bg-white/[0.01] border-white/20 hover:bg-white/[0.05] hover:border-white/40 shadow-[0_4px_24px_rgba(0,0,0,0.2)] hover:shadow-[0_8px_32px_rgba(255,255,255,0.15)]'

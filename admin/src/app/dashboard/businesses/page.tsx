@@ -198,52 +198,153 @@ export default function BusinessesPage() {
                             <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
                                 <div className="space-y-3">
                                     <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">General Information</div>
-                                    <div className="flex items-center gap-3 text-sm">
-                                        <Building2 className="w-4 h-4 text-slate-400" />
-                                        <span className="text-slate-600">Registered: <strong>{new Date(selectedBusiness.createdAt).toLocaleDateString()}</strong></span>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="flex flex-col gap-1 text-sm">
+                                            <span className="text-xs text-slate-400">Registered</span>
+                                            <span className="text-slate-700 font-medium">{new Date(selectedBusiness.createdAt).toLocaleDateString()}</span>
+                                        </div>
+                                        <div className="flex flex-col gap-1 text-sm">
+                                            <span className="text-xs text-slate-400">Category</span>
+                                            <span className="text-slate-700 font-medium">{selectedBusiness.businessCategory}</span>
+                                        </div>
+                                        {selectedBusiness.brandName && (
+                                            <div className="col-span-2 flex flex-col gap-1 text-sm">
+                                                <span className="text-xs text-slate-400">Brand Name</span>
+                                                <span className="text-slate-700 font-medium">{selectedBusiness.brandName}</span>
+                                            </div>
+                                        )}
+                                        <div className="flex flex-col gap-1 text-sm">
+                                            <span className="text-xs text-slate-400">Primary Contact</span>
+                                            <span className="text-slate-700 font-medium">{selectedBusiness.primaryContactNumber}</span>
+                                        </div>
+                                        {selectedBusiness.officialWhatsAppNumber && (
+                                            <div className="flex flex-col gap-1 text-sm">
+                                                <span className="text-xs text-slate-400">WhatsApp</span>
+                                                <span className="text-slate-700 font-medium">{selectedBusiness.officialWhatsAppNumber}</span>
+                                            </div>
+                                        )}
+                                        <div className="col-span-2 flex flex-col gap-1 text-sm">
+                                            <span className="text-xs text-slate-400">Official Email</span>
+                                            <span className="text-slate-700 font-medium truncate">{selectedBusiness.officialEmailAddress}</span>
+                                        </div>
+                                        <div className="col-span-2 flex flex-col gap-1 text-sm">
+                                            <span className="text-xs text-slate-400">Aadhaar</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-slate-700 font-medium">
+                                                    {selectedBusiness.aadhaarNumber 
+                                                        ? (selectedBusiness.aadhaarNumber.length === 12 && !selectedBusiness.aadhaarNumber.includes('X') 
+                                                            ? 'XXXXXXXX' + selectedBusiness.aadhaarNumber.slice(-4) 
+                                                            : selectedBusiness.aadhaarNumber)
+                                                        : 'N/A'}
+                                                </span>
+                                                {selectedBusiness.aadhaarVerified && (
+                                                    <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold">VERIFIED</span>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-3 text-sm">
-                                        <Mail className="w-4 h-4 text-slate-400" />
-                                        <span className="text-slate-600 truncate">{selectedBusiness.officialEmailAddress}</span>
-                                    </div>
-                                    <div className="flex items-center gap-3 text-sm">
-                                        <Phone className="w-4 h-4 text-slate-400" />
-                                        <span className="text-slate-600">{selectedBusiness.primaryContactNumber}</span>
-                                    </div>
-                                    <div className="flex items-center gap-3 text-sm">
-                                        <AlertCircle className="w-4 h-4 text-slate-400" />
-                                        <span className="text-slate-600">Aadhaar: {selectedBusiness.aadhaarNumber || 'N/A'}</span>
-                                        {selectedBusiness.aadhaarVerified && (
-                                            <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold">VERIFIED</span>
+
+                                    {/* Additional Info Section */}
+                                    <div className="pt-4 border-t border-slate-100 mt-4 space-y-3">
+                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Business Operations</div>
+                                        
+                                        <div className="col-span-2 flex flex-col gap-1 text-sm">
+                                            <span className="text-xs text-slate-400">Address</span>
+                                            <span className="text-slate-700 font-medium">{selectedBusiness.registeredOfficeAddress || 'N/A'}</span>
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-2 gap-4 mt-2">
+                                            <div className="flex flex-col gap-1 text-sm">
+                                                <span className="text-xs text-slate-400">Timings</span>
+                                                <span className="text-slate-700 font-medium">
+                                                    {selectedBusiness.openingTime && selectedBusiness.closingTime 
+                                                        ? `${selectedBusiness.openingTime} - ${selectedBusiness.closingTime}` 
+                                                        : 'N/A'}
+                                                </span>
+                                            </div>
+                                            <div className="flex flex-col gap-1 text-sm">
+                                                <span className="text-xs text-slate-400">Weekly Off</span>
+                                                <span className="text-slate-700 font-medium">{selectedBusiness.weeklyOff || 'None'}</span>
+                                            </div>
+                                        </div>
+
+                                        {selectedBusiness.description && (
+                                            <div className="col-span-2 flex flex-col gap-1 text-sm mt-2">
+                                                <span className="text-xs text-slate-400">Description</span>
+                                                <span className="text-slate-700 text-xs leading-relaxed">{selectedBusiness.description}</span>
+                                            </div>
+                                        )}
+                                        
+                                        {selectedBusiness.keywords && selectedBusiness.keywords.length > 0 && (
+                                            <div className="col-span-2 flex flex-col gap-1 text-sm mt-2">
+                                                <span className="text-xs text-slate-400">Keywords</span>
+                                                <div className="flex flex-wrap gap-1">
+                                                    {selectedBusiness.keywords.map((kw: string, i: number) => (
+                                                        <span key={i} className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200">{kw}</span>
+                                                    ))}
+                                                </div>
+                                            </div>
                                         )}
                                     </div>
-                                    {selectedBusiness.website && (
-                                        <div className="flex items-center gap-3 text-sm">
-                                            <ExternalLink className="w-4 h-4 text-slate-400" />
-                                            <a href={selectedBusiness.website.startsWith('http') ? selectedBusiness.website : `https://${selectedBusiness.website}`} target="_blank" className="text-teal-600 hover:underline truncate">
-                                                {selectedBusiness.website}
-                                            </a>
+                                    
+                                    <div className="pt-4 border-t border-slate-100 mt-4 space-y-3">
+                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Community & Links</div>
+                                        {selectedBusiness.website && (
+                                            <div className="flex items-center gap-2 text-sm">
+                                                <ExternalLink className="w-3 h-3 text-slate-400" />
+                                                <a href={selectedBusiness.website.startsWith('http') ? selectedBusiness.website : `https://${selectedBusiness.website}`} target="_blank" className="text-teal-600 hover:underline truncate font-medium flex-1">
+                                                    {selectedBusiness.website}
+                                                </a>
+                                            </div>
+                                        )}
+                                        <div className="flex items-center gap-4 mt-2">
+                                            <div className={`text-[10px] px-2 py-1 flex-1 text-center rounded font-bold uppercase ${selectedBusiness.joinBulkBuying ? 'bg-teal-50 text-teal-700 border border-teal-200' : 'bg-slate-50 text-slate-400 border border-slate-200'}`}>Bulk Buying</div>
+                                            <div className={`text-[10px] px-2 py-1 flex-1 text-center rounded font-bold uppercase ${selectedBusiness.joinFraudAlerts ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-slate-50 text-slate-400 border border-slate-200'}`}>Fraud Alerts</div>
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
 
                                 <div className="space-y-3 pt-4 border-t border-slate-100">
                                     <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Verification Documents</div>
                                     
-                                    {/* Identity Proof */}
+                                    {/* Aadhaar Card */}
+                                    <div className="group relative bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center justify-between hover:border-teal-500 transition-all">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-white rounded-lg border border-slate-200 flex items-center justify-center text-teal-600">
+                                                <AlertCircle size={20} />
+                                            </div>
+                                            <div className="text-left">
+                                                <div className="text-xs font-bold text-slate-900">Aadhaar Card</div>
+                                                <div className="text-[10px] text-slate-500">Manual Verification</div>
+                                            </div>
+                                        </div>
+                                        {selectedBusiness.aadhaarCard ? (
+                                            <a 
+                                                href={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}/${selectedBusiness.aadhaarCard}`} 
+                                                target="_blank" 
+                                                className="p-2 text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
+                                            >
+                                                <ExternalLink size={16} />
+                                            </a>
+                                        ) : (
+                                            <span className="text-[10px] text-slate-400 italic">Not Uploaded</span>
+                                        )}
+                                    </div>
+
+                                    {/* Identity Proof (PAN) */}
                                     <div className="group relative bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center justify-between hover:border-teal-500 transition-all">
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 bg-white rounded-lg border border-slate-200 flex items-center justify-center text-teal-600">
                                                 <ShieldCheck size={20} />
                                             </div>
                                             <div className="text-left">
-                                                <div className="text-xs font-bold text-slate-900">Identity Proof</div>
-                                                <div className="text-[10px] text-slate-500">Aadhaar / PAN</div>
+                                                <div className="text-xs font-bold text-slate-900">PAN Card</div>
+                                                <div className="text-[10px] text-slate-500">Owner Identity</div>
                                             </div>
                                         </div>
                                         {selectedBusiness.ownerIdentityProof ? (
                                             <a 
-                                                href={`${process.env.NEXT_PUBLIC_API_URL}/${selectedBusiness.ownerIdentityProof}`} 
+                                                href={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}/${selectedBusiness.ownerIdentityProof}`} 
                                                 target="_blank" 
                                                 className="p-2 text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
                                             >
@@ -267,7 +368,7 @@ export default function BusinessesPage() {
                                         </div>
                                         {selectedBusiness.establishmentProof ? (
                                             <a 
-                                                href={`${process.env.NEXT_PUBLIC_API_URL}/${selectedBusiness.establishmentProof}`} 
+                                                href={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}/${selectedBusiness.establishmentProof}`} 
                                                 target="_blank" 
                                                 className="p-2 text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
                                             >

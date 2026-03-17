@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Search, MapPin, Store, CheckCircle2, User, Compass, ChevronDown, Loader2 } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 import { useRouter } from "next/navigation";
@@ -29,21 +29,20 @@ export default function HeroSection() {
     const [locationInput, setLocationInput] = useState("");
     const [isLocating, setIsLocating] = useState(false);
     const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
-    const [leftCategories, setLeftCategories] = useState<any[]>([]);
-    const [rightCategories, setRightCategories] = useState<any[]>([]);
+    const [allCategories, setAllCategories] = useState<any[]>([]);
+    const [currentSet, setCurrentSet] = useState(0);
 
     useEffect(() => {
         const fetchCategories = async () => {
             const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
             const BASE_URL = API_URL.replace('/api', '');
             try {
-                const res = await fetch(`${API_URL}/main-categories`);
+                const res = await fetch(`${API_URL}/main-categories?sort=createdAt&limit=100`);
                 const data = await res.json();
                 if (data.success && data.data) {
                     const fetchedCats = data.data
                         .filter((c: any) => c.isActive !== false)
                         .map((c: any, i: number) => {
-                            // Fix image path construction
                             const catImg = c.image?.startsWith('uploads') ? c.image : `uploads/${c.image}`;
                             const imgSrc = c.image && c.image !== 'no-photo.jpg' 
                                 ? `${BASE_URL}/${catImg}` 
@@ -55,10 +54,7 @@ export default function HeroSection() {
                                 delay: i * 0.1
                             };
                         });
-                    
-                    // Split categories: first 4 on left, rest on right (up to 4)
-                    setLeftCategories(fetchedCats.slice(0, 4));
-                    setRightCategories(fetchedCats.slice(4, 8));
+                    setAllCategories(fetchedCats);
                 }
             } catch (err) {
                 console.error('Failed to fetch hero main-categories:', err);
@@ -68,7 +64,23 @@ export default function HeroSection() {
         fetchCategories();
     }, []);
 
-    const allCategories = [...leftCategories, ...rightCategories];
+    useEffect(() => {
+        if (allCategories.length <= 8) return;
+
+        const interval = setInterval(() => {
+            setCurrentSet((prev) => {
+                const totalSets = Math.ceil(allCategories.length / 8);
+                return (prev + 1) % totalSets;
+            });
+        }, 5000);
+
+        return () => clearInterval(interval);
+    }, [allCategories]);
+
+    const startIdx = currentSet * 8;
+    const visibleSlice = allCategories.slice(startIdx, startIdx + 8);
+    const leftCategories = visibleSlice.slice(0, 4);
+    const rightCategories = visibleSlice.slice(4, 8);
 
     const handleSearch = () => {
         let url = `/search?q=${encodeURIComponent(locationInput)}`;
@@ -228,35 +240,38 @@ export default function HeroSection() {
             {/* Main hero content */}
             <div className="relative z-10 flex-1 flex items-center justify-center px-1 sm:px-4 py-3 sm:py-8">
                 <div className="w-full max-w-[1400px] mx-auto flex flex-col lg:flex-row items-center justify-center lg:justify-between gap-1 sm:gap-6 lg:gap-x-16">
-
-                    {/* Left category cards — desktop only */}
-                    <div className="hidden lg:grid grid-cols-2 gap-x-12 gap-y-5 shrink-0">
-                        {leftCategories.map((cat) => (
-                            <motion.div
-                                key={cat.name}
-                                initial={{ opacity: 0, x: -30 }} // animate from left
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 1 + cat.delay, duration: 0.5 }}
-                                onClick={() => router.push(`/search?mainCategory=${encodeURIComponent(cat.name)}`)}
-                                className={`rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:scale-110 transition-all duration-700 w-[140px] h-[130px] group relative overflow-hidden backdrop-blur-md border border-solid ${theme === 'light'
-                                    ? 'bg-white border-slate-200 hover:border-primary/40 shadow-xl'
-                                    : 'bg-white/[0.02] border-white/10 hover:bg-white/[0.08] hover:border-primary/50 shadow-2xl'
-                                    }`}
-                            >
-                                {/* Shiny glass specular highlight */}
-                                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-
-                                <div className={`w-14 h-14 rounded-full overflow-hidden mb-2 border-[1.5px] transition-transform duration-500 group-hover:-translate-y-1 shadow-[0_0_15px_rgba(255,255,255,0.1)] relative z-10 ${theme === 'light' ? 'border-primary/30' : 'border-white/40 group-hover:border-white/80'
-                                    }`}>
-                                    <img src={cat.img} alt={cat.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                                </div>
-                                <p className={`text-[11px] font-bold text-center transition-colors z-10 ${theme === 'light' ? 'text-slate-900 group-hover:text-primary' : 'text-white/80 group-hover:text-white'
-                                    }`}>
-                                    {cat.name}
-                                </p>
-                            </motion.div>
-                        ))}
-                    </div>
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={`left-${currentSet}`}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 20 }}
+                            transition={{ duration: 0.5 }}
+                            className="hidden lg:grid grid-cols-2 gap-x-12 gap-y-5 shrink-0"
+                        >
+                            {leftCategories.map((cat, i) => (
+                                <motion.div
+                                    key={cat.name}
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: i * 0.1, duration: 0.3 }}
+                                    onClick={() => router.push(`/search?mainCategory=${encodeURIComponent(cat.name)}`)}
+                                    className={`rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:scale-110 transition-all duration-700 w-[140px] h-[130px] group relative overflow-hidden backdrop-blur-md border border-solid ${theme === 'light'
+                                        ? 'bg-white border-slate-200 hover:border-primary/40 shadow-xl'
+                                        : 'bg-white/[0.02] border-white/10 hover:bg-white/[0.08] hover:border-primary/50 shadow-2xl'
+                                        }`}
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                                    <div className={`w-14 h-14 rounded-full overflow-hidden mb-2 border-[1.5px] transition-transform duration-500 group-hover:-translate-y-1 shadow-[0_0_15px_rgba(255,255,255,0.1)] relative z-10 ${theme === 'light' ? 'border-primary/30' : 'border-white/40 group-hover:border-white/80'}`}>
+                                        <img src={cat.img} alt={cat.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                    </div>
+                                    <p className={`text-[11px] font-bold text-center transition-colors z-10 ${theme === 'light' ? 'text-slate-900 group-hover:text-primary' : 'text-white/80 group-hover:text-white'}`}>
+                                        {cat.name}
+                                    </p>
+                                </motion.div>
+                            ))}
+                        </motion.div>
+                    </AnimatePresence>
 
                     {/* Center portal — Globe */}
                     <div className="w-full flex flex-col items-center text-center mt-8 sm:mt-0">
@@ -349,34 +364,38 @@ export default function HeroSection() {
                         </motion.div>
                     </div>
 
-                    {/* Right category cards — desktop only */}
-                    <div className="hidden lg:grid grid-cols-2 gap-x-12 gap-y-5 shrink-0">
-                        {rightCategories.map((cat) => (
-                            <motion.div
-                                key={cat.name}
-                                initial={{ opacity: 0, x: 30 }} // animate from right
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 1 + cat.delay, duration: 0.5 }}
-                                onClick={() => router.push(`/search?mainCategory=${encodeURIComponent(cat.name)}`)}
-                                className={`rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:scale-110 transition-all duration-700 w-[140px] h-[130px] group relative overflow-hidden backdrop-blur-md border border-solid ${theme === 'light'
-                                    ? 'bg-white border-slate-200 hover:border-primary/40 shadow-xl'
-                                    : 'bg-white/[0.02] border-white/10 hover:bg-white/[0.08] hover:border-primary/50 shadow-2xl'
-                                    }`}
-                            >
-                                {/* Shiny glass specular highlight */}
-                                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-
-                                <div className={`w-14 h-14 rounded-full overflow-hidden mb-2 border-[1.5px] transition-transform duration-500 group-hover:-translate-y-1 shadow-[0_0_15px_rgba(255,255,255,0.1)] relative z-10 ${theme === 'light' ? 'border-primary/30' : 'border-white/40 group-hover:border-white/80'
-                                    }`}>
-                                    <img src={cat.img} alt={cat.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                                </div>
-                                <p className={`text-[11px] font-bold text-center transition-colors z-10 ${theme === 'light' ? 'text-slate-900 group-hover:text-primary' : 'text-white/80 group-hover:text-white'
-                                    }`}>
-                                    {cat.name}
-                                </p>
-                            </motion.div>
-                        ))}
-                    </div>
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={`right-${currentSet}`}
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            transition={{ duration: 0.5 }}
+                            className="hidden lg:grid grid-cols-2 gap-x-12 gap-y-5 shrink-0"
+                        >
+                            {rightCategories.map((cat, i) => (
+                                <motion.div
+                                    key={cat.name}
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: i * 0.1, duration: 0.3 }}
+                                    onClick={() => router.push(`/search?mainCategory=${encodeURIComponent(cat.name)}`)}
+                                    className={`rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:scale-110 transition-all duration-700 w-[140px] h-[130px] group relative overflow-hidden backdrop-blur-md border border-solid ${theme === 'light'
+                                        ? 'bg-white border-slate-200 hover:border-primary/40 shadow-xl'
+                                        : 'bg-white/[0.02] border-white/10 hover:bg-white/[0.08] hover:border-primary/50 shadow-2xl'
+                                        }`}
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                                    <div className={`w-14 h-14 rounded-full overflow-hidden mb-2 border-[1.5px] transition-transform duration-500 group-hover:-translate-y-1 shadow-[0_0_15px_rgba(255,255,255,0.1)] relative z-10 ${theme === 'light' ? 'border-primary/30' : 'border-white/40 group-hover:border-white/80'}`}>
+                                        <img src={cat.img} alt={cat.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                    </div>
+                                    <p className={`text-[11px] font-bold text-center transition-colors z-10 ${theme === 'light' ? 'text-slate-900 group-hover:text-primary' : 'text-white/80 group-hover:text-white'}`}>
+                                        {cat.name}
+                                    </p>
+                                </motion.div>
+                            ))}
+                        </motion.div>
+                    </AnimatePresence>
 
                 </div>
             </div>

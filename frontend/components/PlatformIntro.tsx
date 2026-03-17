@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Globe, Zap, Target, Award } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 import IndiaMap from "./IndiaMap";
+import Link from "next/link";
 
 const PILLARS = [
     { icon: Globe, title: "Global Reach", desc: "Connect with the world" },
@@ -83,24 +84,28 @@ export default function PlatformIntro() {
                         </div>
 
                         <div className="flex flex-wrap gap-4 pt-4">
-                            <Button
-                                className={`px-8 py-6 text-sm font-bold rounded-full transition-all duration-300 group ${isLight
-                                    ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20'
-                                    : 'glow bg-primary text-background hover:scale-105'
-                                    }`}
-                            >
-                                Learn More
-                                <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                className={`px-8 py-6 text-sm font-bold rounded-full border-2 border-solid transition-all duration-300 ${isLight
-                                    ? 'border-slate-300 text-slate-600 hover:bg-slate-50 hover:text-slate-800 active:border-blue-600 active:text-slate-800'
-                                    : 'border-white/20 !text-white hover:bg-white/5 hover:border-white/40 active:border-primary active:!text-white'
-                                    }`}
-                            >
-                                Contact Us
-                            </Button>
+                            <Link href="/about-us">
+                                <Button
+                                    className={`px-8 py-6 text-sm font-bold rounded-full transition-all duration-300 group ${isLight
+                                        ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20'
+                                        : 'glow bg-primary text-background hover:scale-105'
+                                        }`}
+                                >
+                                    Learn More
+                                    <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                </Button>
+                            </Link>
+                            <Link href="/contact">
+                                <Button
+                                    variant="ghost"
+                                    className={`px-8 py-6 text-sm font-bold rounded-full border-2 border-solid transition-all duration-300 ${isLight
+                                        ? 'border-slate-300 text-slate-600 hover:bg-slate-50 hover:text-slate-800 active:border-blue-600 active:text-slate-800'
+                                        : 'border-white/20 !text-white hover:bg-white/5 hover:border-white/40 active:border-primary active:!text-white'
+                                        }`}
+                                >
+                                    Contact Us
+                                </Button>
+                            </Link>
                         </div>
                     </motion.div>
 
@@ -134,9 +139,12 @@ export default function PlatformIntro() {
 
                             {/* Map Container */}
                             <div className="absolute inset-0 flex items-center justify-center p-8 sm:p-12">
-                                <div className={`relative w-full h-full rounded-full border border-solid flex items-center justify-center transition-all duration-500 overflow-hidden ${isLight
-                                    ? 'bg-gradient-to-b from-white to-blue-50/30 border-blue-100 shadow-[0_32px_64px_-16px_rgba(0,100,255,0.08)]'
-                                    : 'bg-white/[0.02] border-white/5 shadow-2xl shadow-primary/5'
+                                {/* Back Glow */}
+                                <div className={`absolute inset-12 rounded-full blur-[100px] -z-10 opacity-30 ${isLight ? 'bg-blue-400' : 'bg-primary'}`} />
+                                
+                                <div className={`relative w-full h-full rounded-full border border-solid flex items-center justify-center transition-all duration-500 overflow-hidden backdrop-blur-2xl ${isLight
+                                    ? 'bg-white/60 border-blue-100 shadow-[0_32px_64px_-16px_rgba(0,100,255,0.1)]'
+                                    : 'bg-white/[0.03] border-white/10 shadow-2xl shadow-primary/10'
                                     }`}>
                                     <IndiaMap isVisible={inView} />
 

@@ -44,6 +44,7 @@ const features = require('./routes/featureRoutes');
 const solutions = require('./routes/solutionRoutes');
 const business = require('./routes/businessRoutes');
 const pageDetails = require('./routes/pageDetailRoutes');
+const contact = require('./routes/contactRoutes');
 
 // Re-route into other resource routers
 // Re-route into other resource routers
@@ -61,10 +62,12 @@ app.use('/api/solutions', solutions);
 app.use('/api/business', business);
 app.use('/api/page-details', pageDetails);
 
+app.use('/api/contact', contact);
+
 app.get('/', (req, res) => {
     res.send('Digital Book of India Admin API');
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

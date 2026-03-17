@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
-import Image from "next/image";
 import Link from "next/link";
 
 interface MainCategory {
@@ -31,7 +30,6 @@ export default function MainCategories() {
             try {
                 const res = await fetch(`${API}/main-categories`);
                 const data = await res.json();
-                console.log("Main Categories Fetch Response:", data);
                 if (data.success && data.data) {
                     setCategories(data.data.filter((c: any) => c.isActive !== false));
                 }
@@ -77,14 +75,13 @@ export default function MainCategories() {
                 {categories.length === 0 ? (
                     <div className="flex justify-center py-20">
                          <div className="animate-pulse flex flex-col items-center gap-4">
-                            <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+                            <div className="w-12 h-1 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
                             <p className="text-white/40 font-medium">Connecting to Digital Directory...</p>
                          </div>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                         {categories.map((cat, i) => {
-                            // Check if image already has uploads/ prefix
                             const catImg = cat.image?.startsWith('uploads') ? cat.image : `uploads/${cat.image}`;
                             const imageSrc = cat.image && cat.image !== 'no-photo.jpg' ? `${API_BASE}/${catImg}` : '/assets/placeholder-main.jpg';
 
