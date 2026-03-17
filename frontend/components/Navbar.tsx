@@ -10,9 +10,9 @@ import { useTheme } from "@/components/ThemeProvider";
 const navItems = [
     { name: "Home", href: "/" },
     { name: "Why DBI", href: "/why-dbi" },
-    { name: "Become a Part (DBI)", href: "/become-a-part" },
     { name: "Join Community", href: "/join-community" },
     { name: "Mapping Plans", href: "/mapping-plans" },
+    { name: "Contact", href: "/contact" },
 ];
 
 const FEATURE_ICONS = [Building2, Map, ShieldCheck, PieChart, Search, Globe, Zap, Target, Sparkles, Rocket];
@@ -79,17 +79,18 @@ const NavDropdown = ({
                                     const hasSubs = item.subcategories.length > 0;
 
                                     return (
-                                        <div
+                                        <Link
                                             key={item.name}
+                                            href={hasSubs ? '#' : (item.directPageId ? `/details/${item.directPageId}` : '#')}
                                             onClick={(e) => {
-                                                e.preventDefault();
-                                                if (hasSubs) setExpandedCat(isActive ? null : item.categoryId);
+                                                if (hasSubs) {
+                                                    e.preventDefault();
+                                                    setExpandedCat(isActive ? null : item.categoryId);
+                                                }
                                             }}
                                             onMouseEnter={(e) => {
                                                 setExpandedCat(hasSubs ? item.categoryId : null);
                                                 if (hasSubs) {
-                                                    const rect = e.currentTarget.getBoundingClientRect();
-                                                    // Get relative Y position within the container
                                                     const parent = e.currentTarget.offsetParent as HTMLElement;
                                                     if (parent) {
                                                         setFlyoutY(e.currentTarget.offsetTop);
@@ -113,7 +114,7 @@ const NavDropdown = ({
                                             {hasSubs && (
                                                 <ChevronRight size={14} className={`transition-all duration-300 ${isActive ? 'translate-x-1 text-primary' : 'text-slate-500'}`} />
                                             )}
-                                        </div>
+                                        </Link>
                                     );
                                 })}
                             </div>
@@ -143,9 +144,8 @@ const NavDropdown = ({
                                         <div className="max-h-[60vh] overflow-y-auto custom-scrollbar">
                                             {activeItem.subcategories.map((sub) => (
                                                 <Link
-                                                    key={sub}
-                                                    href="#"
-                                                    onClick={(e) => e.preventDefault()}
+                                                    key={sub.id}
+                                                    href={`/details/${sub.id}`}
                                                     className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-200 ${isLight
                                                         ? 'text-slate-600 hover:text-primary hover:bg-primary/5'
                                                         : 'text-slate-300 hover:text-white hover:bg-white/5'
@@ -156,7 +156,7 @@ const NavDropdown = ({
                                                         <Circle size={8} fill="currentColor" />
                                                     </div>
                                                     <div className="flex-1 text-[13px] font-medium transition-colors">
-                                                        {sub}
+                                                        {sub.name}
                                                     </div>
                                                 </Link>
                                             ))}
@@ -174,9 +174,10 @@ const NavDropdown = ({
 
 interface NavItem {
     name: string;
-    subcategories: string[];
+    subcategories: { name: string; id: string }[];
     icon: any;
     categoryId: string;
+    directPageId?: string;
 }
 
 export default function Navbar() {
@@ -191,6 +192,7 @@ export default function Navbar() {
     const [expandedCat, setExpandedCat] = useState<string | null>(null);
     const [flyoutY, setFlyoutY] = useState(0);
     const [mobileExpandedCat, setMobileExpandedCat] = useState<string | null>(null);
+    const [mobileSectionOpen, setMobileSectionOpen] = useState<string | null>(null);
 
     useEffect(() => {
         const handler = () => setScrolled(window.scrollY > 50);
@@ -215,21 +217,30 @@ export default function Navbar() {
 
         const fetchData = async () => {
             try {
-                const [featRes, solRes, subRes] = await Promise.all([
+                const [featRes, solRes, pageRes] = await Promise.all([
                     fetch(`${API}/features`).then(r => r.json()),
                     fetch(`${API}/solutions`).then(r => r.json()),
-                    fetch(`${API}/subcategories`).then(r => r.json()),
+                    fetch(`${API}/page-details`).then(r => r.json()),
                 ]);
 
-                // Group subcategories by category ID
-                const subcatMap: Record<string, string[]> = {};
-                if (subRes.success && subRes.data) {
-                    subRes.data
-                        .filter((s: any) => s.isActive)
-                        .forEach((s: any) => {
-                            const catId = typeof s.category === 'object' ? s.category._id : s.category;
-                            if (!subcatMap[catId]) subcatMap[catId] = [];
-                            subcatMap[catId].push(s.name);
+                // Map data structures for lookup
+                const subcatMap: Record<string, { name: string, id: string }[]> = {};
+                const directCatMap: Record<string, string> = {}; // categoryId -> pageDetailId
+
+                if (pageRes.success && pageRes.data) {
+                    pageRes.data
+                        .filter((p: any) => p.isActive && p.category)
+                        .forEach((p: any) => {
+                            const catId = p.category._id;
+                            if (p.subcategory && p.subcategory.name && p.subcategory.name !== 'N/A') {
+                                if (!subcatMap[catId]) subcatMap[catId] = [];
+                                if (!subcatMap[catId].some(s => s.name === p.subcategory.name)) {
+                                    subcatMap[catId].push({ name: p.subcategory.name, id: p._id });
+                                }
+                            } else {
+                                // Direct category data
+                                directCatMap[catId] = p._id;
+                            }
                         });
                 }
 
@@ -240,6 +251,7 @@ export default function Navbar() {
                             name: f.category.name,
                             categoryId: f.category._id,
                             subcategories: subcatMap[f.category._id] || [],
+                            directPageId: directCatMap[f.category._id],
                             icon: FEATURE_ICONS[i % FEATURE_ICONS.length],
                         }))
                     );
@@ -252,6 +264,7 @@ export default function Navbar() {
                             name: s.category.name,
                             categoryId: s.category._id,
                             subcategories: subcatMap[s.category._id] || [],
+                            directPageId: directCatMap[s.category._id],
                             icon: SOLUTION_ICONS[i % SOLUTION_ICONS.length],
                         }))
                     );
@@ -270,8 +283,8 @@ export default function Navbar() {
             animate={{ y: 0 }}
             transition={{ duration: 0.6 }}
             className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled
-                ? isLight ? "bg-white/80 border-b border-blue-100 backdrop-blur-md shadow-lg shadow-blue-500/5" : "bg-background border-b border-border/10 shadow-lg shadow-primary/5"
-                : "bg-transparent border-b border-border/5"
+                ? isLight ? "bg-white/80 border-b border-blue-100 backdrop-blur-md shadow-lg shadow-blue-500/5" : "bg-[#020631]/80 border-b border-white/5 backdrop-blur-xl shadow-2xl"
+                : "bg-transparent border-b border-white/0"
                 }`}
         >
             <div className="container mx-auto flex items-center justify-between h-20 px-4">
@@ -367,7 +380,7 @@ export default function Navbar() {
                     <Button
                         variant={isLight ? 'default' : 'glow'}
                         size="sm"
-                        className={isLight ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20 font-bold" : ""}
+                        className={isLight ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20 font-bold" : "bg-primary text-white hover:opacity-90 shadow-[0_0_20px_rgba(59,130,246,0.5)] border-none"}
                         asChild
                     >
                         <Link href="/community/register">Sign Up</Link>
@@ -399,93 +412,125 @@ export default function Navbar() {
                         exit={{ opacity: 0, height: 0 }}
                         className={`lg:hidden border-t border-solid transition-colors duration-500 px-4 pb-10 overflow-y-auto max-h-[85vh] ${isLight ? 'bg-white/95 border-blue-50 shadow-xl backdrop-blur-xl' : 'bg-slate-900/95 border-white/5 shadow-2xl backdrop-blur-xl'}`}
                     >
-                        <div className="pt-6 grid gap-6">
+                        <div className="pt-4 grid gap-1">
                             {/* Mobile Sections */}
                             {[
                                 { title: "Features", data: features },
                                 { title: "Solutions", data: solutions }
-                            ].map((section) => (
-                                <div key={section.title} className="space-y-3">
-                                    <div className="text-[11px] font-black uppercase tracking-[0.2em] text-primary opacity-50 px-2">{section.title}</div>
-                                    <div className="grid gap-1">
-                                        {section.data.map((item) => {
-                                            const isExpanded = mobileExpandedCat === item.categoryId;
-                                            const hasSubs = item.subcategories.length > 0;
+                            ].map((section) => {
+                                const isSectionOpen = mobileSectionOpen === section.title;
+                                return (
+                                    <div key={section.title} className="space-y-0">
+                                        <button 
+                                            onClick={() => setMobileSectionOpen(isSectionOpen ? null : section.title)}
+                                            className={`w-full flex items-center justify-between py-2.5 px-2 text-[11px] font-black uppercase tracking-[0.2em] transition-colors ${isSectionOpen ? 'text-white' : 'text-white/60'}`}
+                                        >
+                                            {section.title}
+                                            <ChevronDown size={14} className={`transition-transform duration-300 ${isSectionOpen ? 'rotate-180' : ''}`} />
+                                        </button>
+                                        
+                                        <AnimatePresence>
+                                            {isSectionOpen && (
+                                                <motion.div
+                                                    initial={{ height: 0, opacity: 0 }}
+                                                    animate={{ height: 'auto', opacity: 1 }}
+                                                    exit={{ height: 0, opacity: 0 }}
+                                                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                                                    className="overflow-hidden"
+                                                >
+                                                    <div className="grid gap-1 pb-2">
+                                                        {section.data.map((item) => {
+                                                            const isExpanded = mobileExpandedCat === item.categoryId;
+                                                            const hasSubs = item.subcategories.length > 0;
 
-                                            return (
-                                                <div key={item.name} className="overflow-hidden">
-                                                    <button
-                                                        onClick={() => setMobileExpandedCat(isExpanded ? null : item.categoryId)}
-                                                        className={`w-full flex items-center justify-between p-3.5 rounded-2xl transition-all duration-300 ${isExpanded
-                                                            ? isLight ? 'bg-primary/5' : 'bg-white/5'
-                                                            : 'hover:bg-transparent'
-                                                            }`}
-                                                    >
-                                                        <div className="flex items-center gap-4">
-                                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 ${isExpanded
-                                                                ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                                                                : isLight ? 'bg-slate-100/50 text-slate-500' : 'bg-slate-800/50 text-slate-400'
-                                                                }`}>
-                                                                <item.icon size={18} />
-                                                            </div>
-                                                            <span className={`text-[15px] font-bold tracking-tight ${isExpanded ? isLight ? 'text-primary' : 'text-white' : isLight ? 'text-slate-700' : 'text-slate-300'}`}>
-                                                                {item.name}
-                                                            </span>
-                                                        </div>
-                                                        {hasSubs && (
-                                                            <ChevronRight size={16} className={`transition-transform duration-300 ${isExpanded ? 'rotate-90 text-primary' : 'text-slate-400'}`} />
-                                                        )}
-                                                    </button>
-                                                    
-                                                    <AnimatePresence>
-                                                        {isExpanded && hasSubs && (
-                                                            <motion.div
-                                                                initial={{ height: 0, opacity: 0 }}
-                                                                animate={{ height: 'auto', opacity: 1 }}
-                                                                exit={{ height: 0, opacity: 0 }}
-                                                                transition={{ duration: 0.3, ease: "easeInOut" }}
-                                                                className="overflow-hidden"
-                                                            >
-                                                                <div className="mt-1 ml-6 pl-4 border-l border-solid border-primary/10 grid gap-1 py-1">
-                                                                    {item.subcategories.map((sub) => (
-                                                                        <Link
-                                                                            key={sub}
-                                                                            href="#"
-                                                                            onClick={() => {
+                                                            return (
+                                                                <div key={item.name} className="overflow-hidden">
+                                                                    <Link
+                                                                        href={hasSubs ? '#' : (item.directPageId ? `/details/${item.directPageId}` : '#')}
+                                                                        onClick={(e) => {
+                                                                            if (hasSubs) {
+                                                                                e.preventDefault();
+                                                                                setMobileExpandedCat(isExpanded ? null : item.categoryId);
+                                                                            } else if (!item.directPageId) {
+                                                                                e.preventDefault();
+                                                                            } else {
                                                                                 setMobileOpen(false);
-                                                                                setMobileExpandedCat(null);
-                                                                            }}
-                                                                            className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-200 ${isLight
-                                                                                ? 'text-slate-600 active:bg-primary/5'
-                                                                                : 'text-slate-300 active:bg-white/5'
-                                                                                }`}
-                                                                        >
-                                                                            <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${isLight ? 'bg-slate-100/50 text-slate-400' : 'bg-slate-800/50 text-slate-500'
+                                                                            }
+                                                                        }}
+                                                                        className={`w-full flex items-center justify-between p-3 rounded-2xl transition-all duration-300 ${isExpanded
+                                                                            ? isLight ? 'bg-primary/5' : 'bg-white/5'
+                                                                            : 'hover:bg-transparent'
+                                                                            }`}
+                                                                    >
+                                                                        <div className="flex items-center gap-4">
+                                                                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 ${isExpanded
+                                                                                ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                                                                                : isLight ? 'bg-slate-100/50 text-slate-500' : 'bg-slate-800/50 text-slate-400'
                                                                                 }`}>
-                                                                                <Circle size={6} fill="currentColor" />
+                                                                                <item.icon size={16} />
                                                                             </div>
-                                                                            <span className="text-[13px] font-medium">{sub}</span>
-                                                                        </Link>
-                                                                    ))}
+                                                                            <span className={`text-[14px] font-bold tracking-tight ${isExpanded ? isLight ? 'text-primary' : 'text-white' : isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+                                                                                {item.name}
+                                                                            </span>
+                                                                        </div>
+                                                                        {hasSubs && (
+                                                                            <ChevronRight size={14} className={`transition-transform duration-300 ${isExpanded ? 'rotate-90 text-primary' : 'text-slate-400'}`} />
+                                                                        )}
+                                                                    </Link>
+                                                                    
+                                                                    <AnimatePresence>
+                                                                        {isExpanded && hasSubs && (
+                                                                            <motion.div
+                                                                                initial={{ height: 0, opacity: 0 }}
+                                                                                animate={{ height: 'auto', opacity: 1 }}
+                                                                                exit={{ height: 0, opacity: 0 }}
+                                                                                transition={{ duration: 0.3, ease: "easeInOut" }}
+                                                                                className="overflow-hidden"
+                                                                            >
+                                                                                <div className="mt-1 ml-5 pl-4 border-l border-solid border-primary/10 grid gap-1 py-1">
+                                                                                    {item.subcategories.map((sub) => (
+                                                                                        <Link
+                                                                                            key={sub.id}
+                                                                                            href={`/details/${sub.id}`}
+                                                                                            onClick={() => {
+                                                                                                setMobileOpen(false);
+                                                                                                setMobileExpandedCat(null);
+                                                                                            }}
+                                                                                            className={`flex items-center gap-3 p-2.5 rounded-xl transition-all duration-200 ${isLight
+                                                                                                ? 'text-slate-600 active:bg-primary/5'
+                                                                                                : 'text-slate-300 active:bg-white/5'
+                                                                                                }`}
+                                                                                        >
+                                                                                            <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${isLight ? 'bg-slate-100/50 text-slate-400' : 'bg-slate-800/50 text-slate-500'
+                                                                                                }`}>
+                                                                                                <Circle size={6} fill="currentColor" />
+                                                                                            </div>
+                                                                                            <span className="text-[13px] font-medium">{sub.name}</span>
+                                                                                        </Link>
+                                                                                    ))}
+                                                                                </div>
+                                                                            </motion.div>
+                                                                        )}
+                                                                    </AnimatePresence>
                                                                 </div>
-                                                            </motion.div>
-                                                        )}
-                                                    </AnimatePresence>
-                                                </div>
-                                            );
-                                        })}
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
 
-                            <div className="h-px bg-border/5 my-2" />
+                            <div className="h-px bg-border/5 my-1" />
 
-                            <div className="grid gap-1">
+                            <div className="grid gap-0">
                                 {navItems.map((item) => (
                                     <Link
                                         key={item.name}
                                         href={item.href}
-                                        className={`block py-4 px-4 text-[15px] font-bold tracking-tight rounded-2xl transition-colors ${isLight ? 'text-slate-700 hover:text-primary active:bg-primary/5' : 'text-slate-300 hover:text-white active:bg-white/5'}`}
+                                        className={`block py-2 px-4 text-[15px] font-bold tracking-tight rounded-2xl transition-colors ${isLight ? 'text-slate-700 hover:text-primary active:bg-primary/5' : 'text-slate-300 hover:text-white active:bg-white/5'}`}
                                         onClick={() => setMobileOpen(false)}
                                     >
                                         {item.name}

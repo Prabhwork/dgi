@@ -23,11 +23,11 @@ export default function ParticleNetwork({ className = "" }: { className?: string
         // Colors based on theme
         const particleColor = theme === "light" 
             ? "rgba(15, 23, 42, 1)" 
-            : "rgba(0, 157, 255, 1)"; // Solid cyan for dots
+            : "rgba(255, 255, 255, 1)"; // Pure white for dots
         const strokeColorBase = theme === "light" 
             ? "rgba(15, 23, 42, " 
-            : "rgba(0, 157, 255, ";
-        const baseOpacityMultiplier = theme === "light" ? 0.4 : 0.2; // More subtle lines
+            : "rgba(255, 255, 255, ";
+        const baseOpacityMultiplier = theme === "light" ? 0.4 : 0.15; // Even more subtle for white lines
 
         const resize = () => {
             canvas.width = window.innerWidth;

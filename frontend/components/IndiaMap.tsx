@@ -39,7 +39,7 @@ export default function IndiaMap({ isVisible = true }: IndiaMapProps) {
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
             >
-           
+
                 <motion.path
                     initial={{ pathLength: 0, opacity: 0 }}
                     animate={isVisible ? { pathLength: 1, opacity: 1 } : { pathLength: 0, opacity: 0 }}

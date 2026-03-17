@@ -1,6 +1,7 @@
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
 import PlatformIntro from "@/components/PlatformIntro";
+import MainCategories from "@/components/MainCategories";
 import BrowseByNeed from "@/components/BrowseByNeed";
 import MissionDigitalBharat from "@/components/MissionDigitalBharat";
 import DiscoverSellers from "@/components/DiscoverSellers";
@@ -23,6 +24,7 @@ export default function Home() {
             <Navbar />
             <HeroSection />
             <PlatformIntro />
+            <MainCategories />
             <BrowseByNeed />
 
             <DiscoverSellers />

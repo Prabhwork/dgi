@@ -4,27 +4,49 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { useRef, useEffect, useState } from "react";
 import { useTheme } from "@/components/ThemeProvider";
-
-const categories = [
-    { title: "Railway Stations", img: "/assets/cat-railway.jpg" },
-    { title: "Cabs", img: "/assets/cat-cabs.jpg" },
-    { title: "Restaurants", img: "/assets/cat-restaurant.jpg" },
-    { title: "Schools", img: "/assets/cat-schools.jpg" },
-    { title: "Hospitals", img: "/assets/cat-hospitals.jpg" },
-    { title: "Hotels", img: "/assets/cat-hotels.jpg" },
-];
-
-// Combined pool for smooth looping
-const allCategories = [...categories, ...categories, ...categories, ...categories];
+import { useRouter } from "next/navigation";
 
 export default function BrowseByNeed() {
     const scrollRef = useRef<HTMLDivElement>(null);
     const [isInteracting, setIsInteracting] = useState(false);
     const { theme } = useTheme();
+    const router = useRouter();
+    const [categories, setCategories] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+            const BASE_URL = API_URL.replace('/api', '');
+            try {
+                const res = await fetch(`${API_URL}/categories`);
+                const data = await res.json();
+                if (data.success && data.data) {
+                    const fetchedCats = data.data
+                        .filter((c: any) => c.isActive)
+                        .map((c: any) => ({
+                            title: c.name,
+                            img: c.icon && c.icon !== 'no-photo.jpg' 
+                                ? `${BASE_URL}/uploads/${c.icon}` 
+                                : '/assets/placeholder-category.jpg'
+                        }));
+                    setCategories(fetchedCats);
+                }
+            } catch (err) {
+                console.error('Failed to fetch categories:', err);
+            }
+        };
+
+        fetchCategories();
+    }, []);
+
+    // Combined pool for smooth looping
+    const allCategories = categories.length > 0 
+        ? [...categories, ...categories, ...categories, ...categories]
+        : [];
 
     useEffect(() => {
         const scrollContainer = scrollRef.current;
-        if (!scrollContainer || isInteracting) return;
+        if (!scrollContainer || isInteracting || allCategories.length === 0) return;
 
         let animationFrameId: number;
 
@@ -33,7 +55,7 @@ export default function BrowseByNeed() {
                 if (scrollContainer.scrollLeft >= (scrollContainer.scrollWidth / 2)) {
                     scrollContainer.scrollLeft = 0;
                 } else {
-                    scrollContainer.scrollLeft += 1; // Slightly increased for smoother rAF movement
+                    scrollContainer.scrollLeft += 1;
                 }
             }
             animationFrameId = requestAnimationFrame(scroll);
@@ -41,22 +63,23 @@ export default function BrowseByNeed() {
 
         animationFrameId = requestAnimationFrame(scroll);
         return () => cancelAnimationFrame(animationFrameId);
-    }, [isInteracting]);
+    }, [isInteracting, allCategories]);
 
     const handleScroll = (direction: 'left' | 'right') => {
         const scrollContainer = scrollRef.current;
         if (!scrollContainer) return;
 
         setIsInteracting(true);
-        const scrollAmount = 400; // Adjust for card width
+        const scrollAmount = 400;
         scrollContainer.scrollBy({
             left: direction === 'left' ? -scrollAmount : scrollAmount,
             behavior: 'smooth'
         });
 
-        // Resume auto-scroll after 3 seconds of no interaction
         setTimeout(() => setIsInteracting(false), 3000);
     };
+
+    if (categories.length === 0) return null;
 
     return (
         <section className="pt-4 pb-10 overflow-hidden relative z-10 -mt-4" id="categories">
@@ -103,6 +126,7 @@ export default function BrowseByNeed() {
                             key={`${cat.title}-${i}`}
                             whileHover={{ y: -15 }}
                             whileTap={{ scale: 0.98 }}
+                            onClick={() => router.push(`/search?category=${encodeURIComponent(cat.title)}`)}
                             className={`w-[280px] sm:w-[350px] flex-shrink-0 rounded-[2.5rem] cursor-pointer transition-all duration-500 group relative isolate overflow-hidden backdrop-blur-md border border-solid ${theme === 'light'
                                 ? 'bg-white/60 border-blue-600/20 hover:border-blue-600/40 shadow-none'
                                 : 'bg-white/[0.01] border-white/20 hover:bg-white/[0.05] hover:border-white/40 shadow-[0_4px_24px_rgba(0,0,0,0.2)] hover:shadow-[0_8px_32px_rgba(255,255,255,0.15)]'

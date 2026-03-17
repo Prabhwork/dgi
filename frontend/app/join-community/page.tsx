@@ -37,10 +37,10 @@ export default function JoinCommunityPage() {
             <CursorGlow />
             <Navbar />
 
-            <main className="pt-32 pb-24 relative z-10">
+            <main className="pt-20 pb-4 relative z-10">
                 <div className="container mx-auto px-4 max-w-6xl">
                     {/* Hero Header - Consistent with About and Coming Soon */}
-                    <div className="flex items-center justify-center gap-4 sm:gap-8 mb-12">
+                    <div className="flex items-center justify-center gap-4 sm:gap-8 mb-2">
                         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary/40 to-primary/60" />
                         <motion.div
                             initial={{ opacity: 0, scale: 0.9 }}
@@ -54,24 +54,24 @@ export default function JoinCommunityPage() {
                         <div className="h-px flex-1 bg-gradient-to-l from-transparent via-primary/40 to-primary/60" />
                     </div>
 
-                    <div className="text-center mb-20 space-y-6">
+                    <div className="text-center mb-6 space-y-2">
                         <motion.div
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass border-primary/20 text-accent glow-text font-medium text-sm mb-4 uppercase tracking-widest"
+                            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass border-primary/20 text-accent glow-text font-medium text-sm mb-2 uppercase tracking-widest"
                         >
                             <FastForward size={16} /> High-Speed Sales Engine
                         </motion.div>
                         <h2 className="text-3xl sm:text-5xl font-display font-bold text-white leading-tight">
                             The Ultimate <span className="gradient-text italic">Sales & Security</span> Alliance
                         </h2>
-                        <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+                        <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed text-sm opacity-80">
                             We are inviting all our directory partners to move beyond competition and enter a state of <span className="text-yellow-500 font-bold glow-text uppercase tracking-tight">Collective Growth</span>. Plug into a network where every member helps every other member sell in record time.
                         </p>
                     </div>
 
                     {/* Feature Highlight Section */}
-                    <div className="space-y-16 mb-32">
+                    <div className="space-y-6 mb-2">
                         <div className="text-center">
                             <h3 className="text-3xl font-display font-bold text-white flex items-center justify-center gap-3 uppercase tracking-tighter">
                                 <Zap className="text-primary" /> The "Sell-Faster" Ecosystem
@@ -144,30 +144,6 @@ export default function JoinCommunityPage() {
 
 
 
-                    {/* Philosophy CTA - Master Section */}
-                    <div className="glass-strong border-primary/30 rounded-[3rem] p-12 sm:p-20 text-center relative overflow-hidden group">
-                        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/10 opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent shadow-[0_0_20px_rgba(59,130,246,0.5)]" />
-
-                        <h4 className="text-yellow-500 font-bold tracking-[0.3em] uppercase mb-8 glow-text">The Philosophy</h4>
-                        <h2 className="text-3xl sm:text-6xl font-display font-bold text-white mb-10 leading-tight">
-                            "Why fight for a small piece of the market<br />
-                            <span className="gradient-text italic">when we can grow the market together?</span>"
-                        </h2>
-
-                        <p className="text-xl sm:text-2xl text-muted-foreground/80 mb-16 max-w-4xl mx-auto italic leading-relaxed">
-                            In our community, your neighbor’s success is the spark for your own. If there is a fraudulent actor in the market, the community acts as a shield. If there is a sales opportunity, the community acts as a megaphone.
-                        </p>
-
-                        <div className="flex flex-col sm:flex-row gap-8 justify-center items-center relative z-10">
-                            <Button variant="glow" size="lg" className="h-20 px-16 text-xl rounded-2xl font-display uppercase tracking-widest" asChild>
-                                <Link href="/pre-launch">Join the Alliance Today</Link>
-                            </Button>
-                            <Button variant="outline-glow" size="lg" className="h-20 px-16 text-xl rounded-2xl font-display uppercase tracking-widest text-white/70" asChild>
-                                <Link href="/about-us">Learn More</Link>
-                            </Button>
-                        </div>
-                    </div>
                 </div>
             </main>
 

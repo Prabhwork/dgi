@@ -214,26 +214,7 @@ export default function WhyDBIPage() {
                         </div>
                     </motion.div>
 
-                    {/* CTA / Vision */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        className="glass-strong border border-primary/20 rounded-2xl p-8 sm:p-10 text-center space-y-4 relative overflow-hidden"
-                    >
-                        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent pointer-events-none" />
-                        <p className="text-xs uppercase tracking-widest text-primary font-semibold">The Vision</p>
-                        <h2 className="text-xl sm:text-3xl font-display font-bold text-white leading-snug">
-                            &quot;DBI isn&apos;t just a directory — it&apos;s your{" "}
-                            <span className="text-primary italic">Business Growth Partner.</span>&quot;
-                        </h2>
-                        <p className="text-muted-foreground text-sm max-w-xl mx-auto">
-                            We provide verification, intelligence, and visibility. You provide the service. Don&apos;t let your local customers go elsewhere — let DBI prove that the best choice is right around the corner.
-                        </p>
-                        <Button className="h-10 px-8 text-sm font-semibold uppercase tracking-widest rounded-xl bg-primary hover:bg-primary/80 text-white shadow-[0_0_15px_rgba(59,130,246,0.4)] transition-all mt-2" asChild>
-                            <Link href="/become-a-part">Become a Part (DBI)</Link>
-                        </Button>
-                    </motion.div>
+
 
                 </div>
             </main>

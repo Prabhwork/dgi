@@ -13,17 +13,17 @@ const { protect } = require('../middleware/auth');
 const advancedResults = require('../middleware/advancedResults');
 const Category = require('../models/Category');
 
-router.use(protect);
+// router.use(protect);
 
 router
     .route('/')
     .get(advancedResults(Category), getCategories)
-    .post(createCategory);
+    .post(protect, createCategory);
 
 router
     .route('/:id')
     .get(getCategory)
-    .put(updateCategory)
-    .delete(deleteCategory);
+    .put(protect, updateCategory)
+    .delete(protect, deleteCategory);
 
 module.exports = router;

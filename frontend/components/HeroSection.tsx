@@ -23,27 +23,52 @@ import dynamic from "next/dynamic";
 
 const MiniGlobe = dynamic(() => import("./MiniGlobe"), { ssr: false });
 
-const leftCategories = [
-    { name: "Logistics", img: "/assets/cat-logistics.jpg", delay: 0 },
-    { name: "Automobile", img: "/assets/cat-automobile.jpg", delay: 0.1 },
-    { name: "Real Estate", img: "/assets/cat-realestate.jpg", delay: 0.2 },
-    { name: "Tech", img: "/assets/cat-tech.jpg", delay: 0.3 },
-];
-
-const rightCategories = [
-    { name: "Salon", img: "/assets/cat-salon.jpg", delay: 0.4 },
-    { name: "Restaurant", img: "/assets/cat-restaurant.jpg", delay: 0.5 },
-    { name: "Beauty & Spa", img: "/assets/cat-beautyspa.jpg", delay: 0.6 },
-];
-
-const allCategories = [...leftCategories, ...rightCategories];
-
 export default function HeroSection() {
     const { theme } = useTheme();
     const router = useRouter();
     const [locationInput, setLocationInput] = useState("");
     const [isLocating, setIsLocating] = useState(false);
     const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+    const [leftCategories, setLeftCategories] = useState<any[]>([]);
+    const [rightCategories, setRightCategories] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+            const BASE_URL = API_URL.replace('/api', '');
+            try {
+                const res = await fetch(`${API_URL}/main-categories`);
+                const data = await res.json();
+                if (data.success && data.data) {
+                    const fetchedCats = data.data
+                        .filter((c: any) => c.isActive !== false)
+                        .map((c: any, i: number) => {
+                            // Fix image path construction
+                            const catImg = c.image?.startsWith('uploads') ? c.image : `uploads/${c.image}`;
+                            const imgSrc = c.image && c.image !== 'no-photo.jpg' 
+                                ? `${BASE_URL}/${catImg}` 
+                                : '/assets/placeholder-main.jpg';
+
+                            return {
+                                name: c.name,
+                                img: imgSrc,
+                                delay: i * 0.1
+                            };
+                        });
+                    
+                    // Split categories: first 4 on left, rest on right (up to 4)
+                    setLeftCategories(fetchedCats.slice(0, 4));
+                    setRightCategories(fetchedCats.slice(4, 8));
+                }
+            } catch (err) {
+                console.error('Failed to fetch hero main-categories:', err);
+            }
+        };
+
+        fetchCategories();
+    }, []);
+
+    const allCategories = [...leftCategories, ...rightCategories];
 
     const handleSearch = () => {
         let url = `/search?q=${encodeURIComponent(locationInput)}`;
@@ -212,9 +237,10 @@ export default function HeroSection() {
                                 initial={{ opacity: 0, x: -30 }} // animate from left
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ delay: 1 + cat.delay, duration: 0.5 }}
-                                className={`rounded-[1.5rem] flex flex-col items-center justify-center cursor-pointer hover:scale-105 transition-all duration-500 w-[140px] h-[120px] shadow-[0_4px_24px_rgba(0,0,0,0.2)] hover:shadow-[0_8px_32px_rgba(255,255,255,0.15)] group relative overflow-hidden backdrop-blur-[2px] border border-solid ${theme === 'light'
-                                    ? 'bg-white border-slate-200 hover:border-primary/40'
-                                    : 'bg-white/[0.01] border-white/20 hover:bg-white/[0.05] hover:border-white/40'
+                                onClick={() => router.push(`/search?mainCategory=${encodeURIComponent(cat.name)}`)}
+                                className={`rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:scale-110 transition-all duration-700 w-[140px] h-[130px] group relative overflow-hidden backdrop-blur-md border border-solid ${theme === 'light'
+                                    ? 'bg-white border-slate-200 hover:border-primary/40 shadow-xl'
+                                    : 'bg-white/[0.02] border-white/10 hover:bg-white/[0.08] hover:border-primary/50 shadow-2xl'
                                     }`}
                             >
                                 {/* Shiny glass specular highlight */}
@@ -251,8 +277,11 @@ export default function HeroSection() {
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.5, duration: 0.8 }}
-                                    className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-white tracking-tighter leading-tight uppercase"
-                                    style={{ textShadow: "0 0 30px rgba(0,120,255,0.8), 0 2px 8px rgba(0,0,0,0.9)" }}
+                                    className="text-3xl sm:text-4xl md:text-5xl font-display font-black text-white tracking-[0.2em] leading-tight uppercase"
+                                    style={{ 
+                                        textShadow: "0 0 40px rgba(0,157,255,0.6), 0 0 80px rgba(0,157,255,0.3)",
+                                        letterSpacing: "0.25em"
+                                    }}
                                 >
                                     PRE LAUNCH
                                 </motion.h1>
@@ -260,19 +289,25 @@ export default function HeroSection() {
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     transition={{ delay: 0.8 }}
-                                    className="mt-1 sm:mt-2 text-xs sm:text-sm font-semibold"
-                                    style={{ color: "#00d4ff", textShadow: "0 0 15px rgba(0,200,255,0.8)" }}
+                                    className="mt-2 text-xs sm:text-sm font-bold tracking-[0.3em] uppercase opacity-90"
+                                    style={{ color: "#00d4ff", textShadow: "0 0 20px rgba(0,212,255,0.5)" }}
                                 >
-                                    Prepared To Be Amazed!!
+                                    Prepared To Be Amazed
                                 </motion.p>
+                                <motion.div
+                                    initial={{ scaleX: 0 }}
+                                    animate={{ scaleX: 1 }}
+                                    transition={{ delay: 1, duration: 1 }}
+                                    className="h-[1px] w-24 bg-gradient-to-r from-transparent via-[#00d4ff]/50 to-transparent my-3"
+                                />
                                 <motion.p
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 1.2 }}
-                                    className="mt-2 font-bold max-w-[180px] sm:max-w-[240px] md:max-w-[300px] mx-auto text-[10px] sm:text-xs leading-snug"
-                                    style={{ color: "#facc15", textShadow: "0 1px 6px rgba(0,0,0,0.95)" }}
+                                    className="font-medium max-w-[180px] sm:max-w-[240px] md:max-w-[300px] mx-auto text-[10px] sm:text-xs leading-relaxed opacity-80"
+                                    style={{ color: "#ffffff", textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}
                                 >
-                                    Digital Book Of India is on its way to make your way of living more easier..stay tuned.
+                                    Digital Book Of India is on its way to making your life easier. Stay tuned.
                                 </motion.p>
                             </div>
                         </motion.div>
@@ -292,7 +327,8 @@ export default function HeroSection() {
                                 {[...allCategories, ...allCategories].map((cat, i) => (
                                     <div
                                         key={i}
-                                        className={`flex flex-col items-center justify-center p-4 rounded-2xl border transition-all duration-300 ${theme === 'light'
+                                        onClick={() => router.push(`/search?mainCategory=${encodeURIComponent(cat.name)}`)}
+                                        className={`flex flex-col items-center justify-center p-4 rounded-2xl border transition-all duration-300 cursor-pointer ${theme === 'light'
                                             ? 'bg-white border-blue-600 shadow-none active:scale-95'
                                             : 'bg-white/5 border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.06)] active:scale-95'
                                             }`}
@@ -321,9 +357,10 @@ export default function HeroSection() {
                                 initial={{ opacity: 0, x: 30 }} // animate from right
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ delay: 1 + cat.delay, duration: 0.5 }}
-                                className={`rounded-[1.5rem] flex flex-col items-center justify-center cursor-pointer hover:scale-105 transition-all duration-500 w-[140px] h-[120px] shadow-[0_4px_24px_rgba(0,0,0,0.2)] hover:shadow-[0_8px_32px_rgba(255,255,255,0.15)] group relative overflow-hidden backdrop-blur-[2px] border border-solid ${theme === 'light'
-                                    ? 'bg-white border-slate-200 hover:border-primary/40'
-                                    : 'bg-white/[0.01] border-white/20 hover:bg-white/[0.05] hover:border-white/40'
+                                onClick={() => router.push(`/search?mainCategory=${encodeURIComponent(cat.name)}`)}
+                                className={`rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:scale-110 transition-all duration-700 w-[140px] h-[130px] group relative overflow-hidden backdrop-blur-md border border-solid ${theme === 'light'
+                                    ? 'bg-white border-slate-200 hover:border-primary/40 shadow-xl'
+                                    : 'bg-white/[0.02] border-white/10 hover:bg-white/[0.08] hover:border-primary/50 shadow-2xl'
                                     }`}
                             >
                                 {/* Shiny glass specular highlight */}

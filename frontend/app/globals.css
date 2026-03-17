@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -251,18 +251,26 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans;
-    font-family: 'Inter', sans-serif;
+    @apply bg-background text-foreground;
+    font-family: 'Outfit', sans-serif;
+    background-image: 
+      radial-gradient(at 0% 0%, hsla(210, 100%, 56%, 0.15) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, hsla(255, 60%, 69%, 0.1) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, hsla(185, 100%, 50%, 0.05) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, hsla(210, 100%, 56%, 0.1) 0px, transparent 50%);
+    background-attachment: fixed;
   }
 
   html {
     scroll-behavior: smooth;
+    background-color: #020631;
   }
 }
 
 @layer utilities {
   .glass {
-    @apply bg-card/30 backdrop-blur-xl border border-border/30;
+    @apply bg-white/[0.03] backdrop-blur-xl border border-white/10;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
   }
 
   .glass-strong {
@@ -296,7 +304,7 @@
   }
 
   .font-display {
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: 'Plus Jakarta Sans', sans-serif;
   }
 }
 

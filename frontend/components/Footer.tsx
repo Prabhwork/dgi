@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { Twitter, Facebook, Youtube, Instagram, Linkedin, ChevronRight } from "lucide-react";
+import Link from "next/link";
 
 const staticColumns = [
     {
@@ -58,25 +59,25 @@ export default function Footer() {
     });
 
     return (
-        <footer className="border-t border-border/20 pt-14 pb-8">
+        <footer className="border-t border-border/20 pt-8 pb-8">
             <div className="container mx-auto px-4">
 
                 {/* Main grid: 2 cols on mobile → 3 on md → 4 on lg */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 mb-12">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 mb-8">
 
                     {columns.map((col) => (
                         <div key={col.title}>
-                            <h4 className="font-display font-semibold text-sm text-foreground mb-4">{col.title}</h4>
-                            <ul className="space-y-2.5">
+                            <h4 className="font-display font-semibold text-sm text-foreground mb-2">{col.title}</h4>
+                            <ul className="space-y-1">
                                 {col.links.map((link) => (
                                     <li key={link}>
-                                        <a
-                                            href="#"
+                                        <Link
+                                            href={link === "Contact Support" ? "/contact" : "#"}
                                             className="flex items-start gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors group"
                                         >
                                             <ChevronRight size={11} className="text-muted-foreground/40 group-hover:text-primary transition-colors mt-0.5 shrink-0" />
                                             {link}
-                                        </a>
+                                        </Link>
                                     </li>
                                 ))}
                             </ul>
