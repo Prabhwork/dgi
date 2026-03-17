@@ -2,15 +2,41 @@
 
 import { useEffect, useState } from "react";
 import { 
-    Search, Filter, CheckCircle, XCircle, Eye, 
-    Building2, Mail, Phone, Calendar, Clock,
-    ChevronDown, ChevronUp, ExternalLink, AlertCircle, ShieldCheck
+    Search, CheckCircle, XCircle, Eye, 
+    Building2, ExternalLink, AlertCircle, ShieldCheck
 } from "lucide-react";
 
+interface Business {
+    _id: string;
+    businessName: string;
+    brandName?: string;
+    businessCategory: string;
+    officialEmailAddress: string;
+    primaryContactNumber: string;
+    officialWhatsAppNumber?: string;
+    aadhaarNumber?: string;
+    aadhaarVerified: boolean;
+    registeredOfficeAddress: string;
+    openingTime?: string;
+    closingTime?: string;
+    weeklyOff?: string;
+    description?: string;
+    keywords?: string[];
+    website?: string;
+    joinBulkBuying: boolean;
+    joinFraudAlerts: boolean;
+    aadhaarCard?: string;
+    ownerIdentityProof?: string;
+    establishmentProof?: string;
+    approvalStatus: string;
+    rejectionReason?: string;
+    createdAt: string;
+}
+
 export default function BusinessesPage() {
-    const [businesses, setBusinesses] = useState<any[]>([]);
+    const [businesses, setBusinesses] = useState<Business[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedBusiness, setSelectedBusiness] = useState<any>(null);
+    const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
     const [rejectionReason, setRejectionReason] = useState("");
     const [showRejectionInput, setShowRejectionInput] = useState(false);
     const [filter, setFilter] = useState("all"); // all, pending, approved, rejected
@@ -383,7 +409,7 @@ export default function BusinessesPage() {
                                 {selectedBusiness.approvalStatus === 'rejected' && (
                                     <div className="p-4 bg-red-50 border border-red-100 rounded-xl">
                                         <div className="text-[10px] font-bold text-red-700 uppercase tracking-widest mb-1">Current Rejection Reason</div>
-                                        <p className="text-xs text-red-600 italic">"{selectedBusiness.rejectionReason}"</p>
+                                        <p className="text-xs text-red-600 italic">&quot;{selectedBusiness.rejectionReason}&quot;</p>
                                     </div>
                                 )}
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { apiFetch } from '@/lib/api';
 import { Category, Subcategory, PaginationInfo } from '@/types';
 import { Edit2, Trash2, X, Check, Search, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
@@ -14,9 +14,9 @@ export default function SubcategoriesPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterCategory, setFilterCategory] = useState('');
     const [page, setPage] = useState(1);
-    const [limit, setLimit] = useState(10);
-    const [pagination, setPagination] = useState<PaginationInfo | null>(null);
-    const [total, setTotal] = useState(0);
+    const [limit] = useState(10);
+    const [pagination] = useState<PaginationInfo | null>(null);
+    const [total] = useState(0);
 
     // Create Modal state
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -29,11 +29,7 @@ export default function SubcategoriesPage() {
     const [editName, setEditName] = useState('');
     const [editCategoryId, setEditCategoryId] = useState(''); // To potentially change parent mapping
 
-    useEffect(() => {
-        fetchInitialData();
-    }, [page, limit, searchTerm, filterCategory]);
-
-    const fetchInitialData = async () => {
+    const fetchInitialData = useCallback(async () => {
         setLoading(true);
         try {
             const [catsRes, subcatsRes] = await Promise.all([
@@ -48,7 +44,11 @@ export default function SubcategoriesPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        fetchInitialData();
+    }, [fetchInitialData, page, limit, searchTerm, filterCategory]);
 
     const handleCreateSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -79,8 +79,9 @@ export default function SubcategoriesPage() {
                 setNewSubcategoryName('');
                 setSelectedCategoryId('');
             }
-        } catch (err: any) {
-            setError(err.message || 'Failed to create subcategory');
+        } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : 'Failed to create subcategory';
+            setError(errorMsg);
         }
     };
 
@@ -105,8 +106,9 @@ export default function SubcategoriesPage() {
                 setEditName('');
                 setEditCategoryId('');
             }
-        } catch (err: any) {
-            alert(err.message || 'Failed to update subcategory');
+        } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : 'Failed to update subcategory';
+            alert(errorMsg);
         }
     };
 
@@ -116,7 +118,7 @@ export default function SubcategoriesPage() {
         try {
             await apiFetch(`/subcategories/${id}`, { method: 'DELETE' });
             setSubcategories(subcategories.filter(s => s._id !== id));
-        } catch (err) {
+        } catch {
             alert('Failed to delete subcategory');
         }
     };
@@ -131,7 +133,7 @@ export default function SubcategoriesPage() {
             if (data.success) {
                 fetchInitialData(); // Using fetchInitialData to reliably pull in the updated population
             }
-        } catch (err) {
+        } catch {
             alert('Failed to update status');
         }
     };

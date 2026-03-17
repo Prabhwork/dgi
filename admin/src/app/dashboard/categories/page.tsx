@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { apiFetch } from '@/lib/api';
-import { Category, MainCategory, PaginationInfo } from '@/types';
-import { Plus, Edit2, Trash2, X, Check, Search, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
+import { Category, PaginationInfo } from '@/types';
+import { Edit2, Trash2, X, Check, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function CategoriesPage() {
     const [categories, setCategories] = useState<Category[]>([]);
@@ -15,7 +15,7 @@ export default function CategoriesPage() {
     // Pagination & Search state
     const [searchTerm, setSearchTerm] = useState('');
     const [page, setPage] = useState(1);
-    const [limit, setLimit] = useState(10);
+    const [limit] = useState(10);
     const [pagination, setPagination] = useState<PaginationInfo | null>(null);
     const [total, setTotal] = useState(0);
 
@@ -23,12 +23,7 @@ export default function CategoriesPage() {
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
     const [editName, setEditName] = useState('');
 
-    useEffect(() => {
-        fetchCategories();
-    }, [page, limit, searchTerm]);
-
-
-    const fetchCategories = async () => {
+    const fetchCategories = useCallback(async () => {
         try {
             setLoading(true);
             const queryParams = new URLSearchParams({
@@ -50,7 +45,11 @@ export default function CategoriesPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [page, limit, searchTerm]);
+
+    useEffect(() => {
+        fetchCategories();
+    }, [fetchCategories]);
 
     const handleCreateSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -75,8 +74,9 @@ export default function CategoriesPage() {
                 setIsCreateModalOpen(false);
                 setNewCategoryName('');
             }
-        } catch (err: any) {
-            setError(err.message || 'Failed to create category');
+        } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : 'Failed to create category';
+            setError(errorMsg);
         }
     };
 
@@ -98,8 +98,9 @@ export default function CategoriesPage() {
                 setEditingCategory(null);
                 setEditName('');
             }
-        } catch (err: any) {
-            alert(err.message || 'Failed to update category');
+        } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : 'Failed to update category';
+            alert(errorMsg);
         }
     };
 
@@ -109,7 +110,7 @@ export default function CategoriesPage() {
         try {
             await apiFetch(`/categories/${id}`, { method: 'DELETE' });
             setCategories(categories.filter(c => c._id !== id));
-        } catch (err) {
+        } catch {
             alert('Failed to delete category');
         }
     };
@@ -124,7 +125,7 @@ export default function CategoriesPage() {
             if (data.success) {
                 setCategories(categories.map(c => c._id === category._id ? data.data : c));
             }
-        } catch (err) {
+        } catch {
             alert('Failed to update status');
         }
     };

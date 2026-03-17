@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { apiFetch } from '@/lib/api';
 import { MainCategory, PaginationInfo } from '@/types';
-import { Plus, Edit2, Trash2, X, Check, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Edit2, Trash2, X, Check, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import Image from 'next/image';
 
 export default function MainCategoriesPage() {
     const [mainCategories, setMainCategories] = useState<MainCategory[]>([]);
@@ -15,7 +16,7 @@ export default function MainCategoriesPage() {
     // Pagination & Search state
     const [searchTerm, setSearchTerm] = useState('');
     const [page, setPage] = useState(1);
-    const [limit, setLimit] = useState(10);
+    const [limit] = useState(10);
     const [pagination, setPagination] = useState<PaginationInfo | null>(null);
     const [total, setTotal] = useState(0);
 
@@ -31,19 +32,7 @@ export default function MainCategoriesPage() {
 
     const ASSET_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
-    useEffect(() => {
-        fetchMainCategories();
-    }, [page, limit, searchTerm]);
-
-    // Clean up preview URLs
-    useEffect(() => {
-        return () => {
-            if (createPreview) URL.revokeObjectURL(createPreview);
-            if (editPreview) URL.revokeObjectURL(editPreview);
-        };
-    }, [createPreview, editPreview]);
-
-    const fetchMainCategories = async () => {
+    const fetchMainCategories = useCallback(async () => {
         try {
             setLoading(true);
             const queryParams = new URLSearchParams({
@@ -65,7 +54,19 @@ export default function MainCategoriesPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [page, limit, searchTerm]);
+
+    useEffect(() => {
+        fetchMainCategories();
+    }, [fetchMainCategories]);
+
+    // Clean up preview URLs
+    useEffect(() => {
+        return () => {
+            if (createPreview) URL.revokeObjectURL(createPreview);
+            if (editPreview) URL.revokeObjectURL(editPreview);
+        };
+    }, [createPreview, editPreview]);
 
     const handleCreateSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -97,8 +98,9 @@ export default function MainCategoriesPage() {
                 if (createPreview) URL.revokeObjectURL(createPreview);
                 setCreatePreview(null);
             }
-        } catch (err: any) {
-            setError(err.message || 'Failed to create main category');
+        } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : 'Failed to create main category';
+            setError(errorMsg);
         }
     };
 
@@ -127,8 +129,9 @@ export default function MainCategoriesPage() {
                 if (editPreview) URL.revokeObjectURL(editPreview);
                 setEditPreview(null);
             }
-        } catch (err: any) {
-            alert(err.message || 'Failed to update main category');
+        } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : 'Failed to update main category';
+            alert(errorMsg);
         }
     };
 
@@ -138,7 +141,7 @@ export default function MainCategoriesPage() {
         try {
             await apiFetch(`/main-categories/${id}`, { method: 'DELETE' });
             setMainCategories(mainCategories.filter(c => c._id !== id));
-        } catch (err) {
+        } catch {
             alert('Failed to delete main category');
         }
     };
@@ -153,7 +156,7 @@ export default function MainCategoriesPage() {
             if (data.success) {
                 setMainCategories(mainCategories.map(c => c._id === category._id ? data.data : c));
             }
-        } catch (err) {
+        } catch {
             alert('Failed to update status');
         }
     };
@@ -216,9 +219,11 @@ export default function MainCategoriesPage() {
                                         <td className="py-3 px-6">
                                             <div className="w-10 h-10 rounded overflow-hidden bg-slate-100 border border-slate-200">
                                                 {category.image && category.image !== 'no-photo.jpg' ? (
-                                                    <img
+                                                    <Image
                                                         src={`${ASSET_URL}/${category.image}`}
                                                         alt={category.name}
+                                                        width={40}
+                                                        height={40}
                                                         className="w-full h-full object-cover"
                                                     />
                                                 ) : (
@@ -331,7 +336,7 @@ export default function MainCategoriesPage() {
                                         <div className="flex items-center gap-4 mb-2">
                                             {createPreview && (
                                                 <div className="w-16 h-16 rounded overflow-hidden border border-slate-200 bg-slate-50">
-                                                    <img src={createPreview} alt="Preview" className="w-full h-full object-cover" />
+                                                    <Image src={createPreview} alt="Preview" width={64} height={64} className="w-full h-full object-cover" />
                                                 </div>
                                             )}
                                             <input
@@ -391,9 +396,11 @@ export default function MainCategoriesPage() {
                                         <div className="flex items-center gap-4 mb-2">
                                             {(editPreview || (editingCategory.image && editingCategory.image !== 'no-photo.jpg')) && (
                                                 <div className="w-16 h-16 rounded overflow-hidden border border-slate-200 bg-slate-50">
-                                                    <img
+                                                    <Image
                                                         src={editPreview || `${ASSET_URL}/${editingCategory.image}`}
                                                         alt="Preview"
+                                                        width={64}
+                                                        height={64}
                                                         className="w-full h-full object-cover"
                                                     />
                                                 </div>

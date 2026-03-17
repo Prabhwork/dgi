@@ -1,12 +1,19 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { apiFetch } from '@/lib/api';
 import { PageDetail, Category, Subcategory } from '@/types';
 import { Plus, Edit2, Trash2, X, Image as ImageIcon } from 'lucide-react';
+import Image from 'next/image';
 
-let CKEditorComponent: any = null;
-let ClassicEditorClass: any = null;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type EditorComponentType = any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ClassicEditorType = any;
+
+let CKEditorComponent: EditorComponentType = null;
+let ClassicEditorClass: ClassicEditorType = null;
 
 export default function PageDetailsPage() {
     const [pageDetails, setPageDetails] = useState<PageDetail[]>([]);
@@ -126,8 +133,9 @@ export default function PageDetailsPage() {
             } else {
                 setError(data.error || 'Failed to save page detail');
             }
-        } catch (err: any) {
-            setError(err.message || 'Something went wrong');
+        } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : 'Something went wrong';
+            setError(errorMsg);
         } finally {
             setSubmitting(false);
         }
@@ -337,7 +345,7 @@ export default function PageDetailsPage() {
                                                 editor={ClassicEditorClass}
                                                 data={formData.description}
                                                 config={editorConfig}
-                                                onChange={(_: any, editor: any) => {
+                                                onChange={(_event: unknown, editor: { getData: () => string }) => {
                                                     setFormData(prev => ({ ...prev, description: editor.getData() }));
                                                 }}
                                             />
@@ -364,7 +372,7 @@ export default function PageDetailsPage() {
                                         </div>
                                         {imagePreview && (
                                             <div className="w-32 h-32 rounded-lg border border-slate-200 overflow-hidden relative group shrink-0">
-                                                <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                                                <Image src={imagePreview} alt="Preview" width={128} height={128} className="w-full h-full object-cover" />
                                                 <button
                                                     type="button"
                                                     onClick={() => { setImagePreview(null); setFormData(prev => ({ ...prev, image: null })); }}

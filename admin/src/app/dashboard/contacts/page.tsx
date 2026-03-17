@@ -36,7 +36,7 @@ export default function ContactsPage() {
             if (res.success) {
                 setContacts(contacts.filter(c => c._id !== id));
             }
-        } catch (err) {
+        } catch {
             alert('Failed to delete message');
         }
     };

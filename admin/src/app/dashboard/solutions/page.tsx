@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { apiFetch } from '@/lib/api';
 import { Category, Solution, PaginationInfo } from '@/types';
 import { Edit2, Trash2, X, Check, Search, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
@@ -14,9 +14,9 @@ export default function SolutionsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterCategory, setFilterCategory] = useState('');
     const [page, setPage] = useState(1);
-    const [limit, setLimit] = useState(10);
-    const [pagination, setPagination] = useState<PaginationInfo | null>(null);
-    const [total, setTotal] = useState(0);
+    const [limit] = useState(10);
+    const [pagination] = useState<PaginationInfo | null>(null);
+    const [total] = useState(0);
 
     // Create Modal state
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -27,11 +27,7 @@ export default function SolutionsPage() {
     const [editingSolution, setEditingSolution] = useState<Solution | null>(null);
     const [editCategoryId, setEditCategoryId] = useState('');
 
-    useEffect(() => {
-        fetchInitialData();
-    }, [page, limit, searchTerm, filterCategory]);
-
-    const fetchInitialData = async () => {
+    const fetchInitialData = useCallback(async () => {
         setLoading(true);
         try {
             const [catsRes, solutionsRes] = await Promise.all([
@@ -46,7 +42,11 @@ export default function SolutionsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        fetchInitialData();
+    }, [fetchInitialData, page, limit, searchTerm, filterCategory]);
 
     const handleCreateSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -68,8 +68,9 @@ export default function SolutionsPage() {
                 setIsCreateModalOpen(false);
                 setSelectedCategoryId('');
             }
-        } catch (err: any) {
-            setError(err.message || 'Failed to create solution');
+        } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : 'Failed to create solution';
+            setError(errorMsg);
         }
     };
 
@@ -90,8 +91,9 @@ export default function SolutionsPage() {
                 setEditingSolution(null);
                 setEditCategoryId('');
             }
-        } catch (err: any) {
-            alert(err.message || 'Failed to update solution');
+        } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : 'Failed to update solution';
+            alert(errorMsg);
         }
     };
 
@@ -101,7 +103,7 @@ export default function SolutionsPage() {
         try {
             await apiFetch(`/solutions/${id}`, { method: 'DELETE' });
             setSolutions(solutions.filter(s => s._id !== id));
-        } catch (err) {
+        } catch {
             alert('Failed to delete solution');
         }
     };
@@ -116,7 +118,7 @@ export default function SolutionsPage() {
             if (data.success) {
                 fetchInitialData();
             }
-        } catch (err) {
+        } catch {
             alert('Failed to update status');
         }
     };

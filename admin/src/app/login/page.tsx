@@ -28,8 +28,9 @@ export default function LoginPage() {
             } else {
                 setError('Login failed');
             }
-        } catch (err: any) {
-            setError(err.message || 'An error occurred during login');
+        } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : 'An error occurred during login';
+            setError(errorMsg);
         } finally {
             setLoading(false);
         }
@@ -85,7 +86,7 @@ export default function LoginPage() {
                     <div className="text-center mt-4">
                         {/* We use an anchor tag or Link to navigate to signup */}
                         <a href="/signup" className="text-sm text-blue-600 hover:underline">
-                            Don't have an admin account? Create one
+                            Don&apos;t have an admin account? Create one
                         </a>
                     </div>
                 </form>

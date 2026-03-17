@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { apiFetch } from '@/lib/api';
 import { Category, Feature, PaginationInfo } from '@/types';
 import { Edit2, Trash2, X, Check, Search, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
@@ -14,9 +14,9 @@ export default function FeaturesPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterCategory, setFilterCategory] = useState('');
     const [page, setPage] = useState(1);
-    const [limit, setLimit] = useState(10);
-    const [pagination, setPagination] = useState<PaginationInfo | null>(null);
-    const [total, setTotal] = useState(0);
+    const [limit] = useState(10);
+    const [pagination] = useState<PaginationInfo | null>(null);
+    const [total] = useState(0);
 
     // Create Modal state
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -27,11 +27,7 @@ export default function FeaturesPage() {
     const [editingFeature, setEditingFeature] = useState<Feature | null>(null);
     const [editCategoryId, setEditCategoryId] = useState('');
 
-    useEffect(() => {
-        fetchInitialData();
-    }, [page, limit, searchTerm, filterCategory]);
-
-    const fetchInitialData = async () => {
+    const fetchInitialData = useCallback(async () => {
         setLoading(true);
         try {
             const [catsRes, featuresRes] = await Promise.all([
@@ -46,7 +42,11 @@ export default function FeaturesPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        fetchInitialData();
+    }, [fetchInitialData, page, limit, searchTerm, filterCategory]);
 
     const handleCreateSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -68,8 +68,9 @@ export default function FeaturesPage() {
                 setIsCreateModalOpen(false);
                 setSelectedCategoryId('');
             }
-        } catch (err: any) {
-            setError(err.message || 'Failed to create feature');
+        } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : 'Failed to create feature';
+            setError(errorMsg);
         }
     };
 
@@ -90,8 +91,9 @@ export default function FeaturesPage() {
                 setEditingFeature(null);
                 setEditCategoryId('');
             }
-        } catch (err: any) {
-            alert(err.message || 'Failed to update feature');
+        } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : 'Failed to update feature';
+            alert(errorMsg);
         }
     };
 
@@ -101,7 +103,7 @@ export default function FeaturesPage() {
         try {
             await apiFetch(`/features/${id}`, { method: 'DELETE' });
             setFeatures(features.filter(s => s._id !== id));
-        } catch (err) {
+        } catch {
             alert('Failed to delete feature');
         }
     };
@@ -116,7 +118,7 @@ export default function FeaturesPage() {
             if (data.success) {
                 fetchInitialData();
             }
-        } catch (err) {
+        } catch {
             alert('Failed to update status');
         }
     };
