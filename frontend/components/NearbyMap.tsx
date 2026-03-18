@@ -6,6 +6,7 @@ import mapboxgl from "mapbox-gl";
 import { X, MapPin, Phone, Star, Filter, Loader2, Navigation, SlidersHorizontal, Circle, ChevronDown, Globe, MessageCircle, Share2, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
 
@@ -76,7 +77,18 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
         [fetchNearbyBusinesses]
     );
 
+    const searchParams = useSearchParams();
+    const paramLat = searchParams.get("lat");
+    const paramLng = searchParams.get("lng");
+    const paramId = searchParams.get("id");
+
     useEffect(() => {
+        if (paramLat && paramLng) {
+            setUserLocation({ lat: parseFloat(paramLat), lng: parseFloat(paramLng) });
+            setLocating(false);
+            return;
+        }
+
         if (!navigator.geolocation) { setLocating(false); return; }
         navigator.geolocation.getCurrentPosition(
             (pos) => {
@@ -89,7 +101,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
             },
             { timeout: 8000 }
         );
-    }, []);
+    }, [paramLat, paramLng]);
 
     useEffect(() => {
         if (!userLocation || !mapContainer.current || mapRef.current) return;
@@ -155,8 +167,12 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
         return () => map.remove();
     }, [userLocation]);
 
+    const initialSelectPerformed = useRef(false);
+
     useEffect(() => {
-        if (!mapLoaded || !mapRef.current) return;
+        if (!mapLoaded) return;
+        
+        // Clear markers
         markersRef.current.forEach(m => m.remove());
         markersRef.current = [];
 
@@ -206,7 +222,6 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                 const pin = container.querySelector(".pin") as HTMLElement;
                 if (pin) pin.style.transform = "scale(1.15) translateY(-5px)";
                 
-                // Show site-matched glass popup for perfect 3D label placement
                 labelPopup = new mapboxgl.Popup({
                     closeButton: false,
                     closeOnClick: false,
@@ -244,7 +259,23 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                 .addTo(mapRef.current!);
             markersRef.current.push(marker);
         });
-    }, [businesses, mapLoaded, searchQuery]);
+
+        // Handle initial selection from URL ID - DRY: Only once
+        if (paramId && businesses.length > 0 && !initialSelectPerformed.current) {
+            const biz = businesses.find(b => b._id === paramId);
+            if (biz) {
+                initialSelectPerformed.current = true;
+                setSelectedBusiness(biz);
+                mapRef.current?.flyTo({
+                    center: [biz.gpsCoordinates.lng, biz.gpsCoordinates.lat],
+                    zoom: 17.5,
+                    pitch: 60,
+                    duration: 1200,
+                    essential: true
+                });
+            }
+        }
+    }, [businesses, mapLoaded, searchQuery, paramId]);
 
     const formatTime = (t: string) => {
         if (!t) return "";
@@ -292,6 +323,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                         placeholder="Search for businesses..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
+                        suppressHydrationWarning
                         className="bg-transparent border-none outline-none text-white text-sm md:text-base font-semibold flex-1 placeholder:text-white/20"
                     />
                     {loading && <Loader2 size={18} className="text-primary animate-spin shrink-0" />}
@@ -325,18 +357,22 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                         exit={{ opacity: 0 }}
                         className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-[#020631]/80 backdrop-blur-sm"
                     >
-                        <div className="relative mb-8">
-                            <div className="w-32 h-32 border-4 border-primary/20 rounded-full animate-ping" />
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(59,130,246,0.6)]">
-                                    <MapPin size={32} className="text-white animate-bounce" />
+                        <div className="flex flex-col items-center justify-center text-center px-6">
+                            <div className="relative mb-10">
+                                <div className="w-32 h-32 border-4 border-primary/20 rounded-full animate-ping" />
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(59,130,246,0.6)] z-10 transition-transform duration-500">
+                                        <MapPin size={32} className="text-white animate-bounce" />
+                                    </div>
                                 </div>
+                                {/* Scanning wave */}
+                                <div className="absolute inset-0 border-2 border-primary rounded-full animate-[spin_3s_linear_infinite] scale-125 opacity-20" style={{ borderRightColor: 'transparent', borderBottomColor: 'transparent' }} />
+                                <div className="absolute inset-0 border-2 border-primary rounded-full animate-[spin_4s_linear_infinite_reverse] scale-150 opacity-10" style={{ borderLeftColor: 'transparent', borderTopColor: 'transparent' }} />
                             </div>
-                            {/* Scanning wave */}
-                            <div className="absolute inset-0 border-2 border-primary rounded-full animate-[spin_3s_linear_infinite] scale-125 opacity-20" style={{ borderRightColor: 'transparent', borderBottomColor: 'transparent' }} />
+
+                            <h2 className="text-white text-2xl md:text-3xl font-black mb-3 tracking-tight uppercase">Scanning Area</h2>
+                            <p className="text-white/40 text-xs md:text-sm font-bold animate-pulse max-w-[280px] md:max-w-md tracking-wider">Finding nearby businesses in your city...</p>
                         </div>
-                        <h2 className="text-white text-2xl font-black mb-2 tracking-tight">Scanning Area</h2>
-                        <p className="text-white/40 text-sm font-medium animate-pulse">Finding nearby businesses in your city...</p>
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -391,7 +427,14 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                 <a href={`https://wa.me/${selectedBusiness.officialWhatsAppNumber || selectedBusiness.primaryContactNumber}`} target="_blank" className="flex items-center justify-center gap-2 bg-[#25D366]/20 border border-[#25D366]/20 text-[#25D366] font-bold text-xs py-3.5 rounded-2xl hover:bg-[#25D366]/30 transition-all"><MessageCircle size={14} /> WhatsApp</a>
                             </div>
 
-                            <a href={`https://maps.google.com/?q=${selectedBusiness.gpsCoordinates.lat},${selectedBusiness.gpsCoordinates.lng}`} target="_blank" className="flex items-center justify-center gap-2 text-white/20 text-[10px] uppercase font-black tracking-widest mt-6 hover:text-white/40 transition-all">Directions on Google Maps</a>
+                            <a 
+                                href={`https://www.google.com/maps/dir/?api=1&destination=${selectedBusiness.gpsCoordinates.lat},${selectedBusiness.gpsCoordinates.lng}`} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] uppercase font-black tracking-widest mt-6 hover:bg-blue-500/20 transition-all"
+                            >
+                                <Navigation size={14} /> DIRECTION
+                            </a>
                         </div>
                     </motion.div>
                 )}

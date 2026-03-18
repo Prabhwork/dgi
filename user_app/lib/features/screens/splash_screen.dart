@@ -31,6 +31,9 @@ class _SplashScreenState extends State<SplashScreen> {
     'assets/images/logo2.png',
     'assets/images/logo3.png',
     'assets/images/logo4.jpeg',
+    'assets/images/logo5.jpeg',
+    'assets/images/logo6.jpeg',
+    'assets/images/logo7.jpeg',
     'assets/images/map.jpg',
     'assets/images/earth.jpg',
   ];

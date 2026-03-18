@@ -8,7 +8,10 @@ const logos = [
     "/assets/logo1.png",
     "/assets/logo2.png",
     "/assets/logo3.png",
-    "/assets/logo4.jpeg"
+    "/assets/logo4.jpeg",
+    "/assets/logo5.png",
+    "/assets/logo6.png",
+    "/assets/logo7.png"
 ];
 
 const repeatingLogos = [...logos, ...logos, ...logos, ...logos];

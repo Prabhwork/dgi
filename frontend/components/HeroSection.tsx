@@ -175,6 +175,7 @@ export default function HeroSection() {
                                 value={locationInput}
                                 onChange={(e) => setLocationInput(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                suppressHydrationWarning
                                 className={`bg-transparent text-sm outline-none w-full ${theme === 'light'
                                     ? 'text-slate-900 placeholder:text-slate-400'
                                     : 'text-white placeholder:text-white/60'
@@ -204,7 +205,10 @@ export default function HeroSection() {
 
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <button className="flex items-center gap-1 hover:text-primary transition-colors whitespace-nowrap outline-none">
+                                <button 
+                                    suppressHydrationWarning
+                                    className="flex items-center gap-1 hover:text-primary transition-colors whitespace-nowrap outline-none"
+                                >
                                     DBI for Business <ChevronDown size={14} />
                                 </button>
                             </DropdownMenuTrigger>

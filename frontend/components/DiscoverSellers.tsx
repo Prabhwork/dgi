@@ -5,12 +5,13 @@ import { useRef } from "react";
 import { MapPin, Users, Database, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/ThemeProvider";
+import Link from "next/link";
 
 const features = [
-    { icon: MapPin, title: "Easy Business Listing", desc: "List your business effortlessly on our platform, making it easily discoverable by potential customers through our digital map." },
-    { icon: Users, title: "Customer Connectivity", desc: "Connect customers directly to their final destination with ease, enhancing their experience and increasing your business's visibility." },
-    { icon: Database, title: "Comprehensive Information", desc: "Access detailed and accurate information about services and products from all sectors, ensuring you find exactly what you need." },
-    { icon: ShieldCheck, title: "Reliable Source", desc: "Trust in our accuracy and reliability for all your service needs, with up-to-date information that you can depend on." },
+    { icon: MapPin, title: "Easy Business Listing", desc: "List your business effortlessly on our platform, making it easily discoverable by potential customers through our digital map.", href: "/listing-benefits" },
+    { icon: Users, title: "Customer Connectivity", desc: "Connect customers directly to their final destination with ease, enhancing their experience and increasing your business's visibility.", href: "/customer-connectivity" },
+    { icon: Database, title: "Comprehensive Information", desc: "Access detailed and accurate information about services and products from all sectors, ensuring you find exactly what you need.", href: "/comprehensive-information" },
+    { icon: ShieldCheck, title: "Reliable Source", desc: "Trust in our accuracy and reliability for all your service needs, with up-to-date information that you can depend on.", href: "/reliable-source" },
 ];
 
 export default function DiscoverSellers() {
@@ -60,8 +61,9 @@ export default function DiscoverSellers() {
                                 variant={theme === 'light' ? 'default' : 'outline-glow'}
                                 size="sm"
                                 className={`mt-4 ${theme === 'light' ? 'bg-primary text-white hover:bg-primary/90' : ''}`}
+                                asChild
                             >
-                                Read More
+                                <Link href={f.href || "#"}>Read More</Link>
                             </Button>
                         </motion.div>
                     ))}

@@ -6,7 +6,16 @@ import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Globe, Zap, Target, Award } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
-import IndiaMap from "./IndiaMap";
+import dynamic from "next/dynamic";
+
+const ThreeIndiaMap = dynamic(() => import("./ThreeIndiaMap"), { 
+    ssr: false,
+    loading: () => (
+        <div className="w-full h-full flex items-center justify-center">
+            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+    )
+});
 import Link from "next/link";
 
 const PILLARS = [
@@ -146,7 +155,7 @@ export default function PlatformIntro() {
                                     ? 'bg-white/60 border-blue-100 shadow-[0_32px_64px_-16px_rgba(0,100,255,0.1)]'
                                     : 'bg-white/[0.03] border-white/10 shadow-2xl shadow-primary/10'
                                     }`}>
-                                    <IndiaMap isVisible={inView} />
+                                    <ThreeIndiaMap />
 
                                     {/* Scan Line Animation */}
                                     <motion.div
