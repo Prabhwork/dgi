@@ -22,6 +22,11 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // 2FA state
+    const [requires2fa, setRequires2fa] = useState(false);
+    const [tempToken, setTempToken] = useState("");
+    const [otp, setOtp] = useState("");
+
     const [formData, setFormData] = useState({
         email: "",
         contactNumber: "",
@@ -52,6 +57,40 @@ export default function LoginPage() {
             const data = await res.json();
 
             if (data.success) {
+                if (data.requires2fa) {
+                    setRequires2fa(true);
+                    setTempToken(data.tempToken);
+                    return;
+                }
+
+                // Store token
+                localStorage.setItem("businessToken", data.token);
+                router.push("/");
+            } else {
+                setError(data.error || "Login failed. Please check your credentials.");
+            }
+        } catch (err) {
+            setError("Something went wrong. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handle2FASubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setError(null);
+
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/business/2fa/verify-login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ tempToken, token: otp })
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
                 // Store token
                 localStorage.setItem("businessToken", data.token);
                 
@@ -62,7 +101,7 @@ export default function LoginPage() {
                     router.push("/community/status");
                 }
             } else {
-                setError(data.error || "Login failed. Please check your credentials.");
+                setError(data.error || "Invalid verification code.");
             }
         } catch (err) {
             setError("Something went wrong. Please try again.");
@@ -118,73 +157,115 @@ export default function LoginPage() {
                             </div>
                         )}
 
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            {loginWith === "email" ? (
+                        {requires2fa ? (
+                            <form onSubmit={handle2FASubmit} className="space-y-6">
                                 <div className="space-y-2">
-                                    <Label className="text-white/70 text-xs uppercase tracking-widest">Official Email</Label>
+                                    <Label className="text-white/70 text-xs uppercase tracking-widest">Authenticator Code</Label>
                                     <div className="relative">
-                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
                                         <Input
-                                            name="email"
-                                            type="email"
-                                            value={formData.email}
-                                            onChange={handleInputChange}
-                                            className="bg-white/5 border-white/10 text-white pl-11 h-12 rounded-xl focus:ring-primary/50"
-                                            placeholder="name@business.com"
+                                            name="otp"
+                                            type="text"
+                                            maxLength={6}
+                                            value={otp}
+                                            onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                                            className="bg-white/5 border-white/10 text-white pl-11 h-12 rounded-xl focus:ring-primary/50 text-center text-lg tracking-[0.2em]"
+                                            placeholder="000000"
                                             required
                                         />
                                     </div>
+                                    <p className="text-white/40 text-[10px] text-center mt-2">Open your authenticator app to view your 6-digit code.</p>
                                 </div>
-                            ) : (
+                                <Button
+                                    type="submit"
+                                    variant="glow"
+                                    disabled={loading || otp.length < 6}
+                                    className="w-full h-12 rounded-xl font-display uppercase tracking-[0.2em] text-xs bg-primary text-white"
+                                >
+                                    {loading ? "Verifying..." : "Verify Code"}
+                                </Button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setRequires2fa(false);
+                                        setTempToken("");
+                                        setOtp("");
+                                        setError(null);
+                                    }}
+                                    className="w-full text-xs text-white/40 hover:text-white uppercase tracking-widest transition-colors mt-2"
+                                >
+                                    Back to Login
+                                </button>
+                            </form>
+                        ) : (
+                            <form onSubmit={handleSubmit} className="space-y-6">
+                                {loginWith === "email" ? (
+                                    <div className="space-y-2">
+                                        <Label className="text-white/70 text-xs uppercase tracking-widest">Official Email</Label>
+                                        <div className="relative">
+                                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                                            <Input
+                                                name="email"
+                                                type="email"
+                                                value={formData.email}
+                                                onChange={handleInputChange}
+                                                className="bg-white/5 border-white/10 text-white pl-11 h-12 rounded-xl focus:ring-primary/50"
+                                                placeholder="name@business.com"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        <Label className="text-white/70 text-xs uppercase tracking-widest">Contact Number</Label>
+                                        <div className="relative">
+                                            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                                            <Input
+                                                name="contactNumber"
+                                                type="tel"
+                                                value={formData.contactNumber}
+                                                onChange={handleInputChange}
+                                                className="bg-white/5 border-white/10 text-white pl-11 h-12 rounded-xl focus:ring-primary/50"
+                                                placeholder="+91 99999 99999"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="space-y-2">
-                                    <Label className="text-white/70 text-xs uppercase tracking-widest">Contact Number</Label>
+                                    <Label className="text-white/70 text-xs uppercase tracking-widest">Password</Label>
                                     <div className="relative">
-                                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
                                         <Input
-                                            name="contactNumber"
-                                            type="tel"
-                                            value={formData.contactNumber}
+                                            name="password"
+                                            type={showPassword ? "text" : "password"}
+                                            value={formData.password}
                                             onChange={handleInputChange}
-                                            className="bg-white/5 border-white/10 text-white pl-11 h-12 rounded-xl focus:ring-primary/50"
-                                            placeholder="+91 99999 99999"
+                                            className="bg-white/5 border-white/10 text-white pl-11 pr-11 h-12 rounded-xl focus:ring-primary/50"
+                                            placeholder="••••••••"
                                             required
                                         />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
+                                        >
+                                            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                        </button>
                                     </div>
                                 </div>
-                            )}
 
-                            <div className="space-y-2">
-                                <Label className="text-white/70 text-xs uppercase tracking-widest">Password</Label>
-                                <div className="relative">
-                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
-                                    <Input
-                                        name="password"
-                                        type={showPassword ? "text" : "password"}
-                                        value={formData.password}
-                                        onChange={handleInputChange}
-                                        className="bg-white/5 border-white/10 text-white pl-11 pr-11 h-12 rounded-xl focus:ring-primary/50"
-                                        placeholder="••••••••"
-                                        required
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
-                                    >
-                                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                                    </button>
-                                </div>
-                            </div>
-
-                            <Button
-                                type="submit"
-                                variant="glow"
-                                disabled={loading}
-                                className="w-full h-12 rounded-xl font-display uppercase tracking-[0.2em] text-xs bg-primary text-white"
-                            >
-                                {loading ? "Authenticating..." : "Login to Portal"}
-                            </Button>
-                        </form>
+                                <Button
+                                    type="submit"
+                                    variant="glow"
+                                    disabled={loading}
+                                    className="w-full h-12 rounded-xl font-display uppercase tracking-[0.2em] text-xs bg-primary text-white"
+                                >
+                                    {loading ? "Authenticating..." : "Login to Portal"}
+                                </Button>
+                            </form>
+                        )}
 
                         <div className="mt-8 pt-8 border-t border-white/10 text-center space-y-4">
                             <p className="text-white/40 text-xs uppercase tracking-widest">

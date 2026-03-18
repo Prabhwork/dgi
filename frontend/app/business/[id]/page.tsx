@@ -76,7 +76,9 @@ function BusinessDetail() {
         );
     }
 
-    const coverImageUrl = business.coverImage 
+    const bannerImageUrl = business.bannerImage 
+        ? `${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}/${business.bannerImage}` 
+        : business.coverImage 
         ? `${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}/${business.coverImage}` 
         : '/assets/business-placeholder.jpg';
 
@@ -113,7 +115,7 @@ function BusinessDetail() {
                             >
                                 <div className="h-64 md:h-80 w-full relative">
                                     <img 
-                                        src={coverImageUrl} 
+                                        src={bannerImageUrl} 
                                         alt={business.brandName || business.businessName}
                                         className="w-full h-full object-cover"
                                         onError={(e) => { (e.target as HTMLImageElement).src = '/assets/business-placeholder.jpg'; }}

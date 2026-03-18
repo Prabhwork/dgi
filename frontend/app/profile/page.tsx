@@ -65,6 +65,8 @@ export default function ProfilePage() {
     // File states
     const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
     const [coverImagePreview, setCoverImagePreview] = useState<string>('');
+    const [bannerImageFile, setBannerImageFile] = useState<File | null>(null);
+    const [bannerImagePreview, setBannerImagePreview] = useState<string>('');
     const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
     const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
     const [catalogFile, setCatalogFile] = useState<File | null>(null);
@@ -73,6 +75,7 @@ export default function ProfilePage() {
     const [estabFile, setEstabFile] = useState<File | null>(null);
 
     const coverRef = useRef<HTMLInputElement>(null);
+    const bannerRef = useRef<HTMLInputElement>(null);
     const galleryRef = useRef<HTMLInputElement>(null);
     const catalogRef = useRef<HTMLInputElement>(null);
     const aadhaarRef = useRef<HTMLInputElement>(null);
@@ -108,6 +111,7 @@ export default function ProfilePage() {
                         joinFraudAlerts: b.joinFraudAlerts || false,
                     });
                     if (b.coverImage) setCoverImagePreview(`${BASE_URL}/${b.coverImage}`);
+                    if (b.bannerImage) setBannerImagePreview(`${BASE_URL}/${b.bannerImage}`);
                     if (b.gallery && b.gallery.length) setGalleryPreviews(b.gallery.map((g: string) => `${BASE_URL}/${g}`));
                 } else {
                     router.push('/community/login');
@@ -152,6 +156,7 @@ export default function ProfilePage() {
 
         Object.entries(form).forEach(([k, v]) => fd.append(k, String(v)));
         if (coverImageFile) fd.append('coverImage', coverImageFile);
+        if (bannerImageFile) fd.append('bannerImage', bannerImageFile);
         galleryFiles.forEach(f => fd.append('gallery', f));
         if (catalogFile) fd.append('catalog', catalogFile);
         if (aadhaarFile) fd.append('aadhaarCard', aadhaarFile);
@@ -166,7 +171,11 @@ export default function ProfilePage() {
             });
             const data = await res.json();
             if (data.success) {
-                setSuccess("✅ Profile updated successfully! It will be re-reviewed by our team.");
+                const isApproved = data.data?.approvalStatus === 'approved';
+                setSuccess(isApproved
+                    ? "✅ Profile updated successfully! Your listing stays live. Our team has been notified of the changes."
+                    : "✅ Profile updated! It will be reviewed by our team within 24–48 hours."
+                );
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             } else {
                 setError(data.error || "Failed to update profile.");
@@ -193,7 +202,7 @@ export default function ProfilePage() {
 
     const inputClass = isLight
         ? 'bg-white border-slate-300 text-slate-900 focus:border-primary'
-        : 'bg-white/5 border-white/10 text-white focus:border-primary/50';
+        : 'bg-white/5 border-white/10 text-white focus:border-primary/50 [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:invert-[1] [&::-webkit-calendar-picker-indicator]:brightness-200';
 
     if (loading) return (
         <div className="min-h-screen bg-[#020631] flex items-center justify-center">
@@ -213,24 +222,35 @@ export default function ProfilePage() {
                     <div className="mb-8">
                         <div className={`relative rounded-3xl overflow-hidden border p-8 ${cardClass} backdrop-blur-xl`}>
                             <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-                                {/* Cover Image / Avatar */}
-                                <div className="relative shrink-0">
-                                    <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-primary/30">
-                                        {coverImagePreview
-                                            ? <img src={coverImagePreview} className="w-full h-full object-cover" alt="cover" />
-                                            : <div className="w-full h-full bg-primary/10 flex items-center justify-center">
-                                                <Building2 size={36} className="text-primary/50" />
-                                            </div>
-                                        }
+                                {/* Top row on mobile: photo + member since */}
+                                <div className="flex flex-row items-start justify-between w-full md:w-auto md:justify-start md:gap-0">
+                                    {/* Cover Image / Avatar */}
+                                    <div className="relative shrink-0">
+                                        <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-primary/30">
+                                            {coverImagePreview
+                                                ? <img src={coverImagePreview} className="w-full h-full object-cover" alt="cover" />
+                                                : <div className="w-full h-full bg-primary/10 flex items-center justify-center">
+                                                    <Building2 size={36} className="text-primary/50" />
+                                                </div>
+                                            }
+                                        </div>
+                                        <button
+                                            onClick={() => coverRef.current?.click()}
+                                            className="absolute -bottom-2 -right-2 bg-primary text-white p-1.5 rounded-lg shadow-lg hover:bg-primary/80 transition"
+                                        >
+                                            <Camera size={14} />
+                                        </button>
+                                        <input ref={coverRef} type="file" accept="image/*" className="hidden"
+                                            onChange={e => handleFileChange(e.target.files?.[0] || null, setCoverImageFile, setCoverImagePreview)} />
                                     </div>
-                                    <button
-                                        onClick={() => coverRef.current?.click()}
-                                        className="absolute -bottom-2 -right-2 bg-primary text-white p-1.5 rounded-lg shadow-lg hover:bg-primary/80 transition"
-                                    >
-                                        <Camera size={14} />
-                                    </button>
-                                    <input ref={coverRef} type="file" accept="image/*" className="hidden"
-                                        onChange={e => handleFileChange(e.target.files?.[0] || null, setCoverImageFile, setCoverImagePreview)} />
+
+                                    {/* Member since — visible only on mobile, right of photo */}
+                                    <div className="text-right md:hidden">
+                                        <p className="text-xs text-muted-foreground">Member since</p>
+                                        <p className="text-sm font-medium text-foreground">
+                                            {business?.createdAt ? new Date(business.createdAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'short' }) : '—'}
+                                        </p>
+                                    </div>
                                 </div>
 
                                 {/* Names & Status */}
@@ -252,10 +272,11 @@ export default function ProfilePage() {
                                             {business?.approvalStatus || 'pending'}
                                         </span>
                                     </div>
-                                    <p className="text-muted-foreground text-sm">{business?.businessCategory} • {business?.registeredOfficeAddress}</p>
+                                    <p className="text-muted-foreground text-sm">{business?.registeredOfficeAddress}</p>
                                 </div>
 
-                                <div className="text-right shrink-0">
+                                {/* Member since — desktop only (far right) */}
+                                <div className="text-right shrink-0 hidden md:block">
                                     <p className="text-xs text-muted-foreground">Member since</p>
                                     <p className="text-sm font-medium text-foreground">
                                         {business?.createdAt ? new Date(business.createdAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'short' }) : '—'}
@@ -322,8 +343,8 @@ export default function ProfilePage() {
                                                     <label className="block text-sm font-medium text-muted-foreground mb-1.5">Category *</label>
                                                     <select value={form.businessCategory} onChange={e => setForm({ ...form, businessCategory: e.target.value })}
                                                         className={`w-full rounded-lg border px-3 py-2 text-sm transition-colors ${inputClass}`} required>
-                                                        <option value="">Select category</option>
-                                                        {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                                                        <option value="" className={isLight ? '' : 'bg-[#020631] text-white'}>Select category</option>
+                                                        {CATEGORIES.map(c => <option key={c} value={c} className={isLight ? '' : 'bg-[#020631] text-white'}>{c}</option>)}
                                                     </select>
                                                 </div>
                                                 <div>
@@ -388,7 +409,7 @@ export default function ProfilePage() {
                                                     <label className="block text-sm font-medium text-muted-foreground mb-1.5">Weekly Off</label>
                                                     <select value={form.weeklyOff} onChange={e => setForm({ ...form, weeklyOff: e.target.value })}
                                                         className={`w-full rounded-lg border px-3 py-2 text-sm transition-colors ${inputClass}`}>
-                                                        {DAYS.map(d => <option key={d} value={d}>{d}</option>)}
+                                                        {DAYS.map(d => <option key={d} value={d} className={isLight ? '' : 'bg-[#020631] text-white'}>{d}</option>)}
                                                     </select>
                                                 </div>
                                             </div>
@@ -417,6 +438,23 @@ export default function ProfilePage() {
                                                     </button>
                                                     <input ref={coverRef} type="file" accept="image/*" className="hidden"
                                                         onChange={e => handleFileChange(e.target.files?.[0] || null, setCoverImageFile, setCoverImagePreview)} />
+                                                </div>
+                                            </div>
+
+                                            {/* Banner Photo */}
+                                            <div>
+                                                <label className="block text-sm font-medium text-muted-foreground mb-3">Banner Photo</label>
+                                                <div className="flex flex-col sm:flex-row items-start gap-4">
+                                                    <ImagePreview src={bannerImagePreview} alt="Banner" className="w-full sm:w-64 h-28" />
+                                                    <div className="flex flex-col gap-2">
+                                                        <button type="button" onClick={() => bannerRef.current?.click()}
+                                                            className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition ${isLight ? 'border-slate-300 hover:bg-slate-100 text-slate-700' : 'border-white/10 hover:bg-white/10 text-white'}`}>
+                                                            <Upload size={16} /> {bannerImagePreview ? 'Change Banner' : 'Upload Banner'}
+                                                        </button>
+                                                        <p className="text-xs text-muted-foreground">Optimal ratio: 3:1 or 4:1 (e.g. 1200x400).</p>
+                                                    </div>
+                                                    <input ref={bannerRef} type="file" accept="image/*" className="hidden"
+                                                        onChange={e => handleFileChange(e.target.files?.[0] || null, setBannerImageFile, setBannerImagePreview)} />
                                                 </div>
                                             </div>
 

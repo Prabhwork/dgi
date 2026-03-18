@@ -10,15 +10,32 @@ const staticColumns = [
     },
     {
         title: "For Business Owners",
-        links: ["Claim Your Listing", "Add Your Business", "Advertising Solutions", "success stories"],
+        links: [
+            { name: "Claim Your Listing", href: "/search" },
+            { name: "Add Your Business", href: "/auth" },
+            { name: "Advertising Solutions", href: "/advertising" },
+            { name: "Success Stories", href: "/success-stories" }
+        ],
     },
     {
         title: "Trust & Company",
-        links: ["About DBI", "Careers", "support", "How Verification Works", "The Accuracy Shield", "Press & News"],
+        links: [
+            { name: "About DBI", href: "/about-us" },
+            { name: "Careers", href: "/careers" },
+            { name: "Support", href: "/contact" },
+            { name: "How Verification Works", href: "/verification" },
+            { name: "The Accuracy Shield", href: "/accuracy-shield" }
+        ],
     },
     {
         title: "Support & Legal",
-        links: ["Contact Support", "Report a Data Error", "Terms of Service & Privacy Policy", "Cookiers Preference– GDPR/CCPA Compliance"],
+        links: [
+            { name: "Contact Support", href: "/contact" },
+            { name: "Report a Data Error", href: "/report-error" },
+            { name: "Terms of Service", href: "/terms" },
+            { name: "Privacy Policy", href: "/privacy" },
+            { name: "Cookies Preference & GDPR", href: "/cookies" }
+        ],
     },
 ];
 
@@ -69,17 +86,23 @@ export default function Footer() {
                         <div key={col.title}>
                             <h4 className="font-display font-semibold text-sm text-foreground mb-2">{col.title}</h4>
                             <ul className="space-y-1">
-                                {col.links.map((link) => (
-                                    <li key={link}>
-                                        <Link
-                                            href={link === "Contact Support" ? "/contact" : "#"}
-                                            className="flex items-start gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors group"
-                                        >
-                                            <ChevronRight size={11} className="text-muted-foreground/40 group-hover:text-primary transition-colors mt-0.5 shrink-0" />
-                                            {link}
-                                        </Link>
-                                    </li>
-                                ))}
+                                {col.links.map((link: any) => {
+                                    const isString = typeof link === 'string';
+                                    const name = isString ? link : link.name;
+                                    const href = isString ? `/search?category=${encodeURIComponent(link)}` : link.href;
+                                    
+                                    return (
+                                        <li key={name}>
+                                            <Link
+                                                href={href}
+                                                className="flex items-start gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors group"
+                                            >
+                                                <ChevronRight size={11} className="text-muted-foreground/40 group-hover:text-primary transition-colors mt-0.5 shrink-0" />
+                                                {name}
+                                            </Link>
+                                        </li>
+                                    );
+                                })}
                             </ul>
                         </div>
                     ))}

@@ -11,7 +11,12 @@ const {
     getBusinessById,
     updateBusinessStatus,
     updateBusinessDetails,
-    searchBusinesses
+    searchBusinesses,
+    generate2FA,
+    verifyAndEnable2FA,
+    disable2FA,
+    verify2FALogin,
+    getNearbyBusinesses
 } = require('../controllers/businessController');
 
 const router = express.Router();
@@ -25,6 +30,7 @@ const uploadFields = upload.fields([
     { name: 'establishmentProof', maxCount: 1 },
     { name: 'certifications', maxCount: 1 },
     { name: 'coverImage', maxCount: 1 },
+    { name: 'bannerImage', maxCount: 1 },
     { name: 'gallery', maxCount: 10 },
     { name: 'catalog', maxCount: 1 }
 ]);
@@ -36,6 +42,7 @@ router.post('/verify-otp', verifyOTP);
 router.get('/digilocker/authorize', authorizeDigiLocker);
 router.post('/digilocker/callback', handleDigiLockerCallback);
 router.get('/search', searchBusinesses);
+router.get('/nearby', getNearbyBusinesses);
 router.get('/public/:id', getBusinessById); // Reusing getBusinessById since we can just use the same logic
 router.get('/me', protect, getMe);
 
@@ -46,5 +53,11 @@ router.put('/:id/status', protect, authorize('admin'), updateBusinessStatus);
 
 // Business Routes
 router.put('/update-details', protect, authorize('business'), uploadFields, updateBusinessDetails);
+
+// 2FA Routes
+router.post('/2fa/generate', protect, authorize('business'), generate2FA);
+router.post('/2fa/verify-enable', protect, authorize('business'), verifyAndEnable2FA);
+router.post('/2fa/disable', protect, authorize('business'), disable2FA);
+router.post('/2fa/verify-login', verify2FALogin);
 
 module.exports = router;

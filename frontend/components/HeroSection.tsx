@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, MapPin, Store, CheckCircle2, User, Compass, ChevronDown, Loader2 } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
@@ -27,10 +27,13 @@ export default function HeroSection() {
     const { theme } = useTheme();
     const router = useRouter();
     const [locationInput, setLocationInput] = useState("");
+    const [detectedLocation, setDetectedLocation] = useState("");
     const [isLocating, setIsLocating] = useState(false);
     const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
     const [allCategories, setAllCategories] = useState<any[]>([]);
     const [currentSet, setCurrentSet] = useState(0);
+    const mobileScrollRef = useRef<HTMLDivElement>(null);
+    const [isInteractingMobile, setIsInteractingMobile] = useState(false);
 
     useEffect(() => {
         const fetchCategories = async () => {
@@ -63,6 +66,27 @@ export default function HeroSection() {
 
         fetchCategories();
     }, []);
+
+    // Hybrid Mobile Scroll Logic
+    useEffect(() => {
+        const scrollContainer = mobileScrollRef.current;
+        if (!scrollContainer || isInteractingMobile || allCategories.length === 0) return;
+
+        let animationFrameId: number;
+        const scroll = () => {
+            if (scrollContainer) {
+                if (scrollContainer.scrollLeft >= (scrollContainer.scrollWidth / 2)) {
+                    scrollContainer.scrollLeft = 0;
+                } else {
+                    scrollContainer.scrollLeft += 0.8; // Smooth slow glide
+                }
+            }
+            animationFrameId = requestAnimationFrame(scroll);
+        };
+
+        animationFrameId = requestAnimationFrame(scroll);
+        return () => cancelAnimationFrame(animationFrameId);
+    }, [isInteractingMobile, allCategories]);
 
     useEffect(() => {
         if (allCategories.length <= 8) return;
@@ -108,7 +132,7 @@ export default function HeroSection() {
                         // Extract city/town/village
                         const address = data.address;
                         const locationName = address.city || address.town || address.village || address.state || "Detected Location";
-                        setLocationInput(locationName);
+                        setDetectedLocation(locationName);
                     } catch (err) {
                         console.error("Auto-location name fetch failed:", err);
                     } finally {
@@ -125,6 +149,9 @@ export default function HeroSection() {
 
         autoLocate();
     }, []);
+
+    // Double categories for infinite loop
+    const mobilePool = [...allCategories, ...allCategories];
 
     return (
         <section className="relative min-h-screen flex flex-col overflow-hidden" id="home">
@@ -144,7 +171,7 @@ export default function HeroSection() {
                             }`}>
                             <input
                                 type="text"
-                                placeholder={isLocating ? "Fetching location..." : "Search location..."}
+                                placeholder={isLocating ? "Detecting location..." : (detectedLocation ? `Near ${detectedLocation}` : "Search near you...")}
                                 value={locationInput}
                                 onChange={(e) => setLocationInput(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -163,11 +190,14 @@ export default function HeroSection() {
                                 />
                             )}
                         </div>
-                        <button className="flex items-center gap-1.5 bg-primary text-white px-5 py-2.5 rounded-r-lg text-sm font-bold hover:bg-primary/80 transition-all whitespace-nowrap shadow-lg shadow-primary/20">
+                        <Link 
+                            href="/nearby-map"
+                            className="flex items-center gap-1.5 bg-primary text-white px-5 py-2.5 rounded-r-lg text-sm font-bold hover:bg-primary/80 transition-all whitespace-nowrap shadow-lg shadow-primary/20"
+                        >
                             <MapPin size={15} />
                             <span className="hidden sm:inline">See On Map</span>
                             <span className="sm:hidden">Map</span>
-                        </button>
+                        </Link>
                     </div>
                     {/* Quick links — visible on all screens */}
                     <div className="flex items-center justify-center sm:justify-end gap-3 sm:gap-5 text-[10px] sm:text-sm text-foreground w-full md:w-auto">
@@ -327,35 +357,36 @@ export default function HeroSection() {
                             </div>
                         </motion.div>
 
-
-
-
-                        {/* Mobile category auto-scroll strip */}
+                        {/* Mobile category hybrid scroll strip */}
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 1.5 }}
                             className="flex lg:hidden mt-8 w-full overflow-hidden"
                         >
-                            {/* Duplicate array so it loops seamlessly */}
-                            <div className="flex animate-marquee gap-2">
-                                {[...allCategories, ...allCategories].map((cat, i) => (
+                            <div
+                                ref={mobileScrollRef}
+                                onTouchStart={() => setIsInteractingMobile(true)}
+                                onTouchEnd={() => setTimeout(() => setIsInteractingMobile(false), 3000)}
+                                onPointerDown={() => setIsInteractingMobile(true)}
+                                onPointerUp={() => setTimeout(() => setIsInteractingMobile(false), 3000)}
+                                className="flex w-full overflow-x-auto scrollbar-hide px-6 gap-4 select-none cursor-grab active:cursor-grabbing"
+                            >
+                                {mobilePool.map((cat, i) => (
                                     <div
-                                        key={i}
+                                        key={`${cat.name}-${i}`}
                                         onClick={() => router.push(`/search?mainCategory=${encodeURIComponent(cat.name)}`)}
-                                        className={`flex flex-col items-center justify-center p-4 rounded-2xl border transition-all duration-300 cursor-pointer ${theme === 'light'
-                                            ? 'bg-white border-blue-600 shadow-none active:scale-95'
-                                            : 'bg-white/5 border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.06)] active:scale-95'
+                                        className={`flex-shrink-0 flex flex-col items-center justify-center p-4 rounded-[2rem] border transition-all duration-300 cursor-pointer w-[150px] h-[150px] relative overflow-hidden backdrop-blur-md ${theme === 'light'
+                                            ? 'bg-white border-blue-600/30 text-slate-900 active:scale-95 shadow-lg'
+                                            : 'bg-white/5 border-white/20 text-white active:scale-95 shadow-2xl'
                                             }`}
                                     >
-                                        <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-active:opacity-100 pointer-events-none transition-opacity" />
+                                        <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 active:opacity-100 pointer-events-none transition-opacity" />
 
-                                        <div className={`w-12 h-12 rounded-full overflow-hidden mb-1.5 border-[1.5px] shadow-[0_0_10px_rgba(255,255,255,0.1)] relative z-10 ${theme === 'light' ? 'border-primary/30' : 'border-white/40'
-                                            }`}>
+                                        <div className={`w-14 h-14 rounded-full overflow-hidden mb-2.5 border-[1.5px] shadow-[0_0_15px_rgba(255,255,255,0.1)] relative z-10 ${theme === 'light' ? 'border-primary/30' : 'border-white/40'}`}>
                                             <img src={cat.img} alt={cat.name} className="w-full h-full object-cover" />
                                         </div>
-                                        <p className={`text-[10px] sm:text-[11px] font-bold text-center transition-colors z-10 ${theme === 'light' ? 'text-slate-900' : 'text-white/80'
-                                            }`}>
+                                        <p className="text-[11px] font-black text-center transition-colors z-10 uppercase tracking-wider">
                                             {cat.name}
                                         </p>
                                     </div>

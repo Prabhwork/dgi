@@ -467,9 +467,16 @@ function RegisterPageContent() {
                                             size="sm"
                                             onClick={handleSendOTP}
                                             disabled={otpLoading || !formData.officialEmailAddress}
-                                            className="shrink-0"
+                                            className="shrink-0 gap-2"
                                         >
-                                            {otpLoading ? "Sending..." : "Send OTP"}
+                                            {otpLoading ? (
+                                                <>
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                    Sending...
+                                                </>
+                                            ) : (
+                                                "Send OTP"
+                                            )}
                                         </Button>
                                     )}
                                     {isEmailVerified && (
@@ -482,7 +489,7 @@ function RegisterPageContent() {
                             {showOTPField && !isEmailVerified && (
                                 <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} className="space-y-4">
                                     <Label className="text-white/70 text-center block">Enter 6-Digit Verification Code</Label>
-                                    <div className="flex justify-center gap-3">
+                                    <div className="flex justify-center gap-2 sm:gap-3">
                                         {[0, 1, 2, 3, 4, 5].map((index) => (
                                             <input
                                                 key={index}
@@ -511,7 +518,7 @@ function RegisterPageContent() {
                                                         prevInput?.focus();
                                                     }
                                                 }}
-                                                className="w-12 h-14 bg-slate-900/60 border border-white/10 rounded-xl text-center text-2xl font-bold text-primary focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all outline-none"
+                                                className="w-10 h-12 sm:w-12 sm:h-14 bg-slate-900/60 border border-white/10 rounded-xl text-center text-xl sm:text-2xl font-bold text-primary focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all outline-none"
                                             />
                                         ))}
                                     </div>
@@ -521,9 +528,16 @@ function RegisterPageContent() {
                                             variant="glow"
                                             onClick={handleVerifyOTP}
                                             disabled={otpLoading || otp.length !== 6}
-                                            className="rounded-xl px-12 font-display uppercase tracking-widest text-xs h-12"
+                                            className="rounded-xl px-12 font-display uppercase tracking-widest text-xs h-12 gap-2"
                                         >
-                                            {otpLoading ? "Verifying..." : "Verify Code"}
+                                            {otpLoading ? (
+                                                <>
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                    Verifying...
+                                                </>
+                                            ) : (
+                                                "Verify Code"
+                                            )}
                                         </Button>
                                     </div>
                                 </motion.div>
@@ -741,11 +755,11 @@ function RegisterPageContent() {
 
             <main className="pt-32 pb-24 relative z-10 px-4">
                 <div className="max-w-4xl mx-auto">
-                    <div className="text-center mb-12">
-                        <h1 className="text-4xl md:text-5xl font-display font-bold uppercase tracking-widest mb-4">
+                    <div className="text-center mb-8 md:mb-12">
+                        <h1 className="text-2xl sm:text-3xl md:text-5xl font-display font-bold uppercase tracking-widest mb-3 md:mb-4 px-2">
                             DBI <span className="text-primary italic">Community</span> Registration
                         </h1>
-                        <p className="text-muted-foreground uppercase text-sm tracking-[0.2em]">Join the trusted network of businesses</p>
+                        <p className="text-muted-foreground uppercase text-[10px] sm:text-xs md:text-sm tracking-[0.15em] sm:tracking-[0.2em]">Join the trusted network of businesses</p>
                     </div>
 
                     {isUpdateMode && rejectionReason && (
@@ -788,7 +802,7 @@ function RegisterPageContent() {
                     </div>
 
                     {/* Form Container */}
-                    <div className="max-w-2xl mx-auto glass-strong border-white/10 rounded-2xl sm:rounded-[2rem] p-5 sm:p-8 md:p-12 shadow-2xl relative overflow-hidden">
+                    <div className="max-w-2xl mx-auto glass-strong border-white/10 rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-8 md:p-12 shadow-2xl relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
 
                         {error && (
@@ -809,9 +823,9 @@ function RegisterPageContent() {
                                     variant="outline"
                                     onClick={prevStep}
                                     disabled={currentStep === 1 || loading}
-                                    className="rounded-xl px-8 border-white/10 text-white/70 hover:bg-white/5 hover:text-white disabled:opacity-30 transition-all font-display uppercase tracking-widest text-xs"
+                                    className="rounded-xl px-4 sm:px-8 border-white/10 text-white/70 hover:bg-white/5 hover:text-white disabled:opacity-30 transition-all font-display uppercase tracking-widest text-[10px] sm:text-xs h-10 sm:h-12"
                                 >
-                                    <ChevronLeft className="mr-2 w-4 h-4" /> Previous
+                                    <ChevronLeft className="mr-1 sm:mr-2 w-3 h-3 sm:w-4 h-4" /> Prev
                                 </Button>
 
                                 {currentStep < 6 ? (
@@ -819,18 +833,18 @@ function RegisterPageContent() {
                                         type="button"
                                         variant="glow"
                                         onClick={nextStep}
-                                        className="rounded-xl px-12 font-display uppercase tracking-widest text-xs h-12"
+                                        className="rounded-xl px-8 sm:px-12 font-display uppercase tracking-widest text-[10px] sm:text-xs h-10 sm:h-12"
                                     >
-                                        Next <ChevronRight className="ml-2 w-4 h-4" />
+                                        Next <ChevronRight className="ml-1 sm:ml-2 w-3 h-3 sm:w-4 h-4" />
                                     </Button>
                                 ) : (
                                     <Button
                                         type="submit"
                                         variant="glow"
                                         disabled={loading}
-                                        className="rounded-xl px-12 font-display uppercase tracking-widest text-xs h-12 bg-primary text-white"
+                                        className="rounded-xl px-8 sm:px-12 font-display uppercase tracking-widest text-[10px] sm:text-xs h-10 sm:h-12 bg-primary text-white"
                                     >
-                                        {loading ? "Registering..." : "Submit Registration"}
+                                        {loading ? "Registering..." : "Submit"}
                                     </Button>
                                 )}
                             </div>

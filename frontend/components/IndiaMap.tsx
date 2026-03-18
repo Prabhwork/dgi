@@ -5,10 +5,10 @@ import { useEffect, useState } from "react";
 import { useTheme } from "@/components/ThemeProvider";
 
 const CITIES = [
-    { name: "North: Delhi", x: 195, y: 155 },
-    { name: "West: Mumbai", x: 125, y: 395 },
-    { name: "East: Kolkata", x: 425, y: 355 },
-    { name: "South: Chennai", x: 265, y: 535 },
+    { name: "North: Delhi", x: 235, y: 175, color: "#ff3b30" }, // Red
+    { name: "West: Mumbai", x: 135, y: 395, color: "#007aff" }, // Blue
+    { name: "East: Kolkata", x: 455, y: 345, color: "#34c759" }, // Green
+    { name: "South: Chennai", x: 275, y: 535, color: "#ffcc00" }, // Yellow
 ];
 
 const CONNECTIONS = [
@@ -16,7 +16,7 @@ const CONNECTIONS = [
     { from: 0, to: 2 }, // Delhi - Kolkata
     { from: 1, to: 3 }, // Mumbai - Chennai
     { from: 2, to: 3 }, // Kolkata - Chennai
-    { from: 0, to: 3 }, // Delhi - Chennai (North-South)
+    { from: 0, to: 3 }, // Delhi - Chennai
 ];
 
 interface IndiaMapProps {
@@ -35,40 +35,41 @@ export default function IndiaMap({ isVisible = true }: IndiaMapProps) {
         <div className="relative w-full h-full flex items-center justify-center bg-transparent group select-none">
             <svg
                 viewBox="0 0 600 700"
-                className="w-full h-full drop-shadow-[0_0_30px_rgba(0,149,255,0.2)]"
+                className="w-full h-full drop-shadow-[0_0_40px_rgba(0,149,255,0.15)]"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
             >
-
+                {/* Improved India Path - Accurate Borders */}
                 <motion.path
                     initial={{ pathLength: 0, opacity: 0 }}
                     animate={isVisible ? { pathLength: 1, opacity: 1 } : { pathLength: 0, opacity: 0 }}
                     transition={{
                         duration: 3,
-                        ease: "easeInOut",
+                        ease: "linear",
                         repeat: Infinity,
-                        repeatDelay: 2
+                        repeatDelay: 5
                     }}
-                    d="M194.5 35L178.5 45.5L163 70.5L163 87.5L152 101L156.5 116.5L168.5 125L181.5 142.5L181.5 158.5L173.5 168.5L156.5 174.5L145 187.5L138.5 204.5L129 204.5L118 198.5L112.5 187.5L96.5 187.5L88 198.5L78 198.5L72.5 214.5L78 227L88 238L104 238L112.5 248.5L112.5 264.5L112.5 280.5L104 291L118 291L129 291L138.5 304L145 321L145 334.5L138.5 351L129 367L118 382.5L104 397L104 411.5L112.5 425L129 435.5L145 444L163 459L181.5 478.5L200.5 504L214 521.5L226.5 540L239 556L251 573L251 594L261 612.5L268 626L282 638L297.5 644L313 638L326 626L333 607L342 594L355.5 573L363 556L363 540L370 528.5L379.5 513L394.5 497L403.5 487L403.5 469.5L403.5 450.5L414 440.5L425.5 440.5L441 450.5L452.5 450.5L466.5 440.5L482 430.5L497.5 425L511 418L520.5 411.5L528 403.5L535.5 391L535.5 373L544.5 367L544.5 351L535.5 342L520.5 342L511 342L497.5 351L482 355.5L466.5 351L458 342L458 321L466.5 304L482 291L497.5 291L482 278L466.5 264.5L458 248.5L458 232.5L466.5 221L482 214.5L497.5 204.5L482 193L466.5 182L452.5 182L441 193L425.5 204.5L414 214.5L399.5 214.5L383 204.5L370 193L370 176.5L379.5 162.5L383 148L383 133L379.5 116.5L370 106.5L355.5 106.5L342 116.5L333 133L326 148L313 158.5L302.5 168.5L302.5 151L295.5 136.5L302.5 116.5L295.5 101L285 91L272.5 83L261 74.5L261 57.5L251 45.5L239 35L221.5 31.5L200.5 31.5L194.5 35Z"
+                    d="M211,46 L201,54 L203,72 L188,96 L195,123 L180,131 L187,143 L180,157 L157,175 L143,189 L126,192 L111,182 L96,183 L83,197 L75,208 L78,225 L106,243 L108,266 L100,286 L118,294 L129,315 L119,343 L109,372 L96,398 L103,418 L113,425 L133,441 L168,468 L196,501 L211,530 L229,555 L244,582 L248,603 L256,626 L269,635 L288,642 L312,634 L323,618 L334,595 L352,569 L363,546 L374,534 L381,518 L401,496 L407,477 L401,452 L411,444 L435,444 L458,452 L473,446 L493,430 L514,418 L533,397 L538,377 L546,364 L541,348 L526,346 L503,349 L486,354 L468,349 L461,338 L460,323 L471,304 L483,293 L486,281 L468,261 L456,244 L458,228 L475,214 L489,198 L482,185 L466,177 L448,187 L426,195 L415,212 L396,215 L383,204 L372,192 L368,172 L378,158 L386,145 L384,129 L378,114 L368,103 L351,102 L339,112 L329,124 L319,139 L315,153 L301,164 L298,148 L285,125 L276,108 L263,98 L244,81 L234,68 L221,55 L211,46 Z"
                     stroke="currentColor"
-                    strokeWidth="2"
-                    className="text-primary/40"
-                    fill="url(#mapGradient)"
-                    fillOpacity="0.1"
+                    strokeWidth="1.5"
+                    className="text-primary/30"
+                    fill="url(#indiaGradient)"
+                    fillOpacity="0.08"
                 />
 
                 <defs>
-                    <radialGradient id="mapGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                    <radialGradient id="indiaGradient" cx="50%" cy="50%" r="50%">
                         <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.2" />
                         <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
                     </radialGradient>
                 </defs>
 
-                {/* Connection Lines & Airplanes */}
+                {/* Connection Lines with Multi-Color Airplanes */}
                 {isLoaded && CONNECTIONS.map((conn, i) => {
                     const fromCity = CITIES[conn.from];
                     const toCity = CITIES[conn.to];
                     const angle = Math.atan2(toCity.y - fromCity.y, toCity.x - fromCity.x) * (180 / Math.PI);
+                    const color = fromCity.color; // Match airplane to 'from' city
 
                     return (
                         <g key={`connection-${i}`}>
@@ -77,12 +78,11 @@ export default function IndiaMap({ isVisible = true }: IndiaMapProps) {
                                 y1={fromCity.y}
                                 x2={toCity.x}
                                 y2={toCity.y}
-                                stroke="currentColor"
-                                strokeWidth="1"
-                                className="text-primary/20"
+                                stroke={color}
+                                strokeWidth="0.8"
                                 initial={{ pathLength: 0, opacity: 0 }}
-                                animate={isVisible ? { pathLength: 1, opacity: 1 } : { pathLength: 0, opacity: 0 }}
-                                transition={{ duration: 1.5, delay: 2.5 + i * 0.2 }}
+                                animate={isVisible ? { pathLength: 1, opacity: 0.15 } : { pathLength: 0, opacity: 0 }}
+                                transition={{ duration: 2, delay: 2.5 + i * 0.2 }}
                             />
 
                             {/* Animated Airplane */}
@@ -94,46 +94,52 @@ export default function IndiaMap({ isVisible = true }: IndiaMapProps) {
                                     y: [fromCity.y, toCity.y]
                                 } : { opacity: 0 }}
                                 transition={{
-                                    duration: 3,
-                                    delay: 3 + i * 0.5,
+                                    duration: 4,
+                                    delay: 3 + i * 0.6,
                                     repeat: Infinity,
-                                    repeatDelay: 2,
-                                    ease: "linear"
+                                    repeatDelay: 1,
+                                    ease: "easeInOut"
                                 }}
-                                className="text-primary"
+                                style={{ color }}
                             >
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style={{ transform: 'translate(-7px, -7px)' }}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style={{ transform: 'translate(-8px, -8px)' }}>
                                     <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
                                 </svg>
+                                {/* Airplane glow trail */}
+                                <div className="absolute w-8 h-8 rounded-full blur-md opacity-20 pointer-events-none" style={{ backgroundColor: color }} />
                             </motion.g>
                         </g>
                     );
                 })}
 
-                {/* City Markers */}
+                {/* City Markers - Glow Pulse in their respective colors */}
                 {isLoaded && CITIES.map((city, i) => (
                     <g key={i}>
                         <motion.circle
                             cx={city.x}
                             cy={city.y}
-                            r="12"
-                            className="fill-primary/20"
+                            r="15"
+                            fill={city.color}
+                            fillOpacity="0.1"
                             initial={{ scale: 0 }}
-                            animate={isVisible ? { scale: [1, 1.5, 1] } : { scale: 0 }}
+                            animate={isVisible ? { scale: [1, 1.8, 1] } : { scale: 0 }}
                             transition={{
-                                duration: 2,
+                                duration: 2.5,
                                 repeat: Infinity,
-                                delay: 3 + i * 0.3
+                                delay: 3 + i * 0.4
                             }}
                         />
                         <motion.circle
                             cx={city.x}
                             cy={city.y}
-                            r="4"
-                            className="fill-primary"
+                            r="4.5"
+                            fill={city.color}
                             initial={{ scale: 0 }}
                             animate={isVisible ? { scale: 1 } : { scale: 0 }}
-                            transition={{ duration: 0.5, delay: 3 + i * 0.3 }}
+                            transition={{ duration: 0.8, delay: 3 + i * 0.4 }}
+                            style={{ 
+                                filter: `drop-shadow(0 0 8px ${city.color})` 
+                            }}
                         />
                     </g>
                 ))}

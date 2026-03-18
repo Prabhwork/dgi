@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { encryptDeterministic, decryptDeterministic } = require('../utils/encryption');
 
 const BusinessSchema = new mongoose.Schema({
     // Step 1: Basic Identity
@@ -59,7 +60,9 @@ const BusinessSchema = new mongoose.Schema({
     // Step 4: Verification & Trust
     aadhaarNumber: {
         type: String,
-        // Removed exact 12-digit match to allow 'XXXXXXXX1234' masking
+        set: encryptDeterministic,
+        get: decryptDeterministic // Decrypts when retrieved from DB
+        // Removed exact 12-digit match to allow 'XXXXXXXX1234' masking or encrypted strings
     },
     aadhaarCard: String, // file path for manual upload
     aadhaarVerified: {
@@ -72,6 +75,7 @@ const BusinessSchema = new mongoose.Schema({
 
     // Step 5: Gallery & Catalog
     coverImage: String, // file path
+    bannerImage: String, // file path
     gallery: [String], // array of file paths
     catalog: String, // file path (Pricing/Menu/Catalog)
 
@@ -109,10 +113,25 @@ const BusinessSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    hasPendingChanges: {
+        type: Boolean,
+        default: false
+    },
+    isTwoFactorEnabled: {
+        type: Boolean,
+        default: false
+    },
+    twoFactorSecret: {
+        type: String,
+        select: false
+    },
     createdAt: {
         type: Date,
         default: Date.now
     }
+}, {
+    toJSON: { getters: true },
+    toObject: { getters: true }
 });
 
 // Encrypt password using bcrypt

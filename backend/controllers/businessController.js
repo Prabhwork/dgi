@@ -3,12 +3,14 @@ const Business = require('../models/Business');
 const OTP = require('../models/OTP');
 const sendEmail = require('../utils/sendEmail');
 const { getOTPTemplate, getRegistrationSuccessTemplate, getRejectionTemplate } = require('../utils/emailTemplates');
-
+const speakeasy = require('speakeasy');
+const qrcode = require('qrcode');
+const jwt = require('jsonwebtoken');
 
 const handleBusinessFiles = (req, existingData = {}) => {
     const businessData = { ...existingData };
     if (req.files) {
-        const fields = ['ownerIdentityProof', 'establishmentProof', 'coverImage', 'catalog', 'aadhaarCard'];
+        const fields = ['ownerIdentityProof', 'establishmentProof', 'coverImage', 'bannerImage', 'catalog', 'aadhaarCard'];
         fields.forEach(field => {
             if (req.files[field]) {
                 businessData[field] = req.files[field][0].path.replace(/\\/g, '/');
@@ -43,11 +45,6 @@ exports.registerBusiness = async (req, res, next) => {
         
         // Aadhaar verified is false by default for manual check
         businessData.aadhaarVerified = false;
-
-        // Mask Aadhaar Number to prevent data leaks (Show only last 4 digits)
-        if (businessData.aadhaarNumber && businessData.aadhaarNumber.length === 12) {
-            businessData.aadhaarNumber = 'XXXXXXXX' + businessData.aadhaarNumber.slice(-4);
-        }
 
         const business = await Business.create(businessData);
         
@@ -100,6 +97,19 @@ exports.loginBusiness = async (req, res, next) => {
             return res.status(401).json({ success: false, error: 'Invalid credentials' });
         }
 
+        if (business.isTwoFactorEnabled) {
+            // Setup a temporary token for 2FA validation
+            const tempToken = jwt.sign({ id: business._id, pending2FA: true }, process.env.JWT_SECRET, {
+                expiresIn: '5m'
+            });
+            return res.status(200).json({ 
+                success: true, 
+                requires2fa: true,
+                tempToken,
+                message: '2FA verification required'
+            });
+        }
+
         sendTokenResponse(business, 200, res);
     } catch (err) {
         res.status(400).json({ success: false, error: err.message });
@@ -130,19 +140,22 @@ exports.sendOTP = async (req, res, next) => {
         const message = `Your DBI Community verification code is: ${otp}. It will expire in 10 minutes.`;
         const html = getOTPTemplate(otp);
 
-        try {
-            await sendEmail({
-                email,
-                subject: 'Email Verification Code - DBI Community',
-                message,
-                html
-            });
+        // Send email in background - Don't await it to ensure instant API response
+        sendEmail({
+            email,
+            subject: 'Email Verification Code - DBI Community',
+            message,
+            html
+        }).catch(err => {
+            console.error('Background Email Dispatch Failed:', err);
+        });
 
-            res.status(200).json({ success: true, data: 'Email sent', otp: process.env.NODE_ENV === 'development' ? otp : undefined });
-        } catch (err) {
-            console.error(err);
-            return res.status(500).json({ success: false, error: 'Email could not be sent' });
-        }
+        // Respond instantly
+        res.status(200).json({ 
+            success: true, 
+            data: 'OTP triggered', 
+            otp: process.env.NODE_ENV === 'development' ? otp : undefined 
+        });
     } catch (err) {
         res.status(400).json({ success: false, error: err.message });
     }
@@ -352,6 +365,7 @@ exports.updateBusinessStatus = async (req, res, next) => {
         } else {
             business.rejectionReason = '';
             business.isVerified = true;
+            business.hasPendingChanges = false; // Clear flag once admin has reviewed & approved
         }
 
         await business.save();
@@ -403,9 +417,17 @@ exports.updateBusinessDetails = async (req, res, next) => {
         // Use helper for files
         const updateData = handleBusinessFiles(req, req.body);
 
-        // Reset status to pending upon update
-        updateData.approvalStatus = 'pending';
-        updateData.rejectionReason = '';
+        // If already approved, keep approved so listing stays visible on frontend.
+        // Set a flag so admin can see there are pending changes to review.
+        // Only reset to 'pending' if they were rejected/never approved yet.
+        if (business.approvalStatus === 'approved') {
+            updateData.hasPendingChanges = true;
+            // Keep approvalStatus as 'approved' — don't remove from public listing!
+        } else {
+            // Was pending or rejected — reset to pending for fresh admin review
+            updateData.approvalStatus = 'pending';
+            updateData.rejectionReason = '';
+        }
 
         business = await Business.findByIdAndUpdate(req.user.id, updateData, {
             new: true,
@@ -426,6 +448,63 @@ exports.getMe = async (req, res, next) => {
         res.status(200).json({ success: true, data: req.user });
     } catch (err) {
         res.status(400).json({ success: false, error: err.message });
+    }
+};
+
+// @desc    Get nearby businesses using gpsCoordinates
+// @route   GET /api/business/nearby?lat=xx&lng=xx&radius=5000
+// @access  Public
+exports.getNearbyBusinesses = async (req, res, next) => {
+    try {
+        const { lat, lng, radius = 5000, category, minRating } = req.query;
+        
+        if (!lat || !lng) {
+            return res.status(400).json({ success: false, error: 'Please provide lat and lng' });
+        }
+
+        const userLat = parseFloat(lat);
+        const userLng = parseFloat(lng);
+        const radiusKm = parseFloat(radius) / 1000;
+
+        // Rough bounding box (~1 degree = 111km)
+        const latDelta = radiusKm / 111;
+        const lngDelta = radiusKm / (111 * Math.cos(userLat * Math.PI / 180));
+
+        let query = {
+            approvalStatus: 'approved',
+            isActive: true,
+            'gpsCoordinates.lat': { $gte: userLat - latDelta, $lte: userLat + latDelta },
+            'gpsCoordinates.lng': { $gte: userLng - lngDelta, $lte: userLng + lngDelta }
+        };
+
+        if (category) query.businessCategory = new RegExp(category, 'i');
+
+        let businesses = await Business.find(query)
+            .select('businessName brandName businessCategory description registeredOfficeAddress gpsCoordinates primaryContactNumber officialWhatsAppNumber website openingTime closingTime coverImage aadhaarVerified approvalStatus')
+            .limit(200);
+
+        // Calculate exact distance and filter
+        const toRad = (deg) => deg * Math.PI / 180;
+        const getDistanceKm = (lat1, lon1, lat2, lon2) => {
+            const R = 6371;
+            const dLat = toRad(lat2 - lat1);
+            const dLon = toRad(lon2 - lon1);
+            const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        };
+
+        businesses = businesses
+            .filter(b => b.gpsCoordinates && b.gpsCoordinates.lat && b.gpsCoordinates.lng)
+            .map(b => ({
+                ...b.toObject(),
+                distanceKm: getDistanceKm(userLat, userLng, b.gpsCoordinates.lat, b.gpsCoordinates.lng)
+            }))
+            .filter(b => b.distanceKm <= radiusKm)
+            .sort((a, b) => a.distanceKm - b.distanceKm);
+
+        res.status(200).json({ success: true, count: businesses.length, data: businesses });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
     }
 };
 
@@ -454,4 +533,132 @@ const sendTokenResponse = (business, statusCode, res) => {
             status: business.approvalStatus,
             rejectionReason: business.rejectionReason
         });
+};
+
+// @desc    Generate 2FA Secret and QR Code
+// @route   POST /api/business/2fa/generate
+// @access  Private
+exports.generate2FA = async (req, res, next) => {
+    try {
+        const business = await Business.findById(req.user.id);
+        if (!business) return res.status(404).json({ success: false, error: 'Business not found' });
+
+        const secret = speakeasy.generateSecret({
+            name: `Digital Book Of India (${business.officialEmailAddress})`
+        });
+
+        const qrCodeUrl = await qrcode.toDataURL(secret.otpauth_url);
+
+        // We do temporarily send the secret back because the user needs to save it before verifying
+        // We will only save it to DB once they verify it successfully in the next step
+        res.status(200).json({
+            success: true,
+            secret: secret.base32,
+            qrCodeUrl
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+// @desc    Verify and Enable 2FA
+// @route   POST /api/business/2fa/verify-enable
+// @access  Private
+exports.verifyAndEnable2FA = async (req, res, next) => {
+    try {
+        const { token, secret } = req.body;
+        if (!token || !secret) return res.status(400).json({ success: false, error: 'Token and secret are required' });
+
+        const isValid = speakeasy.totp.verify({
+            secret: secret,
+            encoding: 'base32',
+            token: token
+        });
+
+        if (!isValid) {
+            return res.status(400).json({ success: false, error: 'Invalid 2FA token' });
+        }
+
+        await Business.findByIdAndUpdate(req.user.id, {
+            isTwoFactorEnabled: true,
+            twoFactorSecret: secret
+        });
+
+        res.status(200).json({ success: true, message: '2FA has been enabled successfully' });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+// @desc    Disable 2FA
+// @route   POST /api/business/2fa/disable
+// @access  Private
+exports.disable2FA = async (req, res, next) => {
+    try {
+        const { token } = req.body;
+        if (!token) return res.status(400).json({ success: false, error: 'Token is required' });
+
+        const business = await Business.findById(req.user.id).select('+twoFactorSecret');
+        if (!business) return res.status(404).json({ success: false, error: 'Business not found' });
+
+        if (!business.isTwoFactorEnabled || !business.twoFactorSecret) {
+            return res.status(400).json({ success: false, error: '2FA is not enabled' });
+        }
+
+        const isValid = speakeasy.totp.verify({
+            secret: business.twoFactorSecret,
+            encoding: 'base32',
+            token: token
+        });
+
+        if (!isValid) {
+            return res.status(400).json({ success: false, error: 'Invalid 2FA token' });
+        }
+
+        business.isTwoFactorEnabled = false;
+        business.twoFactorSecret = undefined;
+        await business.save();
+
+        res.status(200).json({ success: true, message: '2FA has been disabled successfully' });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+// @desc    Verify 2FA login step
+// @route   POST /api/business/2fa/verify-login
+// @access  Public
+exports.verify2FALogin = async (req, res, next) => {
+    try {
+        const { tempToken, token } = req.body;
+        if (!tempToken || !token) return res.status(400).json({ success: false, error: 'Temp token and 2FA token are required' });
+
+        // Verify temp token
+        const decoded = jwt.verify(tempToken, process.env.JWT_SECRET);
+        if (!decoded.pending2FA) {
+            return res.status(400).json({ success: false, error: 'Invalid token type' });
+        }
+
+        const business = await Business.findById(decoded.id).select('+twoFactorSecret');
+        if (!business) return res.status(404).json({ success: false, error: 'Business not found' });
+
+        if (!business.isTwoFactorEnabled || !business.twoFactorSecret) {
+            return res.status(400).json({ success: false, error: '2FA is not enabled for this account' });
+        }
+
+        const isValid = speakeasy.totp.verify({
+            secret: business.twoFactorSecret,
+            encoding: 'base32',
+            token: token
+        });
+
+        if (!isValid) {
+            return res.status(400).json({ success: false, error: 'Invalid 2FA token' });
+        }
+
+        // Issue actual login token
+        sendTokenResponse(business, 200, res);
+    } catch (err) {
+        res.status(401).json({ success: false, error: 'Token is invalid or expired' });
+    }
 };

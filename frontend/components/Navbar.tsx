@@ -446,7 +446,7 @@ export default function Navbar() {
                                                 <Settings size={16} /> Settings
                                             </Link>
                                             <Link 
-                                                href="#"
+                                                href="/settings/2fa"
                                                 className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${isLight ? 'text-slate-700 hover:bg-slate-100 hover:text-primary' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}
                                             >
                                                 <ShieldCheck size={16} /> 2-Step Verification
@@ -665,7 +665,7 @@ export default function Navbar() {
                                                 <Settings size={16} />
                                                 <span className="text-[10px] font-bold">Config</span>
                                             </Link>
-                                            <Link href="#" className={`flex flex-col items-center gap-1 p-3 rounded-xl border ${isLight ? 'bg-white border-slate-200 text-slate-700' : 'bg-white/5 border-white/10 text-slate-300'}`}>
+                                            <Link href="/settings/2fa" className={`flex flex-col items-center gap-1 p-3 rounded-xl border ${isLight ? 'bg-white border-slate-200 text-slate-700' : 'bg-white/5 border-white/10 text-slate-300'}`}>
                                                 <ShieldCheck size={16} />
                                                 <span className="text-[10px] font-bold">2-Step</span>
                                             </Link>

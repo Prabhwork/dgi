@@ -30,6 +30,7 @@ interface Business {
     establishmentProof?: string;
     approvalStatus: string;
     rejectionReason?: string;
+    hasPendingChanges?: boolean;
     createdAt: string;
 }
 
@@ -191,13 +192,20 @@ export default function BusinessesPage() {
                                             </td>
                                             <td className="px-6 py-4 text-sm text-slate-600">{b.businessCategory}</td>
                                             <td className="px-6 py-4">
-                                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                                                    b.approvalStatus === 'approved' ? 'bg-green-100 text-green-700' :
-                                                    b.approvalStatus === 'rejected' ? 'bg-red-100 text-red-700' :
-                                                    'bg-amber-100 text-amber-700'
-                                                }`}>
-                                                    {b.approvalStatus}
-                                                </span>
+                                                <div className="flex flex-col gap-1">
+                                                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider w-fit ${
+                                                        b.approvalStatus === 'approved' ? 'bg-green-100 text-green-700' :
+                                                        b.approvalStatus === 'rejected' ? 'bg-red-100 text-red-700' :
+                                                        'bg-amber-100 text-amber-700'
+                                                    }`}>
+                                                        {b.approvalStatus}
+                                                    </span>
+                                                    {b.hasPendingChanges && (
+                                                        <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase bg-orange-100 text-orange-700 w-fit tracking-wide">
+                                                            ⚠ Changes Pending
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <button className="p-2 text-slate-400 hover:text-teal-600 transition-colors">
@@ -222,6 +230,15 @@ export default function BusinessesPage() {
                             </div>
                             
                             <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+                                {selectedBusiness.hasPendingChanges && (
+                                    <div className="flex items-start gap-3 bg-orange-50 border border-orange-200 rounded-xl p-3">
+                                        <span className="text-orange-500 text-lg">⚠️</span>
+                                        <div>
+                                            <p className="text-xs font-bold text-orange-700">Profile Updated by Business</p>
+                                            <p className="text-[11px] text-orange-600 mt-0.5">This approved business has updated their details. Listing is still live. Review and re-approve to clear this flag.</p>
+                                        </div>
+                                    </div>
+                                )}
                                 <div className="space-y-3">
                                     <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">General Information</div>
                                     <div className="grid grid-cols-2 gap-4">
