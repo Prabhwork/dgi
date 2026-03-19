@@ -72,15 +72,7 @@ export default function SuccessStoriesPage() {
 
                     </div>
                     
-                    <div className="mt-16 text-center">
-                        <div className="inline-block p-8 bg-primary/10 border border-primary/20 rounded-3xl">
-                            <h3 className="text-2xl font-bold text-foreground mb-3">Ready to write your own story?</h3>
-                            <p className="text-muted-foreground mb-6">Join thousands of verified businesses to build trust and scale.</p>
-                            <a href="/auth" className="inline-block px-8 py-3 bg-primary text-white rounded-xl font-bold hover:shadow-lg hover:shadow-primary/30 transition-all">
-                                Add Your Business
-                            </a>
-                        </div>
-                    </div>
+
 
                 </main>
 

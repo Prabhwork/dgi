@@ -32,7 +32,9 @@ const uploadFields = upload.fields([
     { name: 'coverImage', maxCount: 1 },
     { name: 'bannerImage', maxCount: 1 },
     { name: 'gallery', maxCount: 10 },
-    { name: 'catalog', maxCount: 1 }
+    { name: 'catalog', maxCount: 1 },
+    { name: 'serviceImages', maxCount: 10 },
+    { name: 'productImages', maxCount: 10 }
 ]);
 
 router.post('/register', uploadFields, registerBusiness);

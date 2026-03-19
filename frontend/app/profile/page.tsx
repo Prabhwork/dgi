@@ -10,7 +10,7 @@ import { motion } from "framer-motion";
 import {
     User, Building2, MapPin, Phone, Mail, Globe, Clock, Camera, Upload, Save,
     CheckCircle2, AlertCircle, Loader2, Tag, Image as ImageIcon, FileText,
-    Shield, BadgeCheck, Edit3, ChevronDown, X
+    Shield, BadgeCheck, Edit3, ChevronDown, X, Plus, Briefcase, Package
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,6 +62,22 @@ export default function ProfilePage() {
         joinFraudAlerts: false,
     });
 
+    // Timings State
+    const [timings, setTimings] = useState<{ open: string; close: string }[]>([{ open: "", close: "" }]);
+
+    // Services & Products State
+    const [services, setServices] = useState<any[]>([]);
+    const [products, setProducts] = useState<any[]>([]);
+
+    // Sync timings to form
+    useEffect(() => {
+        setForm(prev => ({
+            ...prev,
+            openingTime: timings.map(t => t.open).join(','),
+            closingTime: timings.map(t => t.close).join(',')
+        }));
+    }, [timings]);
+
     // File states
     const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
     const [coverImagePreview, setCoverImagePreview] = useState<string>('');
@@ -110,9 +126,33 @@ export default function ProfilePage() {
                         joinBulkBuying: b.joinBulkBuying || false,
                         joinFraudAlerts: b.joinFraudAlerts || false,
                     });
+                    
+                    if (b.openingTime || b.closingTime) {
+                        const opens = (b.openingTime || "").split(",");
+                        const closes = (b.closingTime || "").split(",");
+                        const len = Math.max(opens.length, closes.length, 1);
+                        const newTimings = [];
+                        for (let i = 0; i < len; i++) {
+                            newTimings.push({ open: opens[i] || "", close: closes[i] || "" });
+                        }
+                        setTimings(newTimings);
+                    }
+
                     if (b.coverImage) setCoverImagePreview(`${BASE_URL}/${b.coverImage}`);
                     if (b.bannerImage) setBannerImagePreview(`${BASE_URL}/${b.bannerImage}`);
                     if (b.gallery && b.gallery.length) setGalleryPreviews(b.gallery.map((g: string) => `${BASE_URL}/${g}`));
+
+                    if (b.services) {
+                        setServices(b.services.map((s: any) => ({ ...s, imagePreview: s.image ? `${BASE_URL}/${s.image}` : '' })));
+                    } else {
+                        setServices([]);
+                    }
+
+                    if (b.products) {
+                        setProducts(b.products.map((p: any) => ({ ...p, imagePreview: p.image ? `${BASE_URL}/${p.image}` : '' })));
+                    } else {
+                        setProducts([]);
+                    }
                 } else {
                     router.push('/community/login');
                 }
@@ -163,6 +203,30 @@ export default function ProfilePage() {
         if (panFile) fd.append('ownerIdentityProof', panFile);
         if (estabFile) fd.append('establishmentProof', estabFile);
 
+        let serviceFileIndex = 0;
+        const mappedServices = services.map(s => {
+            let imageStr = s.imagePreview ? s.imagePreview.replace(`${BASE_URL}/`, '') : '';
+            if (s.imageFile) {
+                fd.append('serviceImages', s.imageFile);
+                imageStr = `new_file_${serviceFileIndex}`;
+                serviceFileIndex++;
+            }
+            return { name: s.name, description: s.description, price: s.price, image: imageStr };
+        });
+        fd.append('servicesData', JSON.stringify(mappedServices));
+
+        let productFileIndex = 0;
+        const mappedProducts = products.map(p => {
+            let imageStr = p.imagePreview ? p.imagePreview.replace(`${BASE_URL}/`, '') : '';
+            if (p.imageFile) {
+                fd.append('productImages', p.imageFile);
+                imageStr = `new_file_${productFileIndex}`;
+                productFileIndex++;
+            }
+            return { name: p.name, description: p.description, price: p.price, image: imageStr };
+        });
+        fd.append('productsData', JSON.stringify(mappedProducts));
+
         try {
             const res = await fetch(`${API_URL}/business/update-details`, {
                 method: 'PUT',
@@ -191,9 +255,9 @@ export default function ProfilePage() {
         { id: 'basic', label: 'Basic Info', icon: Building2 },
         { id: 'contact', label: 'Contact', icon: Phone },
         { id: 'hours', label: 'Hours & Status', icon: Clock },
+        { id: 'services', label: 'Services', icon: Briefcase },
+        { id: 'products', label: 'Products', icon: Package },
         { id: 'media', label: 'Photos & Media', icon: ImageIcon },
-        { id: 'documents', label: 'Documents', icon: FileText },
-        { id: 'community', label: 'Community', icon: Shield },
     ];
 
     const cardClass = isLight
@@ -202,7 +266,7 @@ export default function ProfilePage() {
 
     const inputClass = isLight
         ? 'bg-white border-slate-300 text-slate-900 focus:border-primary'
-        : 'bg-white/5 border-white/10 text-white focus:border-primary/50 [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:invert-[1] [&::-webkit-calendar-picker-indicator]:brightness-200';
+        : 'bg-white/5 border-white/10 text-white focus:border-primary/50 [&::-webkit-calendar-picker-indicator]:brightness-0 [&::-webkit-calendar-picker-indicator]:invert';
 
     if (loading) return (
         <div className="min-h-screen bg-[#020631] flex items-center justify-center">
@@ -396,16 +460,60 @@ export default function ProfilePage() {
                                     {activeTab === 'hours' && (
                                         <div className="space-y-6">
                                             <h2 className="text-lg font-bold text-foreground flex items-center gap-2"><Clock size={18} />Business Hours</h2>
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-muted-foreground mb-1.5">Opening Time</label>
-                                                    <Input type="time" value={form.openingTime} onChange={e => setForm({ ...form, openingTime: e.target.value })} className={inputClass} />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm font-medium text-muted-foreground mb-1.5">Closing Time</label>
-                                                    <Input type="time" value={form.closingTime} onChange={e => setForm({ ...form, closingTime: e.target.value })} className={inputClass} />
-                                                </div>
-                                                <div>
+                                            
+                                            <div className="space-y-4">
+                                                {timings.map((timing, index) => (
+                                                    <div key={index} className="flex flex-col sm:flex-row gap-4 items-end bg-white/5 p-4 rounded-xl border border-white/10 relative">
+                                                        {timings.length > 1 && (
+                                                            <button 
+                                                                type="button" 
+                                                                onClick={() => setTimings(timings.filter((_, i) => i !== index))}
+                                                                className="absolute top-2 right-2 text-muted-foreground hover:text-red-400 transition"
+                                                            >
+                                                                <X size={16} />
+                                                            </button>
+                                                        )}
+                                                        <div className="grid gap-1.5 w-full">
+                                                            <label className="text-sm font-medium text-muted-foreground">Opening Time</label>
+                                                            <Input 
+                                                                type="time" 
+                                                                value={timing.open} 
+                                                                onChange={(e) => {
+                                                                    const newTimings = [...timings];
+                                                                    newTimings[index].open = e.target.value;
+                                                                    setTimings(newTimings);
+                                                                }} 
+                                                                className={inputClass}
+                                                                style={{ colorScheme: isLight ? 'light' : 'dark' }}
+                                                            />
+                                                        </div>
+                                                        <div className="grid gap-1.5 w-full">
+                                                            <label className="text-sm font-medium text-muted-foreground">Closing Time</label>
+                                                            <Input 
+                                                                type="time" 
+                                                                value={timing.close} 
+                                                                onChange={(e) => {
+                                                                    const newTimings = [...timings];
+                                                                    newTimings[index].close = e.target.value;
+                                                                    setTimings(newTimings);
+                                                                }} 
+                                                                className={inputClass}
+                                                                style={{ colorScheme: isLight ? 'light' : 'dark' }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ))}
+
+                                                <Button 
+                                                    type="button" 
+                                                    variant="outline" 
+                                                    onClick={() => setTimings([...timings, { open: "", close: "" }])}
+                                                    className={`w-fit border-dashed ${isLight ? 'border-slate-300 text-slate-600' : 'border-white/20 text-white/70 hover:text-white bg-transparent'} text-sm h-9 px-4`}
+                                                >
+                                                    <Plus size={16} className="mr-2" /> Add Timing Block
+                                                </Button>
+
+                                                <div className="pt-2">
                                                     <label className="block text-sm font-medium text-muted-foreground mb-1.5">Weekly Off</label>
                                                     <select value={form.weeklyOff} onChange={e => setForm({ ...form, weeklyOff: e.target.value })}
                                                         className={`w-full rounded-lg border px-3 py-2 text-sm transition-colors ${inputClass}`}>
@@ -413,9 +521,10 @@ export default function ProfilePage() {
                                                     </select>
                                                 </div>
                                             </div>
+
                                             <div className={`rounded-xl border p-4 ${isLight ? 'bg-blue-50 border-blue-200' : 'bg-blue-500/10 border-blue-500/20'}`}>
                                                 <p className="text-sm text-muted-foreground">Preview: <span className="font-medium text-foreground">
-                                                    {form.openingTime || '--:--'} – {form.closingTime || '--:--'}
+                                                    {timings.map(t => `${t.open || '--:--'} – ${t.close || '--:--'}`).join(', ')}
                                                     {form.weeklyOff && form.weeklyOff !== 'None' ? ` • Closed on ${form.weeklyOff}` : ''}
                                                 </span></p>
                                             </div>
@@ -497,66 +606,212 @@ export default function ProfilePage() {
                                         </div>
                                     )}
 
-                                    {/* ─── Documents ─── */}
-                                    {activeTab === 'documents' && (
+                                    {/* ─── Services ─── */}
+                                    {activeTab === 'services' && (
                                         <div className="space-y-6">
-                                            <h2 className="text-lg font-bold text-foreground flex items-center gap-2"><FileText size={18} />Identity & Documents</h2>
-                                            <div className={`rounded-xl border p-4 ${isLight ? 'bg-amber-50 border-amber-200' : 'bg-amber-500/10 border-amber-500/20'}`}>
-                                                <p className="text-sm text-amber-600 dark:text-amber-400">⚠️ Updating documents will reset your verification status. Our team will re-verify your new documents within 24–48 hours.</p>
+                                            <div className="flex items-center justify-between">
+                                                <h2 className="text-lg font-bold text-foreground flex items-center gap-2"><Briefcase size={18} /> Services Portfolio</h2>
+                                                <span className="text-xs font-medium text-muted-foreground">{services.length} / 10 Added</span>
                                             </div>
-
-                                            {[
-                                                { label: 'Aadhaar Card', sublabel: 'Upload photo of Aadhaar Card', ref: aadhaarRef, file: aadhaarFile, setter: setAadhaarFile, existing: business?.aadhaarCard, accept: 'image/*' },
-                                                { label: 'PAN Card (Owner Identity Proof)', sublabel: 'Upload owner PAN card', ref: panRef, file: panFile, setter: setPanFile, existing: business?.ownerIdentityProof, accept: 'image/*,.pdf' },
-                                                { label: 'Establishment Proof', sublabel: 'Partnership deed, GST certificate, any other proof', ref: estabRef, file: estabFile, setter: setEstabFile, existing: business?.establishmentProof, accept: 'image/*,.pdf' },
-                                            ].map(doc => (
-                                                <div key={doc.label}>
-                                                    <label className="block text-sm font-medium text-muted-foreground mb-1">{doc.label}</label>
-                                                    <p className="text-xs text-muted-foreground/70 mb-2">{doc.sublabel}</p>
-                                                    <div className="flex items-center gap-4">
-                                                        {doc.existing && (
-                                                            <a href={`${BASE_URL}/${doc.existing}`} target="_blank" rel="noopener noreferrer"
-                                                                className="text-xs text-primary underline flex items-center gap-1"><FileText size={12} />View current</a>
-                                                        )}
-                                                        <button type="button" onClick={() => doc.ref.current?.click()}
-                                                            className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium transition ${isLight ? 'border-slate-300 hover:bg-slate-100 text-slate-700' : 'border-white/10 hover:bg-white/10 text-white'}`}>
-                                                            <Upload size={16} /> {doc.file ? doc.file.name : 'Upload New'}
+                                            
+                                            <div className="space-y-6">
+                                                {services.map((service, index) => (
+                                                    <div key={index} className={`relative p-5 rounded-2xl border ${isLight ? 'bg-white border-slate-200' : 'bg-white/5 border-white/10'}`}>
+                                                        <button type="button" onClick={() => setServices(services.filter((_, i) => i !== index))} className="absolute top-4 right-4 text-muted-foreground hover:text-red-400 transition" aria-label="Remove Service">
+                                                            <X size={18} />
                                                         </button>
-                                                        <input ref={doc.ref} type="file" accept={doc.accept} className="hidden"
-                                                            onChange={e => doc.setter(e.target.files?.[0] || null)} />
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
+                                                        <div className="flex flex-col md:flex-row gap-6">
+                                                            {/* Image Upload Box */}
+                                                            <div className="shrink-0 flex flex-col items-center gap-2">
+                                                                <div className={`w-32 h-32 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden transition-all relative group ${!service.imagePreview && isLight ? 'border-slate-300 hover:border-primary' : !service.imagePreview ? 'border-white/20 hover:border-primary' : 'border-transparent'}`}>
+                                                                    {service.imagePreview ? (
+                                                                        <>
+                                                                            <img src={service.imagePreview} alt="service" className="w-full h-full object-cover" />
+                                                                            <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                                <Camera size={20} className="text-white mb-1" />
+                                                                                <span className="text-[10px] text-white font-medium">Change</span>
+                                                                            </div>
+                                                                        </>
+                                                                    ) : (
+                                                                        <div className="flex flex-col items-center text-muted-foreground">
+                                                                            <Upload size={24} className="mb-2" />
+                                                                            <span className="text-xs font-medium">Add Photo</span>
+                                                                        </div>
+                                                                    )}
+                                                                    <input 
+                                                                        type="file" 
+                                                                        accept="image/*" 
+                                                                        className="absolute inset-0 opacity-0 cursor-pointer"
+                                                                        onChange={(e) => {
+                                                                            const file = e.target.files?.[0];
+                                                                            if (file) {
+                                                                                const reader = new FileReader();
+                                                                                reader.onload = (re) => {
+                                                                                    const newS = [...services];
+                                                                                    newS[index].imageFile = file;
+                                                                                    newS[index].imagePreview = re.target?.result as string;
+                                                                                    setServices(newS);
+                                                                                };
+                                                                                reader.readAsDataURL(file);
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                </div>
+                                                            </div>
 
-                                    {/* ─── Community ─── */}
-                                    {activeTab === 'community' && (
-                                        <div className="space-y-6">
-                                            <h2 className="text-lg font-bold text-foreground flex items-center gap-2"><Shield size={18} />Community Preferences</h2>
-                                            <div className="space-y-4">
-                                                {[
-                                                    { key: 'joinBulkBuying', label: 'Join Bulk Buying Network', desc: 'Get access to wholesale deals and group purchase opportunities.' },
-                                                    { key: 'joinFraudAlerts', label: 'Join Fraud Alerts Network', desc: 'Receive alerts about fraudulent activities in your sector.' },
-                                                ].map(opt => (
-                                                    <div key={opt.key}
-                                                        className={`flex items-start gap-4 p-4 rounded-2xl border cursor-pointer transition ${
-                                                            (form as any)[opt.key]
-                                                                ? 'border-primary/50 bg-primary/5'
-                                                                : isLight ? 'border-slate-200 hover:border-slate-300' : 'border-white/10 hover:border-white/20'
-                                                        }`}
-                                                        onClick={() => setForm({ ...form, [opt.key]: !(form as any)[opt.key] })}>
-                                                        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 mt-0.5 transition ${
-                                                            (form as any)[opt.key] ? 'bg-primary border-primary' : isLight ? 'border-slate-300' : 'border-white/30'
-                                                        }`}>
-                                                            {(form as any)[opt.key] && <CheckCircle2 size={12} className="text-white" />}
-                                                        </div>
-                                                        <div>
-                                                            <p className="font-medium text-foreground text-sm">{opt.label}</p>
-                                                            <p className="text-xs text-muted-foreground mt-0.5">{opt.desc}</p>
+                                                            {/* Text Inputs */}
+                                                            <div className="flex-1 space-y-4">
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                    <div>
+                                                                        <label className="block text-xs font-medium text-muted-foreground mb-1">Service Name</label>
+                                                                        <Input 
+                                                                            placeholder="e.g. Website Design" 
+                                                                            className={inputClass} 
+                                                                            value={service.name}
+                                                                            onChange={(e) => { const n = [...services]; n[index].name = e.target.value; setServices(n); }}
+                                                                        />
+                                                                    </div>
+                                                                    <div>
+                                                                        <label className="block text-xs font-medium text-muted-foreground mb-1">Price (₹)</label>
+                                                                        <Input 
+                                                                            type="number"
+                                                                            placeholder="e.g. 5000" 
+                                                                            className={inputClass} 
+                                                                            value={service.price}
+                                                                            onChange={(e) => { const n = [...services]; n[index].price = e.target.value; setServices(n); }}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                                <div>
+                                                                    <label className="block text-xs font-medium text-muted-foreground mb-1">Description</label>
+                                                                    <textarea 
+                                                                        className={`w-full rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all ${isLight ? 'bg-slate-50 border-slate-200 text-slate-900 border' : 'bg-white/5 border border-white/10 text-white'}`}
+                                                                        rows={2}
+                                                                        placeholder="Briefly describe what this service includes..."
+                                                                        value={service.description}
+                                                                        onChange={(e) => { const n = [...services]; n[index].description = e.target.value; setServices(n); }}
+                                                                    ></textarea>
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 ))}
+
+                                                {services.length < 10 && (
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={() => setServices([...services, { name: '', description: '', price: '', imagePreview: '', imageFile: null }])}
+                                                        className={`w-full py-4 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition text-muted-foreground hover:text-primary ${isLight ? 'border-slate-300 hover:border-primary/50 hover:bg-primary/5' : 'border-white/10 hover:border-primary/50 hover:bg-primary/5'}`}
+                                                    >
+                                                        <Plus size={24} />
+                                                        <span className="font-bold text-sm">Add New Service</span>
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* ─── Products ─── */}
+                                    {activeTab === 'products' && (
+                                        <div className="space-y-6">
+                                            <div className="flex items-center justify-between">
+                                                <h2 className="text-lg font-bold text-foreground flex items-center gap-2"><Package size={18} /> Products Catalog</h2>
+                                                <span className="text-xs font-medium text-muted-foreground">{products.length} / 10 Added</span>
+                                            </div>
+                                            
+                                            <div className="space-y-6">
+                                                {products.map((product, index) => (
+                                                    <div key={index} className={`relative p-5 rounded-2xl border ${isLight ? 'bg-white border-slate-200' : 'bg-white/5 border-white/10'}`}>
+                                                        <button type="button" onClick={() => setProducts(products.filter((_, i) => i !== index))} className="absolute top-4 right-4 text-muted-foreground hover:text-red-400 transition" aria-label="Remove Product">
+                                                            <X size={18} />
+                                                        </button>
+                                                        <div className="flex flex-col md:flex-row gap-6">
+                                                            {/* Image Upload Box */}
+                                                            <div className="shrink-0 flex flex-col items-center gap-2">
+                                                                <div className={`w-32 h-32 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden transition-all relative group ${!product.imagePreview && isLight ? 'border-slate-300 hover:border-primary' : !product.imagePreview ? 'border-white/20 hover:border-primary' : 'border-transparent'}`}>
+                                                                    {product.imagePreview ? (
+                                                                        <>
+                                                                            <img src={product.imagePreview} alt="product" className="w-full h-full object-cover" />
+                                                                            <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                                <Camera size={20} className="text-white mb-1" />
+                                                                                <span className="text-[10px] text-white font-medium">Change</span>
+                                                                            </div>
+                                                                        </>
+                                                                    ) : (
+                                                                        <div className="flex flex-col items-center text-muted-foreground">
+                                                                            <Upload size={24} className="mb-2" />
+                                                                            <span className="text-xs font-medium">Add Photo</span>
+                                                                        </div>
+                                                                    )}
+                                                                    <input 
+                                                                        type="file" 
+                                                                        accept="image/*" 
+                                                                        className="absolute inset-0 opacity-0 cursor-pointer"
+                                                                        onChange={(e) => {
+                                                                            const file = e.target.files?.[0];
+                                                                            if (file) {
+                                                                                const reader = new FileReader();
+                                                                                reader.onload = (re) => {
+                                                                                    const newP = [...products];
+                                                                                    newP[index].imageFile = file;
+                                                                                    newP[index].imagePreview = re.target?.result as string;
+                                                                                    setProducts(newP);
+                                                                                };
+                                                                                reader.readAsDataURL(file);
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Text Inputs */}
+                                                            <div className="flex-1 space-y-4">
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                    <div>
+                                                                        <label className="block text-xs font-medium text-muted-foreground mb-1">Product Name</label>
+                                                                        <Input 
+                                                                            placeholder="e.g. Running Shoes" 
+                                                                            className={inputClass} 
+                                                                            value={product.name}
+                                                                            onChange={(e) => { const n = [...products]; n[index].name = e.target.value; setProducts(n); }}
+                                                                        />
+                                                                    </div>
+                                                                    <div>
+                                                                        <label className="block text-xs font-medium text-muted-foreground mb-1">Price (₹)</label>
+                                                                        <Input 
+                                                                            type="number"
+                                                                            placeholder="e.g. 2999" 
+                                                                            className={inputClass} 
+                                                                            value={product.price}
+                                                                            onChange={(e) => { const n = [...products]; n[index].price = e.target.value; setProducts(n); }}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                                <div>
+                                                                    <label className="block text-xs font-medium text-muted-foreground mb-1">Description</label>
+                                                                    <textarea 
+                                                                        className={`w-full rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all ${isLight ? 'bg-slate-50 border-slate-200 text-slate-900 border' : 'bg-white/5 border border-white/10 text-white'}`}
+                                                                        rows={2}
+                                                                        placeholder="Briefly describe the product..."
+                                                                        value={product.description}
+                                                                        onChange={(e) => { const n = [...products]; n[index].description = e.target.value; setProducts(n); }}
+                                                                    ></textarea>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+
+                                                {products.length < 10 && (
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={() => setProducts([...products, { name: '', description: '', price: '', imagePreview: '', imageFile: null }])}
+                                                        className={`w-full py-4 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition text-muted-foreground hover:text-primary ${isLight ? 'border-slate-300 hover:border-primary/50 hover:bg-primary/5' : 'border-white/10 hover:border-primary/50 hover:bg-primary/5'}`}
+                                                    >
+                                                        <Plus size={24} />
+                                                        <span className="font-bold text-sm">Add New Product</span>
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     )}

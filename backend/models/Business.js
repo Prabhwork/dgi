@@ -79,6 +79,20 @@ const BusinessSchema = new mongoose.Schema({
     gallery: [String], // array of file paths
     catalog: String, // file path (Pricing/Menu/Catalog)
 
+    // Step 5.1: Services & Products
+    services: [{
+        name: String,
+        description: String,
+        price: Number,
+        image: String // file path
+    }],
+    products: [{
+        name: String,
+        description: String,
+        price: Number,
+        image: String // file path
+    }],
+
     // Step 6: Community & Tenders
     joinBulkBuying: {
         type: Boolean,

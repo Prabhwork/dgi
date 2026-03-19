@@ -64,9 +64,43 @@ export interface Contact {
     createdAt: string;
 }
 
+export interface UpcomingCategory {
+    _id: string;
+    title: string;
+    icon: string;
+    description?: string;
+    image?: string;
+    category?: string | { _id: string; name: string };
+    order: number;
+    isActive: boolean;
+    createdAt: string;
+}
+
 export interface PaginationInfo {
     page: number;
     limit: number;
     next?: { page: number; limit: number };
     prev?: { page: number; limit: number };
+}
+
+export interface Testimonial {
+    _id: string;
+    name: string;
+    email: string;
+    phone: string;
+    role: string;
+    quote: string;
+    rating: number;
+    isActive: boolean;
+    createdAt: string;
+}
+
+export interface ExistingCustomer {
+    _id: string;
+    name: string;
+    logo?: string;
+    link?: string;
+    order: number;
+    isActive: boolean;
+    createdAt: string;
 }

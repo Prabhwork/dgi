@@ -17,7 +17,8 @@ const allowedOrigins = [
   'http://localhost:3001',
   'https://www.digitalbookofindia.com',
   'https://digitalbookofindia.com',
-  'https://dgi-bpu3.onrender.com'
+  'https://dgi-bpu3.onrender.com',
+  "https://coleen-unvirulent-rafael.ngrok-free.dev"
 ];
 
 app.use(cors({
@@ -45,6 +46,9 @@ const solutions = require('./routes/solutionRoutes');
 const business = require('./routes/businessRoutes');
 const pageDetails = require('./routes/pageDetailRoutes');
 const contact = require('./routes/contactRoutes');
+const upcomingCategories = require('./routes/upcomingCategoryRoutes');
+const testimonials = require('./routes/testimonialRoutes');
+const existingCustomers = require('./routes/existingCustomers');
 
 // Re-route into other resource routers
 // Re-route into other resource routers
@@ -63,6 +67,9 @@ app.use('/api/business', business);
 app.use('/api/page-details', pageDetails);
 
 app.use('/api/contact', contact);
+app.use('/api/upcoming-categories', upcomingCategories);
+app.use('/api/testimonials', testimonials);
+app.use('/api/existing-customers', existingCustomers);
 
 app.get('/', (req, res) => {
     res.send('Digital Book of India Admin API');

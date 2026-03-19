@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, MapPin, Store, CheckCircle2, User, Compass, ChevronDown, Loader2 } from "lucide-react";
+import { Search, MapPin, Store, CheckCircle2, Compass, ChevronDown, Loader2, Trophy, TrendingUp, Zap } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 import { useRouter } from "next/navigation";
 import {
@@ -214,52 +214,43 @@ export default function HeroSection() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent className={`border border-solid p-2 min-w-[240px] z-[60] shadow-[0_8px_32px_rgba(0,0,0,0.2)] backdrop-blur-2xl ${theme === 'light' ? 'bg-white/60 border-white/80' : 'bg-white/10 border-white/30'}`}>
                                 <DropdownMenuItem className="focus:bg-primary/20 focus:text-white cursor-pointer py-3 rounded-lg group" asChild>
-                                    <Link href="/community/register" className="flex items-center gap-3">
+                                    <Link href="/success-stories" className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                                            <Store size={18} className="text-primary" />
+                                            <Trophy size={18} className="text-primary" />
                                         </div>
-                                        <span className="font-medium">Add your business</span>
+                                        <span className="font-medium">Success Stories</span>
                                     </Link>
                                 </DropdownMenuItem>
+
                                 <DropdownMenuItem className="focus:bg-primary/20 focus:text-white cursor-pointer py-3 rounded-lg group" asChild>
-                                    <Link href="/community/register" className="flex items-center gap-3">
+                                    <Link href="/listing-benefits" className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                                            <CheckCircle2 size={18} className="text-primary" />
+                                            <TrendingUp size={18} className="text-primary" />
                                         </div>
-                                        <span className="font-medium">claim business just 1/- a day</span>
+                                        <span className="font-medium">Listing Benefits</span>
                                     </Link>
                                 </DropdownMenuItem>
+
                                 <DropdownMenuItem className="focus:bg-primary/20 focus:text-white cursor-pointer py-3 rounded-lg group" asChild>
-                                    <Link href="/community/login" className="flex items-center gap-3">
+                                    <Link href="/mapping-plans" className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                                            <User size={18} className="text-primary" />
+                                            <Zap size={18} className="text-primary" />
                                         </div>
-                                        <span className="font-medium">login to business account</span>
+                                        <span className="font-medium">Business Plans</span>
                                     </Link>
                                 </DropdownMenuItem>
-                                <DropdownMenuItem className="focus:bg-primary/20 focus:text-white cursor-pointer py-3 rounded-lg group" asChild>
-                                    <Link href="/community/login" className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                                            <User size={18} className="text-primary" />
-                                        </div>
-                                        <span className="font-medium">login to suite account</span>
-                                    </Link>
-                                </DropdownMenuItem>
+
                                 <div className="h-px bg-white/10 my-1 px-2" />
                                 <DropdownMenuItem className="focus:bg-primary/20 focus:text-white cursor-pointer py-3 rounded-lg group" asChild>
                                     <Link href="/why-dbi" className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                                             <Compass size={18} className="text-primary" />
                                         </div>
-                                        <span className="font-medium">Explore DBI for business</span>
+                                        <span className="font-medium">Why Choose DBI</span>
                                     </Link>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
-
-                        <Link href="/write-a-review" className="hover:text-primary transition-colors whitespace-nowrap outline-none">
-                            Write a Review
-                        </Link>
 
                         <Link href="/community/register" className={`backdrop-blur-md border px-3 py-1.5 rounded-lg transition-all font-medium whitespace-nowrap text-[11px] sm:text-sm ${theme === 'light'
                             ? 'bg-primary/5 border-primary/20 text-primary hover:bg-primary/10'
@@ -267,6 +258,15 @@ export default function HeroSection() {
                             }`}>
                             claim business just 1/- a day
                         </Link>
+
+                        <Link 
+                            href="/write-a-review"
+                            className="hover:text-primary transition-colors whitespace-nowrap outline-none"
+                        >
+                            Write a Review
+                        </Link>
+
+
                     </div>
                 </div>
             </motion.div>
@@ -332,7 +332,7 @@ export default function HeroSection() {
                                         letterSpacing: "0.25em"
                                     }}
                                 >
-                                    PRE LAUNCH
+                                    DIGITAL BOOK
                                 </motion.h1>
                                 <motion.p
                                     initial={{ opacity: 0 }}
@@ -341,7 +341,7 @@ export default function HeroSection() {
                                     className="mt-2 text-xs sm:text-sm font-bold tracking-[0.3em] uppercase opacity-90"
                                     style={{ color: "#00d4ff", textShadow: "0 0 20px rgba(0,212,255,0.5)" }}
                                 >
-                                    Prepared To Be Amazed
+                                    OF INDIA
                                 </motion.p>
                                 <motion.div
                                     initial={{ scaleX: 0 }}
@@ -356,7 +356,7 @@ export default function HeroSection() {
                                     className="font-medium max-w-[180px] sm:max-w-[240px] md:max-w-[300px] mx-auto text-[10px] sm:text-xs leading-relaxed opacity-80"
                                     style={{ color: "#ffffff", textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}
                                 >
-                                    Digital Book Of India is on its way to making your life easier. Stay tuned.
+                                    Connect with local businesses and discover India's vast digital marketplace today.
                                 </motion.p>
                             </div>
                         </motion.div>

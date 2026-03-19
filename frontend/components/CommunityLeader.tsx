@@ -35,7 +35,7 @@ export default function CommunityLeader() {
                 </motion.div>
 
                 {/* Mobile Scroll / Desktop Flex Container */}
-                <div className="flex overflow-x-auto sm:grid sm:grid-cols-3 lg:grid-cols-5 gap-6 no-scrollbar pb-8 sm:pb-0 snap-x snap-mandatory">
+                <div className="flex overflow-x-auto sm:grid sm:grid-cols-3 lg:grid-cols-5 gap-6 scrollbar-hide pb-8 sm:pb-0 snap-x snap-mandatory">
                     {communityLevels.map((level, i) => (
                         <motion.div
                             key={level.title}

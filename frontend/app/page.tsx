@@ -2,6 +2,7 @@ import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
 import PlatformIntro from "@/components/PlatformIntro";
 import BrowseByNeed from "@/components/BrowseByNeed";
+import ExistingCustomers from "@/components/ExistingCustomers";
 import MissionDigitalBharat from "@/components/MissionDigitalBharat";
 import DiscoverSellers from "@/components/DiscoverSellers";
 import UpcomingFeatures from "@/components/UpcomingFeatures";
@@ -23,6 +24,7 @@ export default function Home() {
             <Navbar />
             <HeroSection />
             <PlatformIntro />
+            <ExistingCustomers />
             <BrowseByNeed />
 
             <DiscoverSellers />

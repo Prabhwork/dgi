@@ -58,15 +58,100 @@ export default function ThreeIndiaMap() {
 
         const createAirplane = (color: number) => {
             const group = new THREE.Group();
-            const mat = new THREE.MeshBasicMaterial({ color });
-            // AeroPlane Geometry
-            const body = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.08, 0.6), mat);
+            
+            // Sleek Metallic Body Material
+            const mat = new THREE.MeshStandardMaterial({ 
+                color: 0xffffff, 
+                metalness: 0.8, 
+                roughness: 0.2,
+                emissive: color,
+                emissiveIntensity: 0.3
+            });
+
+            // Fuselage (Body)
+            const bodyGeom = new THREE.CylinderGeometry(0.035, 0.035, 0.6, 16);
+            bodyGeom.rotateX(Math.PI / 2);
+            const body = new THREE.Mesh(bodyGeom, mat);
             group.add(body);
-            const wings = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.02, 0.18), mat);
+
+            // Nose (Rounded)
+            const noseGeom = new THREE.SphereGeometry(0.035, 16, 16);
+            noseGeom.translate(0, 0, 0.3);
+            const nose = new THREE.Mesh(noseGeom, mat);
+            group.add(nose);
+
+            // Main Wings (Realistic Swept Shape)
+            const wingShape = new THREE.Shape();
+            wingShape.moveTo(0, 0);
+            wingShape.lineTo(0.35, -0.15);
+            wingShape.lineTo(0.35, -0.22);
+            wingShape.lineTo(0, -0.08);
+            wingShape.lineTo(-0.35, -0.22);
+            wingShape.lineTo(-0.35, -0.15);
+            wingShape.lineTo(0, 0);
+            
+            const wingGeom = new THREE.ExtrudeGeometry(wingShape, { depth: 0.012, bevelEnabled: false });
+            const wings = new THREE.Mesh(wingGeom, mat);
+            wings.rotateX(Math.PI / 2);
+            wings.position.set(0, 0, 0.12);
             group.add(wings);
-            const tail = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.15, 0.15), mat);
-            tail.position.set(0, 0.08, -0.2);
-            group.add(tail);
+
+            // Tail Wings (Horizontal Stabilizers)
+            const tailWingShape = new THREE.Shape();
+            tailWingShape.moveTo(0, 0);
+            tailWingShape.lineTo(0.14, -0.06);
+            tailWingShape.lineTo(0.14, -0.1);
+            tailWingShape.lineTo(0, -0.04);
+            tailWingShape.lineTo(-0.14, -0.1);
+            tailWingShape.lineTo(-0.14, -0.06);
+            tailWingShape.lineTo(0, 0);
+
+            const tailWingGeom = new THREE.ExtrudeGeometry(tailWingShape, { depth: 0.01, bevelEnabled: false });
+            const tailWings = new THREE.Mesh(tailWingGeom, mat);
+            tailWings.rotateX(Math.PI / 2);
+            tailWings.position.set(0, 0, -0.22);
+            group.add(tailWings);
+
+            // Vertical Stabilizer (Tail Fin)
+            const finShape = new THREE.Shape();
+            finShape.moveTo(0, 0);
+            finShape.lineTo(0.14, 0.12);
+            finShape.lineTo(0.04, 0);
+            finShape.lineTo(0, 0);
+
+            const finGeom = new THREE.ExtrudeGeometry(finShape, { depth: 0.01, bevelEnabled: false });
+            const fin = new THREE.Mesh(finGeom, mat);
+            fin.rotateY(Math.PI / 2);
+            fin.position.set(0, 0.035, -0.28);
+            group.add(fin);
+
+            // Engines (Under-wing detail)
+            const engineGeom = new THREE.CylinderGeometry(0.02, 0.02, 0.1, 12);
+            engineGeom.rotateX(Math.PI / 2);
+            
+            const leftEngine = new THREE.Mesh(engineGeom, mat);
+            leftEngine.position.set(-0.12, -0.03, 0.05);
+            group.add(leftEngine);
+            
+            const rightEngine = new THREE.Mesh(engineGeom, mat);
+            rightEngine.position.set(0.12, -0.03, 0.05);
+            group.add(rightEngine);
+
+            // Glow Trail (Refined)
+            const glowMat = new THREE.MeshBasicMaterial({
+                color: color,
+                transparent: true,
+                opacity: 0.35,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            });
+            const glow = new THREE.Mesh(new THREE.SphereGeometry(0.05, 16, 16), glowMat);
+            glow.position.set(0, 0, -0.3);
+            glow.scale.z = 4.5;
+            group.add(glow);
+
+            // Final Scale adjustment
+            group.scale.set(0.9, 0.9, 0.9);
             return group;
         };
 
@@ -87,11 +172,16 @@ export default function ThreeIndiaMap() {
         const animate = () => {
             frameId = requestAnimationFrame(animate);
             planes.forEach(p => {
-                p.progress += 0.004;
+                p.progress += 0.003; // Smooth slower motion
                 if (p.progress > 1) p.progress = 0;
+                
+                // use easing for natural flight (optional, but a constant speed is fine for maps)
                 const pos = p.path.getPointAt(p.progress);
                 const nextPos = p.path.getPointAt(Math.min(0.999, p.progress + 0.01));
+                
                 p.mesh.position.copy(pos);
+                // Critical for correct rotation on a 2D map extruded in Z:
+                p.mesh.up.set(0, 0, 1);
                 p.mesh.lookAt(nextPos);
             });
             if (mapGroup.scale.x < 1) {

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Layers, Tag, LogOut, Settings, X, ShieldCheck, Mail } from 'lucide-react';
+import { LayoutDashboard, Layers, Tag, LogOut, Settings, X, ShieldCheck, Mail, Rocket, MessageSquare, UserCheck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -36,6 +36,9 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         { name: 'Features', path: '/dashboard/features', icon: Layers },
         { name: 'Solutions', path: '/dashboard/solutions', icon: Tag },
         { name: 'Page Details', path: '/dashboard/page-details', icon: LayoutDashboard },
+        { name: 'Upcoming Categories', path: '/dashboard/upcoming-categories', icon: Rocket },
+        { name: 'Existing Customers', path: '/dashboard/existing-customers', icon: UserCheck },
+        { name: 'Testimonials', path: '/dashboard/testimonials', icon: MessageSquare },
         { name: 'Contact Messages', path: '/dashboard/contacts', icon: Mail },
         { name: 'Settings', path: '/dashboard/settings', icon: Settings },
     ];

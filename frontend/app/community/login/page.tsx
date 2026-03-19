@@ -96,7 +96,7 @@ export default function LoginPage() {
                 
                 // Redirect based on status
                 if (data.status === 'approved') {
-                    router.push("/pre-launch");
+                    router.push("/");
                 } else {
                     router.push("/community/status");
                 }

@@ -634,42 +634,47 @@ export default function Navbar() {
                             </div>
                             <div className="flex gap-3 mt-4">
                                 {businessUser ? (
-                                    <div className="w-full flex flex-col gap-2">
-                                        <div className={`p-3 rounded-2xl flex items-center justify-between border ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-white/5 border-white/10'}`}>
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${isLight ? 'bg-primary/10 text-primary' : 'bg-primary/20 text-white'}`}>
-                                                    {(businessUser.brandName || businessUser.businessName || 'B').charAt(0).toUpperCase()}
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <span className={`text-sm font-bold max-w-[120px] truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                                                        {businessUser.brandName || businessUser.businessName}
-                                                    </span>
-                                                    <span className={`text-[10px] truncate max-w-[120px] ${isLight ? 'text-slate-500' : 'text-white/40'}`}>
-                                                        {businessUser.officialEmailAddress}
-                                                    </span>
-                                                </div>
+                                    <div className="w-full flex flex-col gap-2 mt-2">
+                                        <div className={`p-4 rounded-2xl flex items-center gap-3 border ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-white/5 border-white/10'}`}>
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold shrink-0 ${isLight ? 'bg-primary/10 text-primary' : 'bg-primary/20 text-white'}`}>
+                                                {(businessUser.brandName || businessUser.businessName || 'B').charAt(0).toUpperCase()}
                                             </div>
-                                            <button 
-                                                onClick={handleLogout}
-                                                className="text-red-500 p-2 rounded-xl hover:bg-red-500/10"
-                                            >
-                                                <LogOut size={16} />
-                                            </button>
+                                            <div className="flex flex-col overflow-hidden">
+                                                <span className={`text-sm font-bold truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                                                    {businessUser.brandName || businessUser.businessName}
+                                                </span>
+                                                <span className={`text-[11px] truncate ${isLight ? 'text-slate-500' : 'text-white/50'}`}>
+                                                    {businessUser.officialEmailAddress}
+                                                </span>
+                                            </div>
                                         </div>
+                                        
                                         <div className="grid grid-cols-3 gap-2">
-                                            <Link href="/community/register?mode=update" className={`flex flex-col items-center gap-1 p-3 rounded-xl border ${isLight ? 'bg-white border-slate-200 text-slate-700' : 'bg-white/5 border-white/10 text-slate-300'}`}>
-                                                <User size={16} />
-                                                <span className="text-[10px] font-bold">Profile</span>
+                                            <Link href="/profile" className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border text-center transition-colors ${isLight ? 'bg-white border-slate-200 text-slate-700 hover:border-primary/50' : 'bg-white/5 border-white/10 text-slate-300 hover:border-white/30'}`}>
+                                                <User size={18} className={isLight ? "text-primary" : "text-white/80"} />
+                                                <span className="text-[10px] font-bold leading-tight">Business<br/>Profile</span>
                                             </Link>
-                                            <Link href="#" className={`flex flex-col items-center gap-1 p-3 rounded-xl border ${isLight ? 'bg-white border-slate-200 text-slate-700' : 'bg-white/5 border-white/10 text-slate-300'}`}>
-                                                <Settings size={16} />
-                                                <span className="text-[10px] font-bold">Config</span>
+                                            <Link href="#" className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border text-center transition-colors ${isLight ? 'bg-white border-slate-200 text-slate-700 hover:border-primary/50' : 'bg-white/5 border-white/10 text-slate-300 hover:border-white/30'}`}>
+                                                <Settings size={18} className={isLight ? "text-primary" : "text-white/80"} />
+                                                <span className="text-[10px] font-bold leading-tight">Account<br/>Settings</span>
                                             </Link>
-                                            <Link href="/settings/2fa" className={`flex flex-col items-center gap-1 p-3 rounded-xl border ${isLight ? 'bg-white border-slate-200 text-slate-700' : 'bg-white/5 border-white/10 text-slate-300'}`}>
-                                                <ShieldCheck size={16} />
-                                                <span className="text-[10px] font-bold">2-Step</span>
+                                            <Link href="/settings/2fa" className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border text-center transition-colors ${isLight ? 'bg-white border-slate-200 text-slate-700 hover:border-primary/50' : 'bg-white/5 border-white/10 text-slate-300 hover:border-white/30'}`}>
+                                                <ShieldCheck size={18} className={isLight ? "text-primary" : "text-white/80"} />
+                                                <span className="text-[10px] font-bold leading-tight">2-Step<br/>Verification</span>
                                             </Link>
                                         </div>
+
+                                        <button 
+                                            onClick={handleLogout}
+                                            className={`w-full mt-1 flex items-center justify-center gap-2 p-3 rounded-xl font-bold text-sm transition-colors border ${
+                                                isLight 
+                                                ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100' 
+                                                : 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20'
+                                            }`}
+                                        >
+                                            <LogOut size={16} />
+                                            Logout Securely
+                                        </button>
                                     </div>
                                 ) : (
                                     <>

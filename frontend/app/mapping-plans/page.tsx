@@ -1,7 +1,7 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MappingPlans from "@/components/MappingPlans";
-import PreLaunchOffer from "@/components/PreLaunchOffer";
+
 import CursorGlow from "@/components/CursorGlow";
 import ParticleNetworkWrapper from "@/components/ParticleNetworkWrapper";
 
@@ -14,7 +14,7 @@ export default function MappingPlansPage() {
 
             <main className="pt-24">
                 <MappingPlans />
-                <PreLaunchOffer />
+
             </main>
 
             <Footer />

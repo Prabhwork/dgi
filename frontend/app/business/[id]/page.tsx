@@ -7,12 +7,25 @@ import Footer from "@/components/Footer";
 import { 
     MapPin, Star, Clock, Phone, Globe, ArrowLeft, Loader2, 
     MessageCircle, ShieldCheck, Mail, Edit3, Image as ImageIcon,
-    Info, Share2, BadgeCheck
+    Info, Share2, BadgeCheck, Briefcase, Package
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { useTheme } from "@/components/ThemeProvider";
 import ParticleNetwork from "@/components/ParticleNetwork";
+
+function format12Hour(time24: string) {
+    if (!time24) return "";
+    const parts = time24.split(":");
+    if (parts.length < 2) return time24;
+    const hoursStr = parts[0];
+    const minutesStr = parts[1];
+    let hours = parseInt(hoursStr, 10);
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12; // the hour '0' should be '12'
+    return `${hours.toString().padStart(2, '0')}:${minutesStr} ${ampm}`;
+}
 
 function BusinessDetail() {
     const params = useParams();
@@ -61,7 +74,7 @@ function BusinessDetail() {
 
     if (loading) {
         return (
-            <div className={`min-h-screen flex items-center justify-center transition-colors ${isLight ? 'bg-slate-50' : 'bg-[#020617]'}`}>
+            <div className={`min-h-screen flex items-center justify-center transition-colors ${isLight ? 'bg-slate-50' : 'bg-[#020631]'}`}>
                 <Loader2 size={40} className="text-primary animate-spin" />
             </div>
         );
@@ -69,7 +82,7 @@ function BusinessDetail() {
 
     if (error || !business) {
         return (
-            <div className={`min-h-screen flex flex-col items-center justify-center transition-colors ${isLight ? 'bg-slate-50 text-slate-900' : 'bg-[#020617] text-white'}`}>
+            <div className={`min-h-screen flex flex-col items-center justify-center transition-colors ${isLight ? 'bg-slate-50 text-slate-900' : 'bg-[#020631] text-white'}`}>
                 <h2 className="text-2xl font-bold mb-4">{error || "Business not found"}</h2>
                 <Button onClick={() => router.back()} variant="outline-glow">Go Back</Button>
             </div>
@@ -84,59 +97,66 @@ function BusinessDetail() {
 
     return (
         <div className={`min-h-screen relative transition-colors duration-500 overflow-x-hidden ${
-            isLight ? 'bg-slate-100 text-slate-900' : 'bg-[#020617] text-white'
+            isLight ? 'bg-slate-100 text-slate-900' : 'bg-[#020631] text-white'
         }`}>
             {/* Background elements */}
-            <div className="fixed inset-0 z-0 opacity-40">
+            <div className={`absolute top-0 inset-x-0 h-[500px] bg-gradient-to-b opacity-50 pointer-events-none transition-colors duration-500 ${
+                isLight ? 'from-blue-100/50 to-transparent' : 'from-[#1a3a8f]/20 to-transparent'
+            }`} />
+            
+            <div className="fixed inset-0 z-0">
                 <ParticleNetwork />
             </div>
+            
+            {/* Subtle overlay to soften particles behind content */}
+            <div className={`fixed inset-0 z-[1] pointer-events-none ${isLight ? 'bg-slate-100/40' : 'bg-[#020631]/40'}`} />
 
-            <div className="relative z-10 flex flex-col min-h-screen">
+            <div className="relative z-[2] flex flex-col min-h-screen">
                 <Navbar />
                 
                 <main className="container mx-auto px-4 pt-24 pb-20 flex-1 max-w-6xl">
                     <button 
                         onClick={() => router.back()} 
-                        className={`flex items-center gap-2 mb-6 text-sm font-medium hover:underline ${isLight ? 'text-slate-600' : 'text-slate-400'}`}
+                        className={`flex items-center gap-2 mb-8 text-sm font-black uppercase tracking-widest transition-all hover:gap-3 ${isLight ? 'text-slate-500 hover:text-primary' : 'text-slate-400 hover:text-primary'}`}
                     >
                         <ArrowLeft size={16} /> Back to Search
                     </button>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         {/* Main Details */}
-                        <div className="lg:col-span-2 space-y-6">
+                        <div className="lg:col-span-2 space-y-8">
                             
                             {/* Header Card */}
                             <motion.div 
                                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                                className={`rounded-3xl overflow-hidden backdrop-blur-xl border border-solid shadow-xl ${
-                                    isLight ? 'bg-white/90 border-slate-200' : 'bg-white/5 border-white/10'
+                                className={`rounded-[2.5rem] overflow-hidden backdrop-blur-3xl border border-solid shadow-2xl ${
+                                    isLight ? 'bg-white/95 border-slate-200' : 'bg-slate-900/90 border-white/10'
                                 }`}
                             >
-                                <div className="h-64 md:h-80 w-full relative">
+                                <div className="h-72 md:h-96 w-full relative">
                                     <img 
                                         src={bannerImageUrl} 
                                         alt={business.brandName || business.businessName}
                                         className="w-full h-full object-cover"
                                         onError={(e) => { (e.target as HTMLImageElement).src = '/assets/business-placeholder.jpg'; }}
                                     />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                                    <div className="absolute top-4 right-4 bg-primary/90 text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider backdrop-blur-sm shadow-lg border border-white/20">
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+                                    <div className="absolute top-6 right-6 bg-primary/20 backdrop-blur-xl text-primary-foreground px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border border-primary/30 shadow-2xl">
                                         {business.businessCategory}
                                     </div>
-                                    <div className="absolute bottom-6 left-6 right-6">
-                                        <h1 className="text-3xl md:text-5xl font-black text-white drop-shadow-lg mb-2">
+                                    <div className="absolute bottom-8 left-8 right-8">
+                                        <h1 className="text-4xl md:text-6xl font-black text-white drop-shadow-2xl mb-4 font-display leading-tight">
                                             {business.brandName || business.businessName}
                                         </h1>
-                                        <div className="flex flex-wrap items-center gap-3 text-sm">
-                                            <div className="flex items-center gap-1 text-yellow-400 bg-black/40 px-2 py-1 rounded-lg backdrop-blur-sm border border-white/10">
-                                                <Star size={16} fill="currentColor" />
-                                                <span className="font-bold text-white">4.8</span>
+                                        <div className="flex flex-wrap items-center gap-4">
+                                            <div className="flex items-center gap-1.5 text-yellow-400 bg-black/50 px-3 py-1.5 rounded-xl backdrop-blur-md border border-white/10">
+                                                <Star size={18} fill="currentColor" />
+                                                <span className="font-black text-white">4.8</span>
                                                 <span className="text-white/60 text-xs ml-1">(120 Reviews)</span>
                                             </div>
                                             {(business.isVerified || business.aadhaarVerified || business.approvalStatus === 'approved') && (
-                                                <div className="flex items-center gap-1 text-emerald-400 bg-black/40 px-2 py-1 rounded-lg backdrop-blur-sm border border-emerald-500/30 font-medium">
-                                                    <BadgeCheck size={16} className="fill-emerald-500 text-black" />
+                                                <div className="flex items-center gap-2 text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-xl backdrop-blur-md border border-emerald-500/20 font-black uppercase text-[10px] tracking-widest shadow-[0_0_20px_rgba(16,185,129,0.15)]">
+                                                    <BadgeCheck size={18} className="fill-emerald-500 text-black" />
                                                     Verified Business
                                                 </div>
                                             )}
@@ -144,53 +164,63 @@ function BusinessDetail() {
                                     </div>
                                 </div>
                                 
-                                <div className="p-6">
-                                    {/* Action row (Mobile sticky logic could be added here, but desktop shows full) */}
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-                                        <a href={`tel:${business.primaryContactNumber}`} className="flex flex-col items-center justify-center p-3 rounded-2xl bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-emerald-500/20 transition-colors border border-emerald-200 dark:border-emerald-500/20">
-                                            <Phone size={24} className="mb-1" />
-                                            <span className="text-xs font-bold">Call Now</span>
+                                <div className="p-8">
+                                    {/* Action row */}
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
+                                        <a href={`tel:${business.primaryContactNumber}`} className="flex flex-col items-center justify-center p-4 rounded-3xl bg-emerald-500/5 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all border border-emerald-500/20 group">
+                                            <Phone size={24} className="mb-2 group-hover:scale-110 transition-transform" />
+                                            <span className="text-[10px] font-black uppercase tracking-wider">Call Now</span>
                                         </a>
-                                        <a href={`https://wa.me/${business.officialWhatsAppNumber || business.primaryContactNumber}`} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center p-3 rounded-2xl bg-green-50 text-green-600 hover:bg-green-100 dark:bg-green-500/10 dark:text-green-400 dark:hover:bg-green-500/20 transition-colors border border-green-200 dark:border-green-500/20">
-                                            <MessageCircle size={24} className="mb-1" />
-                                            <span className="text-xs font-bold">WhatsApp</span>
+                                        <a href={`https://wa.me/${business.officialWhatsAppNumber || business.primaryContactNumber}`} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center p-4 rounded-3xl bg-green-500/5 text-green-500 hover:bg-green-500 hover:text-white transition-all border border-green-500/20 group">
+                                            <MessageCircle size={24} className="mb-2 group-hover:scale-110 transition-transform" />
+                                            <span className="text-[10px] font-black uppercase tracking-wider">WhatsApp</span>
                                         </a>
-                                        <a href={`https://maps.google.com/?q=${business.gpsCoordinates?.lat || ''},${business.gpsCoordinates?.lng || ''}`} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center p-3 rounded-2xl bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20 transition-colors border border-blue-200 dark:border-blue-500/20">
-                                            <MapPin size={24} className="mb-1" />
-                                            <span className="text-xs font-bold">Direction</span>
+                                        <a href={`https://maps.google.com/?q=${business.gpsCoordinates?.lat || ''},${business.gpsCoordinates?.lng || ''}`} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center p-4 rounded-3xl bg-blue-500/5 text-blue-500 hover:bg-blue-500 hover:text-white transition-all border border-blue-500/20 group">
+                                            <MapPin size={24} className="mb-2 group-hover:scale-110 transition-transform" />
+                                            <span className="text-[10px] font-black uppercase tracking-wider">Direction</span>
                                         </a>
-                                        <button className="flex flex-col items-center justify-center p-3 rounded-2xl bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10 transition-colors border border-slate-200 dark:border-white/10">
-                                            <Share2 size={24} className="mb-1" />
-                                            <span className="text-xs font-bold">Share</span>
+                                        <button className={`flex flex-col items-center justify-center p-4 rounded-3xl transition-all border group ${isLight ? 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-900 hover:text-white' : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/20 hover:text-white'}`}>
+                                            <Share2 size={24} className="mb-2 group-hover:scale-110 transition-transform" />
+                                            <span className="text-[10px] font-black uppercase tracking-wider">Share</span>
                                         </button>
                                     </div>
                                     
-                                    <div className="space-y-6">
+                                    <div className="space-y-8">
                                         <div>
-                                            <h3 className={`text-lg font-bold mb-3 flex items-center gap-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                                                <Info size={20} className="text-primary" /> About
+                                            <h3 className={`text-xl font-black mb-4 flex items-center gap-3 font-display ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                                                <div className="p-2 rounded-xl bg-primary/10 text-primary">
+                                                    <Info size={22} />
+                                                </div>
+                                                About Business
                                             </h3>
-                                            <p className={`leading-relaxed text-sm ${isLight ? 'text-slate-600' : 'text-white/70'}`}>
-                                                {business.description || "No detailed description provided by the business."}
+                                            <p className={`leading-loose text-sm font-medium ${isLight ? 'text-slate-600' : 'text-white/70'} italic`}>
+                                                "{business.description || "No detailed description provided by the business."}"
                                             </p>
                                         </div>
                                         
-                                        {/* Gallery quick preview if exists, else skip */}
+                                        {/* Gallery */}
                                         {business.gallery && business.gallery.length > 0 && (
                                             <div>
-                                                <h3 className={`text-lg font-bold mb-3 flex items-center gap-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                                                    <ImageIcon size={20} className="text-primary" /> Photos
+                                                <h3 className={`text-xl font-black mb-4 flex items-center gap-3 font-display ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                                                    <div className="p-2 rounded-xl bg-primary/10 text-primary">
+                                                        <ImageIcon size={22} />
+                                                    </div>
+                                                    Photo Gallery
                                                 </h3>
-                                                <div className="flex gap-3 overflow-x-auto pb-4 snap-x">
+                                                <div className="flex gap-4 overflow-x-auto pb-6 snap-x scrollbar-hide">
                                                     {business.gallery.map((img: string, i: number) => (
-                                                        <div key={i} className="min-w-[140px] h-[140px] rounded-xl overflow-hidden shrink-0 snap-start border border-slate-200 dark:border-white/10">
+                                                        <motion.div 
+                                                            key={i} 
+                                                            whileHover={{ scale: 1.05 }}
+                                                            className="min-w-[180px] h-[180px] rounded-3xl overflow-hidden shrink-0 snap-start border border-slate-200 dark:border-white/10 shadow-lg"
+                                                        >
                                                             <img 
                                                                 src={`${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}/${img}`}
                                                                 alt="Gallery"
                                                                 className="w-full h-full object-cover"
                                                                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                                                             />
-                                                        </div>
+                                                        </motion.div>
                                                     ))}
                                                 </div>
                                             </div>
@@ -199,26 +229,95 @@ function BusinessDetail() {
                                 </div>
                             </motion.div>
 
-                            {/* Keywords / Tags */}
-                            {business.keywords && business.keywords.length > 0 && (
                                 <motion.div 
                                     initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-                                    className={`rounded-3xl p-6 backdrop-blur-xl border border-solid ${
-                                        isLight ? 'bg-white/90 border-slate-200' : 'bg-white/5 border-white/10'
+                                    className={`rounded-[2.5rem] p-8 backdrop-blur-3xl border border-solid shadow-2xl ${
+                                        isLight ? 'bg-white/95 border-slate-200' : 'bg-slate-900/90 border-white/10'
                                     }`}
                                 >
-                                    <h3 className={`text-sm font-bold uppercase tracking-wider mb-4 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Specialities & Tags</h3>
-                                    <div className="flex flex-wrap gap-2">
+                                    <h3 className={`text-2xl font-black mb-8 flex items-center gap-4 font-display ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                                        <div className="p-2.5 rounded-2xl bg-blue-500/10 text-blue-500">
+                                            <Briefcase size={24} />
+                                        </div>
+                                        Professional Services
+                                    </h3>
+                                    <div className="grid gap-6 sm:grid-cols-2">
+                                        {business.services.map((svc: any, i: number) => (
+                                            <div key={i} className={`flex gap-5 p-5 rounded-3xl border transition-all hover:-translate-y-1 hover:shadow-xl ${isLight ? 'bg-white border-slate-100 hover:border-primary/30 shadow-sm' : 'bg-slate-800/80 border-white/5 hover:border-white/20'}`}>
+                                                <div className="w-24 h-24 shrink-0 rounded-2xl overflow-hidden bg-primary/5 flex items-center justify-center border border-white/5">
+                                                    {svc.image ? (
+                                                        <img src={`${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}/${svc.image}`} alt={svc.name} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <Briefcase size={32} className="text-primary/30" />
+                                                    )}
+                                                </div>
+                                                <div className="flex flex-col flex-1 justify-center">
+                                                    <h4 className={`font-black text-lg mb-1 line-clamp-1 font-display ${isLight ? 'text-slate-900' : 'text-white'}`}>{svc.name}</h4>
+                                                    <p className={`text-[11px] leading-relaxed line-clamp-2 mb-3 font-medium ${isLight ? 'text-slate-500' : 'text-white/50'}`}>{svc.description}</p>
+                                                    <div className="font-black text-primary text-base flex items-center gap-1">
+                                                        <span className="text-xs opacity-60">Starting from</span>
+                                                        ₹{svc.price}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </motion.div>
+
+                                <motion.div 
+                                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+                                    className={`rounded-[2.5rem] p-8 backdrop-blur-3xl border border-solid shadow-2xl ${
+                                        isLight ? 'bg-white/95 border-slate-200' : 'bg-slate-900/90 border-white/10'
+                                    }`}
+                                >
+                                    <h3 className={`text-2xl font-black mb-8 flex items-center gap-4 font-display ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                                        <div className="p-2.5 rounded-2xl bg-amber-500/10 text-amber-500">
+                                            <Package size={24} />
+                                        </div>
+                                        Available Products
+                                    </h3>
+                                    <div className="grid gap-6 sm:grid-cols-2">
+                                        {business.products.map((prod: any, i: number) => (
+                                            <div key={i} className={`flex gap-5 p-5 rounded-3xl border transition-all hover:-translate-y-1 hover:shadow-xl ${isLight ? 'bg-white border-slate-100 hover:border-primary/30 shadow-sm' : 'bg-slate-800/80 border-white/5 hover:border-white/20'}`}>
+                                                <div className="w-24 h-24 shrink-0 rounded-2xl overflow-hidden bg-primary/5 flex items-center justify-center border border-white/5">
+                                                    {prod.image ? (
+                                                        <img src={`${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}/${prod.image}`} alt={prod.name} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <Package size={32} className="text-primary/30" />
+                                                    )}
+                                                </div>
+                                                <div className="flex flex-col flex-1 justify-center">
+                                                    <h4 className={`font-black text-lg mb-1 line-clamp-1 font-display ${isLight ? 'text-slate-900' : 'text-white'}`}>{prod.name}</h4>
+                                                    <p className={`text-[11px] leading-relaxed line-clamp-2 mb-3 font-medium ${isLight ? 'text-slate-500' : 'text-white/50'}`}>{prod.description}</p>
+                                                    <div className="font-black text-primary text-base flex items-center gap-1">
+                                                        ₹{prod.price}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </motion.div>
+
+                                <motion.div 
+                                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+                                    className={`rounded-[2rem] p-8 backdrop-blur-3xl border border-solid ${
+                                        isLight ? 'bg-white/95 border-slate-200 shadow-xl shadow-blue-900/5' : 'bg-slate-900/90 border-white/10'
+                                    }`}
+                                >
+                                    <h3 className={`text-xs font-black uppercase tracking-[0.2em] mb-6 flex items-center gap-2 ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
+                                        <div className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_10px_rgba(var(--primary),0.5)]" />
+                                        Specialities & Tags
+                                    </h3>
+                                    <div className="flex flex-wrap gap-3">
                                         {business.keywords.map((kw: string, i: number) => (
-                                            <span key={i} className={`px-3 py-1.5 rounded-lg text-xs font-medium border ${
-                                                isLight ? 'bg-slate-100 border-slate-200 text-slate-700' : 'bg-white/5 border-white/10 text-white/80'
+                                            <span key={i} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all hover:scale-105 cursor-default ${
+                                                isLight ? 'bg-slate-50 border-slate-200 text-slate-600 hover:border-primary/30' : 'bg-white/5 border-white/5 text-white/60 hover:border-white/20'
                                             }`}>
                                                 {kw}
                                             </span>
                                         ))}
                                     </div>
                                 </motion.div>
-                            )}
                         </div>
 
                         {/* Sidebar */}
@@ -228,7 +327,7 @@ function BusinessDetail() {
                             <motion.div 
                                 initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
                                 className={`rounded-3xl p-6 backdrop-blur-xl border border-solid ${
-                                    isLight ? 'bg-white/90 border-slate-200 shadow-xl shadow-blue-900/5' : 'bg-white/5 border-white/10 shadow-black/50'
+                                    isLight ? 'bg-white/95 border-slate-200 shadow-xl shadow-blue-900/5' : 'bg-slate-900/90 border-white/10 shadow-black/50'
                                 }`}
                             >
                                 <h3 className={`text-lg font-bold mb-5 flex items-center gap-2 border-b pb-4 ${
@@ -237,39 +336,53 @@ function BusinessDetail() {
                                     Contact Details
                                 </h3>
                                 
-                                <div className="space-y-5">
-                                    <div className="flex items-start gap-4">
-                                        <div className={`mt-0.5 p-2 rounded-xl shrink-0 ${isLight ? 'bg-blue-50 text-blue-600' : 'bg-blue-500/10 text-blue-400'}`}>
-                                            <MapPin size={20} />
+                                <div className="space-y-6">
+                                    <div className="flex items-start gap-5">
+                                        <div className={`mt-0.5 p-3 rounded-2xl shrink-0 transition-transform hover:rotate-12 ${isLight ? 'bg-blue-50 text-blue-600 shadow-sm' : 'bg-blue-500/10 text-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.1)]'}`}>
+                                            <MapPin size={22} />
                                         </div>
                                         <div>
-                                            <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Address</p>
-                                            <p className={`text-sm font-medium leading-relaxed ${isLight ? 'text-slate-800' : 'text-white/90'}`}>
+                                            <p className={`text-[10px] font-black uppercase tracking-[0.15em] mb-1.5 ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>Registered Office</p>
+                                            <p className={`text-sm font-bold leading-relaxed ${isLight ? 'text-slate-800' : 'text-white/90'}`}>
                                                 {business.registeredOfficeAddress || 'Address not listed'}
                                             </p>
                                         </div>
                                     </div>
                                     
-                                    <div className="flex items-start gap-4">
-                                        <div className={`p-2 rounded-xl shrink-0 ${isLight ? 'bg-emerald-50 text-emerald-600' : 'bg-emerald-500/10 text-emerald-400'}`}>
-                                            <Phone size={20} />
+                                    <div className="flex items-start gap-5">
+                                        <div className={`p-3 rounded-2xl shrink-0 transition-transform hover:rotate-12 ${isLight ? 'bg-emerald-50 text-emerald-600 shadow-sm' : 'bg-emerald-500/10 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.1)]'}`}>
+                                            <Phone size={22} />
                                         </div>
                                         <div>
-                                            <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Phone</p>
-                                            <p className={`text-sm font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>
+                                            <p className={`text-[10px] font-black uppercase tracking-[0.15em] mb-1.5 ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>Official Hotline</p>
+                                            <p className={`text-base font-black tracking-tight ${isLight ? 'text-slate-900' : 'text-white'}`}>
                                                 {business.primaryContactNumber}
                                             </p>
                                         </div>
                                     </div>
 
-                                    {business.website && (
-                                        <div className="flex items-start gap-4">
-                                            <div className={`p-2 rounded-xl shrink-0 ${isLight ? 'bg-purple-50 text-purple-600' : 'bg-purple-500/10 text-purple-400'}`}>
-                                                <Globe size={20} />
+                                    {business.officialWhatsAppNumber && (
+                                        <div className="flex items-start gap-5">
+                                            <div className={`p-3 rounded-2xl shrink-0 transition-transform hover:rotate-12 ${isLight ? 'bg-green-50 text-green-600 shadow-sm' : 'bg-green-500/10 text-green-400 shadow-[0_0_20px_rgba(34,197,94,0.1)]'}`}>
+                                                <MessageCircle size={22} />
                                             </div>
                                             <div>
-                                                <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>Website</p>
-                                                <a href={business.website.startsWith('http') ? business.website : `https://${business.website}`} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-primary hover:underline truncate block max-w-[200px]">
+                                                <p className={`text-[10px] font-black uppercase tracking-[0.15em] mb-1.5 ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>WhatsApp Support</p>
+                                                <p className={`text-base font-black tracking-tight ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                                                    {business.officialWhatsAppNumber}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {business.website && (
+                                        <div className="flex items-start gap-5">
+                                            <div className={`p-3 rounded-2xl shrink-0 transition-transform hover:rotate-12 ${isLight ? 'bg-purple-50 text-purple-600 shadow-sm' : 'bg-purple-500/10 text-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.1)]'}`}>
+                                                <Globe size={22} />
+                                            </div>
+                                            <div>
+                                                <p className={`text-[10px] font-black uppercase tracking-[0.15em] mb-1.5 ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>Digital Portal</p>
+                                                <a href={business.website.startsWith('http') ? business.website : `https://${business.website}`} target="_blank" rel="noopener noreferrer" className="text-sm font-black text-primary hover:underline hover:text-primary/80 truncate block max-w-[180px]">
                                                     {business.website}
                                                 </a>
                                             </div>
@@ -282,7 +395,7 @@ function BusinessDetail() {
                             <motion.div 
                                 initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}
                                 className={`rounded-3xl p-6 backdrop-blur-xl border border-solid ${
-                                    isLight ? 'bg-white/90 border-slate-200 shadow-xl shadow-blue-900/5' : 'bg-white/5 border-white/10 shadow-black/50'
+                                    isLight ? 'bg-white/95 border-slate-200 shadow-xl shadow-blue-900/5' : 'bg-slate-900/90 border-white/10 shadow-black/50'
                                 }`}
                             >
                                 <h3 className={`text-lg font-bold mb-5 flex items-center gap-2 border-b pb-4 ${
@@ -291,21 +404,38 @@ function BusinessDetail() {
                                     Business Hours
                                 </h3>
                                 
-                                <div className="space-y-4">
-                                    <div className="flex justify-between items-center">
-                                        <div className="flex items-center gap-3">
-                                            <Clock size={18} className="text-primary" />
-                                            <span className={`text-sm font-medium ${isLight ? 'text-slate-700' : 'text-white/80'}`}>Daily Timing</span>
+                                <div className="space-y-6">
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex items-center gap-4">
+                                            <div className={`p-2.5 rounded-2xl ${isLight ? 'bg-slate-100 text-slate-500' : 'bg-white/5 text-slate-400'}`}>
+                                                <Clock size={20} />
+                                            </div>
+                                            <span className={`text-sm font-bold ${isLight ? 'text-slate-700' : 'text-white/80'}`}>Operations</span>
                                         </div>
-                                        <span className={`text-sm font-bold ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                                            {business.openingTime || '09:00 AM'} - {business.closingTime || '06:00 PM'}
-                                        </span>
+                                        <div className="text-right pt-1">
+                                            {(() => {
+                                                const opens = (business.openingTime || "09:00").split(',');
+                                                const closes = (business.closingTime || "18:00").split(',');
+                                                const len = Math.max(opens.length, closes.length, 1);
+                                                const blocks = [];
+                                                for (let i = 0; i < len; i++) {
+                                                    const openFmt = format12Hour(opens[i]) || '--:--';
+                                                    const closeFmt = format12Hour(closes[i]) || '--:--';
+                                                    blocks.push(
+                                                        <div key={i} className={`text-sm font-black ${isLight ? 'text-slate-900' : 'text-white'} ${i > 0 ? 'mt-1.5 text-xs opacity-70' : ''}`}>
+                                                            {openFmt} - {closeFmt}
+                                                        </div>
+                                                    );
+                                                }
+                                                return blocks;
+                                            })()}
+                                        </div>
                                     </div>
                                     
                                     {business.weeklyOff && business.weeklyOff.toLowerCase() !== 'none' && (
-                                        <div className="flex justify-between items-center pt-3 border-t border-dashed border-slate-200 dark:border-white/10">
-                                            <span className={`text-sm font-medium ${isLight ? 'text-slate-700' : 'text-white/80'}`}>Weekly Off</span>
-                                            <span className="text-xs font-bold bg-red-100 text-red-600 dark:bg-red-500/10 dark:text-red-400 px-3 py-1 rounded-full uppercase">
+                                        <div className="flex justify-between items-center pt-5 border-t border-dashed border-slate-200 dark:border-white/10">
+                                            <span className={`text-sm font-bold ${isLight ? 'text-slate-700' : 'text-white/80'}`}>Weekly Holiday</span>
+                                            <span className="text-[10px] font-black bg-red-500/10 text-red-500 dark:bg-red-500/20 px-4 py-1.5 rounded-xl uppercase tracking-widest border border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.1)]">
                                                 {business.weeklyOff}
                                             </span>
                                         </div>
@@ -342,7 +472,7 @@ function BusinessDetail() {
 export default function BusinessDetailPage() {
     return (
         <Suspense fallback={
-            <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+            <div className="min-h-screen bg-[#020631] flex items-center justify-center text-white">
                 <Loader2 size={40} className="text-primary animate-spin" />
             </div>
         }>

@@ -417,6 +417,44 @@ exports.updateBusinessDetails = async (req, res, next) => {
         // Use helper for files
         const updateData = handleBusinessFiles(req, req.body);
 
+        // Parse services and map files
+        if (updateData.servicesData) {
+            try {
+                const services = JSON.parse(updateData.servicesData);
+                if (req.files && req.files.serviceImages) {
+                    let fileIndex = 0;
+                    services.forEach((service) => {
+                        if (service.image === `new_file_${fileIndex}` && fileIndex < req.files.serviceImages.length) {
+                            service.image = req.files.serviceImages[fileIndex].path.replace(/\\/g, '/');
+                            fileIndex++;
+                        }
+                    });
+                }
+                updateData.services = services.slice(0, 10);
+            } catch (e) {
+                console.error("Failed to parse servicesData", e);
+            }
+        }
+
+        // Parse products and map files
+        if (updateData.productsData) {
+            try {
+                const products = JSON.parse(updateData.productsData);
+                if (req.files && req.files.productImages) {
+                    let fileIndex = 0;
+                    products.forEach((product) => {
+                        if (product.image === `new_file_${fileIndex}` && fileIndex < req.files.productImages.length) {
+                            product.image = req.files.productImages[fileIndex].path.replace(/\\/g, '/');
+                            fileIndex++;
+                        }
+                    });
+                }
+                updateData.products = products.slice(0, 10);
+            } catch (e) {
+                console.error("Failed to parse productsData", e);
+            }
+        }
+
         // If already approved, keep approved so listing stays visible on frontend.
         // Set a flag so admin can see there are pending changes to review.
         // Only reset to 'pending' if they were rejected/never approved yet.

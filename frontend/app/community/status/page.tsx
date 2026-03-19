@@ -34,7 +34,7 @@ export default function StatusPage() {
                     setBusiness(data.data);
                     // If approved, go to dashboard
                     if (data.data.approvalStatus === 'approved') {
-                        router.push("/pre-launch");
+                        router.push("/");
                     }
                 } else {
                     router.push("/community/login");

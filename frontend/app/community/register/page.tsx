@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
     Building2, MapPin, Clock, ShieldCheck, Image as ImageIcon, Users,
     ChevronRight, ChevronLeft, Upload, CheckCircle2, AlertCircle, X, Map,
-    Loader2, CheckCircle, ExternalLink, Fingerprint
+    Loader2, CheckCircle, ExternalLink, Fingerprint, Plus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +43,18 @@ function RegisterPageContent() {
     const [isEmailVerified, setIsEmailVerified] = useState(false);
     const [isLocating, setIsLocating] = useState(false);
     const [mainCategories, setMainCategories] = useState<{ _id: string, name: string }[]>([]);
+
+    // Timings State
+    const [timings, setTimings] = useState<{ open: string; close: string }[]>([{ open: "", close: "" }]);
+
+    // Sync timings to formData
+    useEffect(() => {
+        setFormData(prev => ({
+            ...prev,
+            openingTime: timings.map(t => t.open).join(','),
+            closingTime: timings.map(t => t.close).join(',')
+        }));
+    }, [timings]);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -200,6 +212,19 @@ function RegisterPageContent() {
                             joinBulkBuying: b.joinBulkBuying || false,
                             joinFraudAlerts: b.joinFraudAlerts || false
                         });
+                        
+                        // Parse mult-timings
+                        if (b.openingTime || b.closingTime) {
+                            const opens = (b.openingTime || "").split(",");
+                            const closes = (b.closingTime || "").split(",");
+                            const len = Math.max(opens.length, closes.length, 1);
+                            const newTimings = [];
+                            for (let i = 0; i < len; i++) {
+                                newTimings.push({ open: opens[i] || "", close: closes[i] || "" });
+                            }
+                            setTimings(newTimings);
+                        }
+
                         setIsEmailVerified(true);
                         if (b.rejectionReason) setRejectionReason(b.rejectionReason);
                     }
@@ -557,17 +582,58 @@ function RegisterPageContent() {
                             <h2 className="text-2xl font-bold text-white">Operations & Status</h2>
                         </div>
                         <div className="space-y-4">
-                            <div className="grid md:grid-cols-2 gap-4">
-                                <div className="grid gap-2">
-                                    <Label className="text-white/70">Opening Time</Label>
-                                    <Input type="time" name="openingTime" value={formData.openingTime} onChange={handleInputChange} className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50" />
+                            {timings.map((timing, index) => (
+                                <div key={index} className="flex flex-col sm:flex-row gap-4 items-end bg-white/5 p-4 rounded-xl border border-white/10 relative">
+                                    {timings.length > 1 && (
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setTimings(timings.filter((_, i) => i !== index))}
+                                            className="absolute top-2 right-2 text-white/40 hover:text-red-400 transition"
+                                        >
+                                            <X size={16} />
+                                        </button>
+                                    )}
+                                    <div className="grid gap-2 w-full">
+                                        <Label className="text-white/70">Opening Time</Label>
+                                        <Input 
+                                            type="time" 
+                                            value={timing.open} 
+                                            onChange={(e) => {
+                                                const newTimings = [...timings];
+                                                newTimings[index].open = e.target.value;
+                                                setTimings(newTimings);
+                                            }} 
+                                            className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50 [&::-webkit-calendar-picker-indicator]:brightness-0 [&::-webkit-calendar-picker-indicator]:invert-[1] [&::-webkit-calendar-picker-indicator]:opacity-70"
+                                            style={{ colorScheme: 'dark' }}
+                                        />
+                                    </div>
+                                    <div className="grid gap-2 w-full">
+                                        <Label className="text-white/70">Closing Time</Label>
+                                        <Input 
+                                            type="time" 
+                                            value={timing.close} 
+                                            onChange={(e) => {
+                                                const newTimings = [...timings];
+                                                newTimings[index].close = e.target.value;
+                                                setTimings(newTimings);
+                                            }} 
+                                            className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50 [&::-webkit-calendar-picker-indicator]:brightness-0 [&::-webkit-calendar-picker-indicator]:invert-[1] [&::-webkit-calendar-picker-indicator]:opacity-70"
+                                            style={{ colorScheme: 'dark' }}
+                                        />
+                                    </div>
                                 </div>
-                                <div className="grid gap-2">
-                                    <Label className="text-white/70">Closing Time</Label>
-                                    <Input type="time" name="closingTime" value={formData.closingTime} onChange={handleInputChange} className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50" />
-                                </div>
-                            </div>
-                            <div className="grid gap-2">
+                            ))}
+                            
+                            <Button 
+                                type="button" 
+                                variant="outline" 
+                                onClick={() => setTimings([...timings, { open: "", close: "" }])}
+                                className="w-fit border-dashed border-white/20 text-white/70 hover:text-white bg-transparent text-sm h-9 px-4"
+                            >
+                                <Plus size={16} className="mr-2" /> Add Timing Block
+                            </Button>
+
+                            <div className="grid gap-2 pt-2">
                                 <Label className="text-white/70">Weekly Off</Label>
                                 <Input name="weeklyOff" value={formData.weeklyOff} onChange={handleInputChange} className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50" />
                             </div>
