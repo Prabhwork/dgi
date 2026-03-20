@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 const Admin = require('../models/Admin');
 const Business = require('../models/Business');
 
@@ -30,8 +31,18 @@ exports.protect = async (req, res, next) => {
             user = await Business.findById(decoded.id);
         }
 
+        // If not business, try to find as regular User
+        if (!user) {
+            user = await User.findById(decoded.id);
+        }
+
         if (!user) {
             return res.status(401).json({ success: false, error: 'Not authorized to access this route' });
+        }
+
+        // Check if user is suspended
+        if (user.status === 'suspended') {
+            return res.status(403).json({ success: false, error: 'Your account has been suspended. Please contact support.' });
         }
 
         req.user = user;
@@ -56,6 +67,7 @@ exports.authorize = (...roles) => {
         const isRoleAuthorized = roles.some(role => {
             if (role === 'admin' && req.user.constructor.modelName === 'Admin') return true;
             if (role === 'business' && req.user.constructor.modelName === 'Business') return true;
+            if (role === 'user' && req.user.constructor.modelName === 'User') return true;
             return false;
         });
 

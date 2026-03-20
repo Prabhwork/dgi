@@ -1,8 +1,9 @@
 const axios = require('axios');
 const Business = require('../models/Business');
+const Claim = require('../models/Claim');
 const OTP = require('../models/OTP');
 const sendEmail = require('../utils/sendEmail');
-const { getOTPTemplate, getRegistrationSuccessTemplate, getRejectionTemplate } = require('../utils/emailTemplates');
+const { getOTPTemplate, getRegistrationSuccessTemplate, getRejectionTemplate, getUserNotificationTemplate, getResetOTPTemplate } = require('../utils/emailTemplates');
 const speakeasy = require('speakeasy');
 const qrcode = require('qrcode');
 const jwt = require('jsonwebtoken');
@@ -23,11 +24,21 @@ const handleBusinessFiles = (req, existingData = {}) => {
     return businessData;
 };
 
+const User = require('../models/User');
+
 // @desc    Register a business
 // @route   POST /api/business/register
 // @access  Public
 exports.registerBusiness = async (req, res, next) => {
     try {
+        const { officialEmailAddress } = req.body;
+
+        // Check if email already exists in User model
+        const userExists = await User.findOne({ email: officialEmailAddress });
+        if (userExists) {
+            return res.status(400).json({ success: false, error: 'Email already registered as a regular user' });
+        }
+
         let businessData = handleBusinessFiles(req, req.body);
 
         // Parse keywords and GPS if they are strings
@@ -125,6 +136,12 @@ exports.sendOTP = async (req, res, next) => {
 
         if (!email) {
             return res.status(400).json({ success: false, error: 'Please provide an email' });
+        }
+
+        // Check if email already exists in User model
+        const userExists = await User.findOne({ email });
+        if (userExists) {
+            return res.status(400).json({ success: false, error: 'Email already registered as a regular user' });
         }
 
         // Generate 6-digit OTP
@@ -263,8 +280,17 @@ exports.handleDigiLockerCallback = async (req, res) => {
 // @access  Private/Admin
 exports.getAllBusinesses = async (req, res, next) => {
     try {
-        const businesses = await Business.find();
-        res.status(200).json({ success: true, data: businesses });
+        const businesses = await Business.find().lean();
+        
+        // Fetch all claims and map them to businesses
+        const allClaims = await Claim.find().lean();
+        
+        const businessesWithClaims = businesses.map(business => ({
+            ...business,
+            claims: allClaims.filter(claim => claim.businessId.toString() === business._id.toString())
+        }));
+
+        res.status(200).json({ success: true, data: businessesWithClaims });
     } catch (err) {
         res.status(400).json({ success: false, error: err.message });
     }
@@ -456,12 +482,8 @@ exports.updateBusinessDetails = async (req, res, next) => {
         }
 
         // If already approved, keep approved so listing stays visible on frontend.
-        // Set a flag so admin can see there are pending changes to review.
-        // Only reset to 'pending' if they were rejected/never approved yet.
-        if (business.approvalStatus === 'approved') {
-            updateData.hasPendingChanges = true;
-            // Keep approvalStatus as 'approved' — don't remove from public listing!
-        } else {
+        // We no longer set hasPendingChanges = true because the user wants updates to be automatic.
+        if (business.approvalStatus !== 'approved') {
             // Was pending or rejected — reset to pending for fresh admin review
             updateData.approvalStatus = 'pending';
             updateData.rejectionReason = '';
@@ -698,5 +720,108 @@ exports.verify2FALogin = async (req, res, next) => {
         sendTokenResponse(business, 200, res);
     } catch (err) {
         res.status(401).json({ success: false, error: 'Token is invalid or expired' });
+    }
+};
+// @desc    Forgot Password - Send OTP
+// @route   POST /api/business/forgot-password
+// @access  Public
+exports.forgotPassword = async (req, res, next) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ success: false, error: 'Please provide an email address' });
+        }
+
+        const business = await Business.findOne({ officialEmailAddress: email });
+        if (!business) {
+            return res.status(404).json({ success: false, error: 'No business found with this email' });
+        }
+
+        // Generate 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+        // Save OTP to temporary collection
+        await OTP.findOneAndUpdate(
+            { email },
+            { otp, createdAt: Date.now() },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
+
+        // Send Email
+        try {
+            const html = getResetOTPTemplate(business.businessName, otp);
+
+            await sendEmail({
+                email,
+                subject: 'Password Reset OTP - DBI Community',
+                html
+            });
+        } catch (mailErr) {
+            console.error('Forgot password email failed:', mailErr);
+        }
+
+        res.status(200).json({ success: true, message: 'Reset OTP sent to your email' });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+// @desc    Reset Password
+// @route   POST /api/business/reset-password
+// @access  Public
+exports.resetPassword = async (req, res, next) => {
+    try {
+        const { email, otp, password } = req.body;
+
+        if (!email || !otp || !password) {
+            return res.status(400).json({ success: false, error: 'Please provide all required fields' });
+        }
+
+        // Verify OTP
+        const otpRecord = await OTP.findOne({ email, otp });
+        if (!otpRecord) {
+            return res.status(400).json({ success: false, error: 'Invalid or expired OTP' });
+        }
+
+        const business = await Business.findOne({ officialEmailAddress: email });
+        if (!business) {
+            return res.status(404).json({ success: false, error: 'Business not found' });
+        }
+
+        // Update password (pre-save hook will hash it)
+        business.password = password;
+        await business.save();
+
+        // Remove OTP
+        await OTP.deleteOne({ _id: otpRecord._id });
+
+        // Send confirmation email
+        try {
+            const successMsg = "Your business account password has been successfully reset. You have been automatically logged in.";
+            const html = getUserNotificationTemplate(
+                business.businessName,
+                'Password Reset Success',
+                successMsg,
+                '✅',
+                '#10b981'
+            );
+
+            await sendEmail({
+                email,
+                subject: 'Password Reset Successful - DBI',
+                html
+            });
+        } catch (mailErr) {
+            console.error('Reset confirmation email failed:', mailErr);
+        }
+
+        res.status(200).json({ 
+            success: true, 
+            message: 'Password reset successful.',
+            token: business.getSignedJwtToken()
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
     }
 };

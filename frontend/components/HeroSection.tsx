@@ -332,7 +332,8 @@ export default function HeroSection() {
                                         letterSpacing: "0.25em"
                                     }}
                                 >
-                                    DIGITAL BOOK
+                                    PRE 
+                                    LAUNCH
                                 </motion.h1>
                                 <motion.p
                                     initial={{ opacity: 0 }}
@@ -341,7 +342,7 @@ export default function HeroSection() {
                                     className="mt-2 text-xs sm:text-sm font-bold tracking-[0.3em] uppercase opacity-90"
                                     style={{ color: "#00d4ff", textShadow: "0 0 20px rgba(0,212,255,0.5)" }}
                                 >
-                                    OF INDIA
+                                    Prepared To Be Amazed!!
                                 </motion.p>
                                 <motion.div
                                     initial={{ scaleX: 0 }}
@@ -356,7 +357,7 @@ export default function HeroSection() {
                                     className="font-medium max-w-[180px] sm:max-w-[240px] md:max-w-[300px] mx-auto text-[10px] sm:text-xs leading-relaxed opacity-80"
                                     style={{ color: "#ffffff", textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}
                                 >
-                                    Connect with local businesses and discover India's vast digital marketplace today.
+                                    Digital Book Of India is on its way to make your way of living more easier..stay tuned.
                                 </motion.p>
                             </div>
                         </motion.div>

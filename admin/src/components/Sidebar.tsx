@@ -33,6 +33,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         { name: 'Categories', path: '/dashboard/categories', icon: Layers },
         { name: 'Subcategories', path: '/dashboard/subcategories', icon: Tag },
         { name: 'Business Approvals', path: '/dashboard/businesses', icon: ShieldCheck },
+        { name: 'User Management', path: '/dashboard/users', icon: UserCheck },
         { name: 'Features', path: '/dashboard/features', icon: Layers },
         { name: 'Solutions', path: '/dashboard/solutions', icon: Tag },
         { name: 'Page Details', path: '/dashboard/page-details', icon: LayoutDashboard },

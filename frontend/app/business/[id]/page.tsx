@@ -7,7 +7,8 @@ import Footer from "@/components/Footer";
 import { 
     MapPin, Star, Clock, Phone, Globe, ArrowLeft, Loader2, 
     MessageCircle, ShieldCheck, Mail, Edit3, Image as ImageIcon,
-    Info, Share2, BadgeCheck, Briefcase, Package
+    Info, Share2, BadgeCheck, Briefcase, Package,
+    ShoppingBag
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
@@ -36,6 +37,67 @@ function BusinessDetail() {
     const [business, setBusiness] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
+    const [claimLoading, setClaimLoading] = useState(false);
+    const [claimForm, setClaimForm] = useState({
+        fullName: "",
+        phoneNumber: "",
+        email: "",
+        ownerProof: null as File | null
+    });
+
+    const handleShare = async () => {
+        const shareData = {
+            title: business?.brandName || business?.businessName || "Digital Book of India",
+            text: business?.description || "Check out this business on Digital Book of India",
+            url: window.location.href,
+        };
+
+        try {
+            if (navigator.share) {
+                await navigator.share(shareData);
+            } else {
+                await navigator.clipboard.writeText(window.location.href);
+                alert("Link copied to clipboard!");
+            }
+        } catch (err) {
+            console.error("Error sharing:", err);
+        }
+    };
+
+    const handleSubmitClaim = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!claimForm.ownerProof) {
+            alert("Please upload proof of ownership");
+            return;
+        }
+
+        setClaimLoading(true);
+        const formData = new FormData();
+        formData.append("fullName", claimForm.fullName);
+        formData.append("phoneNumber", claimForm.phoneNumber);
+        formData.append("email", claimForm.email);
+        formData.append("ownerProof", claimForm.ownerProof);
+
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/business/claim/${id}`, {
+                method: "POST",
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert("Claim submitted successfully! Admin will review it.");
+                setIsClaimModalOpen(false);
+                setClaimForm({ fullName: "", phoneNumber: "", email: "", ownerProof: null });
+            } else {
+                alert(data.error || "Failed to submit claim");
+            }
+        } catch (err) {
+            alert("Something went wrong");
+        } finally {
+            setClaimLoading(false);
+        }
+    };
 
     useEffect(() => {
         const fetchBusiness = async () => {
@@ -119,7 +181,7 @@ function BusinessDetail() {
                         onClick={() => router.back()} 
                         className={`flex items-center gap-2 mb-8 text-sm font-black uppercase tracking-widest transition-all hover:gap-3 ${isLight ? 'text-slate-500 hover:text-primary' : 'text-slate-400 hover:text-primary'}`}
                     >
-                        <ArrowLeft size={16} /> Back to Search
+                        <ArrowLeft size={16} /> Back
                     </button>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -141,23 +203,17 @@ function BusinessDetail() {
                                         onError={(e) => { (e.target as HTMLImageElement).src = '/assets/business-placeholder.jpg'; }}
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-                                    <div className="absolute top-6 right-6 bg-primary/20 backdrop-blur-xl text-primary-foreground px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border border-primary/30 shadow-2xl">
-                                        {business.businessCategory}
-                                    </div>
+
                                     <div className="absolute bottom-8 left-8 right-8">
                                         <h1 className="text-4xl md:text-6xl font-black text-white drop-shadow-2xl mb-4 font-display leading-tight">
                                             {business.brandName || business.businessName}
                                         </h1>
                                         <div className="flex flex-wrap items-center gap-4">
-                                            <div className="flex items-center gap-1.5 text-yellow-400 bg-black/50 px-3 py-1.5 rounded-xl backdrop-blur-md border border-white/10">
-                                                <Star size={18} fill="currentColor" />
-                                                <span className="font-black text-white">4.8</span>
-                                                <span className="text-white/60 text-xs ml-1">(120 Reviews)</span>
-                                            </div>
+                                            
                                             {(business.isVerified || business.aadhaarVerified || business.approvalStatus === 'approved') && (
                                                 <div className="flex items-center gap-2 text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-xl backdrop-blur-md border border-emerald-500/20 font-black uppercase text-[10px] tracking-widest shadow-[0_0_20px_rgba(16,185,129,0.15)]">
                                                     <BadgeCheck size={18} className="fill-emerald-500 text-black" />
-                                                    Verified Business
+                                                    Verified
                                                 </div>
                                             )}
                                         </div>
@@ -166,36 +222,69 @@ function BusinessDetail() {
                                 
                                 <div className="p-8">
                                     {/* Action row */}
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
-                                        <a href={`tel:${business.primaryContactNumber}`} className="flex flex-col items-center justify-center p-4 rounded-3xl bg-emerald-500/5 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all border border-emerald-500/20 group">
-                                            <Phone size={24} className="mb-2 group-hover:scale-110 transition-transform" />
-                                            <span className="text-[10px] font-black uppercase tracking-wider">Call Now</span>
+                                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+                                        <a 
+                                            href={`tel:${business.primaryContactNumber}`} 
+                                            className="flex items-center justify-center gap-2 p-3 rounded-xl bg-emerald-500 text-white hover:bg-emerald-600 transition-all hover:-translate-y-1 shadow-md shadow-emerald-500/20 group h-14"
+                                        >
+                                            <Phone size={20} className="group-hover:scale-110 transition-transform" />
+                                            <span className="text-[10px] font-black uppercase tracking-[0.05em]">Call Now</span>
                                         </a>
-                                        <a href={`https://wa.me/${business.officialWhatsAppNumber || business.primaryContactNumber}`} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center p-4 rounded-3xl bg-green-500/5 text-green-500 hover:bg-green-500 hover:text-white transition-all border border-green-500/20 group">
-                                            <MessageCircle size={24} className="mb-2 group-hover:scale-110 transition-transform" />
-                                            <span className="text-[10px] font-black uppercase tracking-wider">WhatsApp</span>
+                                        <a 
+                                            href={`https://wa.me/${business.officialWhatsAppNumber || business.primaryContactNumber}`} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer" 
+                                            className="flex items-center justify-center gap-2 p-3 rounded-xl bg-[#25D366] text-white hover:bg-[#22c35e] transition-all hover:-translate-y-1 shadow-md shadow-[#25D366]/20 group h-14"
+                                        >
+                                            <MessageCircle size={20} className="group-hover:scale-110 transition-transform" />
+                                            <span className="text-[10px] font-black uppercase tracking-[0.05em]">WhatsApp</span>
                                         </a>
-                                        <a href={`https://maps.google.com/?q=${business.gpsCoordinates?.lat || ''},${business.gpsCoordinates?.lng || ''}`} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center p-4 rounded-3xl bg-blue-500/5 text-blue-500 hover:bg-blue-500 hover:text-white transition-all border border-blue-500/20 group">
-                                            <MapPin size={24} className="mb-2 group-hover:scale-110 transition-transform" />
-                                            <span className="text-[10px] font-black uppercase tracking-wider">Direction</span>
+                                        <a 
+                                            href={`https://maps.google.com/?q=${business.gpsCoordinates?.lat || ''},${business.gpsCoordinates?.lng || ''}`} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer" 
+                                            className="flex items-center justify-center gap-2 p-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all hover:-translate-y-1 shadow-md shadow-blue-600/20 group h-14"
+                                        >
+                                            <MapPin size={20} className="group-hover:scale-110 transition-transform" />
+                                            <span className="text-[10px] font-black uppercase tracking-[0.05em]">Direction</span>
                                         </a>
-                                        <button className={`flex flex-col items-center justify-center p-4 rounded-3xl transition-all border group ${isLight ? 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-900 hover:text-white' : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/20 hover:text-white'}`}>
-                                            <Share2 size={24} className="mb-2 group-hover:scale-110 transition-transform" />
-                                            <span className="text-[10px] font-black uppercase tracking-wider">Share</span>
+                                        <button 
+                                            onClick={handleShare}
+                                            className={`flex items-center justify-center gap-2 p-3 rounded-xl transition-all hover:-translate-y-1 shadow-md group h-14 ${
+                                                isLight 
+                                                    ? 'bg-slate-800 text-white hover:bg-slate-900 shadow-slate-900/10' 
+                                                    : 'bg-slate-700 text-white hover:bg-slate-600 shadow-black/20'
+                                            }`}
+                                        >
+                                            <Share2 size={20} className="group-hover:scale-110 transition-transform" />
+                                            <span className="text-[10px] font-black uppercase tracking-[0.05em]">Share</span>
                                         </button>
                                     </div>
                                     
                                     <div className="space-y-8">
                                         <div>
-                                            <h3 className={`text-xl font-black mb-4 flex items-center gap-3 font-display ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                                                <div className="p-2 rounded-xl bg-primary/10 text-primary">
-                                                    <Info size={22} />
+                                            <h3 className={`text-2xl font-black mb-5 flex items-center gap-3 font-display ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                                                <div className="p-2.5 rounded-2xl bg-primary/10 text-primary">
+                                                    <Info size={24} />
                                                 </div>
                                                 About Business
                                             </h3>
-                                            <p className={`leading-loose text-sm font-medium ${isLight ? 'text-slate-600' : 'text-white/70'} italic`}>
-                                                "{business.description || "No detailed description provided by the business."}"
-                                            </p>
+                                            <div className={`leading-relaxed text-base font-medium mb-6 ${isLight ? 'text-slate-600' : 'text-white/80'}`}>
+                                                {business.description || "No detailed description provided by the business."}
+                                            </div>
+                                            
+                                            {/* Integrated Keywords */}
+                                            {business.keywords && business.keywords.length > 0 && (
+                                                <div className="flex flex-wrap gap-2.5 mt-6">
+                                                    {business.keywords.map((kw: string, i: number) => (
+                                                        <span key={i} className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all hover:scale-105 cursor-default ${
+                                                            isLight ? 'bg-slate-50 border-slate-200 text-slate-500 hover:border-primary/30' : 'bg-white/5 border-white/5 text-white/50 hover:border-white/20'
+                                                        }`}>
+                                                            #{kw.replace(/^#/, '')}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                         
                                         {/* Gallery */}
@@ -229,95 +318,9 @@ function BusinessDetail() {
                                 </div>
                             </motion.div>
 
-                                <motion.div 
-                                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-                                    className={`rounded-[2.5rem] p-8 backdrop-blur-3xl border border-solid shadow-2xl ${
-                                        isLight ? 'bg-white/95 border-slate-200' : 'bg-slate-900/90 border-white/10'
-                                    }`}
-                                >
-                                    <h3 className={`text-2xl font-black mb-8 flex items-center gap-4 font-display ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                                        <div className="p-2.5 rounded-2xl bg-blue-500/10 text-blue-500">
-                                            <Briefcase size={24} />
-                                        </div>
-                                        Professional Services
-                                    </h3>
-                                    <div className="grid gap-6 sm:grid-cols-2">
-                                        {business.services.map((svc: any, i: number) => (
-                                            <div key={i} className={`flex gap-5 p-5 rounded-3xl border transition-all hover:-translate-y-1 hover:shadow-xl ${isLight ? 'bg-white border-slate-100 hover:border-primary/30 shadow-sm' : 'bg-slate-800/80 border-white/5 hover:border-white/20'}`}>
-                                                <div className="w-24 h-24 shrink-0 rounded-2xl overflow-hidden bg-primary/5 flex items-center justify-center border border-white/5">
-                                                    {svc.image ? (
-                                                        <img src={`${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}/${svc.image}`} alt={svc.name} className="w-full h-full object-cover" />
-                                                    ) : (
-                                                        <Briefcase size={32} className="text-primary/30" />
-                                                    )}
-                                                </div>
-                                                <div className="flex flex-col flex-1 justify-center">
-                                                    <h4 className={`font-black text-lg mb-1 line-clamp-1 font-display ${isLight ? 'text-slate-900' : 'text-white'}`}>{svc.name}</h4>
-                                                    <p className={`text-[11px] leading-relaxed line-clamp-2 mb-3 font-medium ${isLight ? 'text-slate-500' : 'text-white/50'}`}>{svc.description}</p>
-                                                    <div className="font-black text-primary text-base flex items-center gap-1">
-                                                        <span className="text-xs opacity-60">Starting from</span>
-                                                        ₹{svc.price}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </motion.div>
 
-                                <motion.div 
-                                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-                                    className={`rounded-[2.5rem] p-8 backdrop-blur-3xl border border-solid shadow-2xl ${
-                                        isLight ? 'bg-white/95 border-slate-200' : 'bg-slate-900/90 border-white/10'
-                                    }`}
-                                >
-                                    <h3 className={`text-2xl font-black mb-8 flex items-center gap-4 font-display ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                                        <div className="p-2.5 rounded-2xl bg-amber-500/10 text-amber-500">
-                                            <Package size={24} />
-                                        </div>
-                                        Available Products
-                                    </h3>
-                                    <div className="grid gap-6 sm:grid-cols-2">
-                                        {business.products.map((prod: any, i: number) => (
-                                            <div key={i} className={`flex gap-5 p-5 rounded-3xl border transition-all hover:-translate-y-1 hover:shadow-xl ${isLight ? 'bg-white border-slate-100 hover:border-primary/30 shadow-sm' : 'bg-slate-800/80 border-white/5 hover:border-white/20'}`}>
-                                                <div className="w-24 h-24 shrink-0 rounded-2xl overflow-hidden bg-primary/5 flex items-center justify-center border border-white/5">
-                                                    {prod.image ? (
-                                                        <img src={`${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}/${prod.image}`} alt={prod.name} className="w-full h-full object-cover" />
-                                                    ) : (
-                                                        <Package size={32} className="text-primary/30" />
-                                                    )}
-                                                </div>
-                                                <div className="flex flex-col flex-1 justify-center">
-                                                    <h4 className={`font-black text-lg mb-1 line-clamp-1 font-display ${isLight ? 'text-slate-900' : 'text-white'}`}>{prod.name}</h4>
-                                                    <p className={`text-[11px] leading-relaxed line-clamp-2 mb-3 font-medium ${isLight ? 'text-slate-500' : 'text-white/50'}`}>{prod.description}</p>
-                                                    <div className="font-black text-primary text-base flex items-center gap-1">
-                                                        ₹{prod.price}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </motion.div>
 
-                                <motion.div 
-                                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-                                    className={`rounded-[2rem] p-8 backdrop-blur-3xl border border-solid ${
-                                        isLight ? 'bg-white/95 border-slate-200 shadow-xl shadow-blue-900/5' : 'bg-slate-900/90 border-white/10'
-                                    }`}
-                                >
-                                    <h3 className={`text-xs font-black uppercase tracking-[0.2em] mb-6 flex items-center gap-2 ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
-                                        <div className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_10px_rgba(var(--primary),0.5)]" />
-                                        Specialities & Tags
-                                    </h3>
-                                    <div className="flex flex-wrap gap-3">
-                                        {business.keywords.map((kw: string, i: number) => (
-                                            <span key={i} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all hover:scale-105 cursor-default ${
-                                                isLight ? 'bg-slate-50 border-slate-200 text-slate-600 hover:border-primary/30' : 'bg-white/5 border-white/5 text-white/60 hover:border-white/20'
-                                            }`}>
-                                                {kw}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </motion.div>
+                                
                         </div>
 
                         {/* Sidebar */}
@@ -404,42 +407,34 @@ function BusinessDetail() {
                                     Business Hours
                                 </h3>
                                 
-                                <div className="space-y-6">
-                                    <div className="flex justify-between items-start">
-                                        <div className="flex items-center gap-4">
-                                            <div className={`p-2.5 rounded-2xl ${isLight ? 'bg-slate-100 text-slate-500' : 'bg-white/5 text-slate-400'}`}>
-                                                <Clock size={20} />
-                                            </div>
-                                            <span className={`text-sm font-bold ${isLight ? 'text-slate-700' : 'text-white/80'}`}>Operations</span>
-                                        </div>
-                                        <div className="text-right pt-1">
-                                            {(() => {
-                                                const opens = (business.openingTime || "09:00").split(',');
-                                                const closes = (business.closingTime || "18:00").split(',');
-                                                const len = Math.max(opens.length, closes.length, 1);
-                                                const blocks = [];
-                                                for (let i = 0; i < len; i++) {
-                                                    const openFmt = format12Hour(opens[i]) || '--:--';
-                                                    const closeFmt = format12Hour(closes[i]) || '--:--';
-                                                    blocks.push(
-                                                        <div key={i} className={`text-sm font-black ${isLight ? 'text-slate-900' : 'text-white'} ${i > 0 ? 'mt-1.5 text-xs opacity-70' : ''}`}>
+                                <div className="space-y-1">
+                                    {(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']).map((day) => {
+                                        const isOff = business.weeklyOff?.toLowerCase() === day.toLowerCase();
+                                        const opens = (business.openingTime || "09:00").split(',');
+                                        const closes = (business.closingTime || "18:00").split(',');
+                                        const openFmt = format12Hour(opens[0]) || '09:00 AM';
+                                        const closeFmt = format12Hour(closes[0]) || '07:00 PM';
+
+                                        return (
+                                            <div key={day} className="flex justify-between items-center py-1">
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-1 h-1 rounded-full ${isOff ? 'bg-red-500' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]'}`} />
+                                                    <span className={`text-[13px] font-bold ${isLight ? 'text-slate-700' : 'text-slate-400'}`}>{day}</span>
+                                                </div>
+                                                <div className="text-right">
+                                                    {isOff ? (
+                                                        <span className="text-[10px] font-black text-red-500 uppercase tracking-widest px-2 py-0.5 rounded-md bg-red-500/10 border border-red-500/10">
+                                                            Closed
+                                                        </span>
+                                                    ) : (
+                                                        <span className={`text-[11px] font-black tracking-tight ${isLight ? 'text-slate-900' : 'text-white'}`}>
                                                             {openFmt} - {closeFmt}
-                                                        </div>
-                                                    );
-                                                }
-                                                return blocks;
-                                            })()}
-                                        </div>
-                                    </div>
-                                    
-                                    {business.weeklyOff && business.weeklyOff.toLowerCase() !== 'none' && (
-                                        <div className="flex justify-between items-center pt-5 border-t border-dashed border-slate-200 dark:border-white/10">
-                                            <span className={`text-sm font-bold ${isLight ? 'text-slate-700' : 'text-white/80'}`}>Weekly Holiday</span>
-                                            <span className="text-[10px] font-black bg-red-500/10 text-red-500 dark:bg-red-500/20 px-4 py-1.5 rounded-xl uppercase tracking-widest border border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.1)]">
-                                                {business.weeklyOff}
-                                            </span>
-                                        </div>
-                                    )}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </motion.div>
 
@@ -454,16 +449,247 @@ function BusinessDetail() {
                                 <p className={`text-xs mb-4 ${isLight ? 'text-slate-600' : 'text-white/60'}`}>
                                     Claim this listing to update information, respond to reviews, and reach more customers.
                                 </p>
-                                <Button className="w-full bg-primary text-white hover:bg-primary/90 rounded-xl">
+                                <Button 
+                                    onClick={() => setIsClaimModalOpen(true)}
+                                    className="w-full bg-primary text-white hover:bg-primary/90 rounded-xl"
+                                >
                                     Claim Business
                                 </Button>
                             </motion.div>
 
                         </div>
                     </div>
+
+                    {/* Services & Products - Full Width Below Info */}
+                    <div className="mt-10 space-y-10">
+                         {/* Services */}
+                         {business.services && business.services.length > 0 && (
+                             <motion.div 
+                                initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+                                className={`rounded-3xl p-6 backdrop-blur-3xl border border-solid shadow-xl relative overflow-hidden ${
+                                    isLight ? 'bg-white/95 border-slate-200' : 'bg-slate-900/90 border-white/10'
+                                }`}
+                            >
+                                <div className={`absolute -top-16 -right-16 w-40 h-40 rounded-full blur-[80px] opacity-20 pointer-events-none ${isLight ? 'bg-primary/30' : 'bg-primary/20'}`} />
+                                
+                                <div className="flex items-center justify-between gap-4 mb-6">
+                                    <h3 className={`text-xl font-black flex items-center gap-3 font-display tracking-tight ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                                        <div className="p-2.5 rounded-2xl bg-primary/10 text-primary">
+                                            <Briefcase size={20} />
+                                        </div>
+                                        Professional Services
+                                    </h3>
+
+                                </div>
+
+                                <div className="grid gap-4 lg:grid-cols-3">
+                                    {business.services.map((svc: any, i: number) => (
+                                        <div key={i} className={`flex flex-col rounded-2xl border transition-all duration-300 hover:-translate-y-1 hover:shadow-xl group/card overflow-hidden ${
+                                            isLight 
+                                                ? 'bg-white border-slate-100 hover:border-primary/40 shadow-sm' 
+                                                : 'bg-slate-800/40 border-white/5 hover:border-primary/30'
+                                        }`}>
+                                            <div className="w-full h-40 overflow-hidden relative">
+                                                <img 
+                                                    src={svc.image ? (svc.image.startsWith('http') ? svc.image : `${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}/${svc.image}`) : `https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800`} 
+                                                    alt={svc.name} 
+                                                    className="w-full h-full object-cover transition-transform duration-700 group-hover/card:scale-105" 
+                                                />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                                            </div>
+                                            
+                                            <div className="flex flex-col flex-1 p-4">
+                                                <h4 className={`font-black text-base font-display leading-tight mb-1.5 group-hover/card:text-primary transition-colors ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                                                    {svc.name}
+                                                </h4>
+                                                
+                                                <p className={`text-xs leading-relaxed mb-4 ${isLight ? 'text-slate-500' : 'text-slate-400/90'}`}>
+                                                    {svc.description}
+                                                </p>
+                                                
+                                                <div className="mt-auto pt-3 border-t border-dashed border-slate-200 dark:border-white/10 flex items-center justify-between gap-3">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[9px] uppercase tracking-widest font-black opacity-50">Starting From</span>
+                                                        <span className={`text-base font-black ${isLight ? 'text-slate-900' : 'text-white'}`}>₹{svc.price}</span>
+                                                    </div>
+                                                    
+                                                    <button 
+                                                        onClick={() => window.open(`https://wa.me/${business.whatsapp || ''}?text=I'm interested in ${svc.name}`, '_blank')}
+                                                        className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 ${
+                                                            isLight 
+                                                            ? 'bg-primary text-white hover:bg-primary/90' 
+                                                            : 'bg-primary text-black hover:bg-primary/90'
+                                                        }`}
+                                                    >
+                                                        <MessageCircle size={13} />
+                                                        Enquire Now
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </motion.div>
+                         )}
+
+                        {/* Products */}
+                        {business.products && business.products.length > 0 && (
+                            <motion.div 
+                                initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+                                className={`rounded-3xl p-6 backdrop-blur-3xl border border-solid shadow-xl relative overflow-hidden ${
+                                    isLight ? 'bg-white/95 border-slate-200' : 'bg-slate-900/90 border-white/10'
+                                }`}
+                            >
+                                <div className={`absolute -top-16 -right-16 w-40 h-40 rounded-full blur-[80px] opacity-20 pointer-events-none ${isLight ? 'bg-amber-500/30' : 'bg-amber-500/20'}`} />
+
+                                <div className="flex items-center justify-between gap-4 mb-6">
+                                    <h3 className={`text-xl font-black flex items-center gap-3 font-display tracking-tight ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                                        <div className="p-2.5 rounded-2xl bg-amber-500/10 text-amber-500">
+                                            <Package size={20} />
+                                        </div>
+                                        Available Products
+                                    </h3>
+                                </div>
+
+                                <div className="grid gap-4 lg:grid-cols-3">
+                                    {business.products.map((prod: any, i: number) => (
+                                        <div key={i} className={`flex flex-col rounded-2xl border transition-all duration-300 hover:-translate-y-1 hover:shadow-xl group/card overflow-hidden ${
+                                            isLight 
+                                                ? 'bg-white border-slate-100 hover:border-amber-500/40 shadow-sm' 
+                                                : 'bg-slate-800/40 border-white/5 hover:border-amber-500/30'
+                                        }`}>
+                                            <div className="w-full h-40 overflow-hidden relative">
+                                                <img 
+                                                    src={prod.image ? (prod.image.startsWith('http') ? prod.image : `${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}/${prod.image}`) : `https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=800`} 
+                                                    alt={prod.name} 
+                                                    className="w-full h-full object-cover transition-transform duration-700 group-hover/card:scale-105" 
+                                                />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                                            </div>
+                                            
+                                            <div className="flex flex-col flex-1 p-4">
+                                                <h4 className={`font-black text-base font-display leading-tight mb-1.5 group-hover/card:text-amber-500 transition-colors ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                                                    {prod.name}
+                                                </h4>
+                                                <p className={`text-xs leading-relaxed mb-4 ${isLight ? 'text-slate-500' : 'text-slate-400/90'}`}>
+                                                    {prod.description}
+                                                </p>
+                                                
+                                                <div className="mt-auto pt-3 border-t border-dashed border-slate-200 dark:border-white/10 flex items-center justify-between gap-3">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[9px] uppercase tracking-widest font-black opacity-50">Price</span>
+                                                        <span className={`text-base font-black ${isLight ? 'text-slate-900' : 'text-white'}`}>₹{prod.price}</span>
+                                                    </div>
+                                                    
+                                                    <button 
+                                                        onClick={() => window.open(`https://wa.me/${business.whatsapp || ''}?text=I'm interested in buying ${prod.name}`, '_blank')}
+                                                        className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 bg-amber-500 text-white hover:bg-amber-600"
+                                                    >
+                                                        <ShoppingBag size={13} />
+                                                       cart
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </motion.div>
+                        )}
+                    </div>
                 </main>
                 
                 <Footer />
+                
+                {/* Claim Business Modal */}
+                {isClaimModalOpen && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <motion.div 
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                            onClick={() => setIsClaimModalOpen(false)}
+                        />
+                        <motion.div 
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }}
+                            className={`relative w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl border ${
+                                isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-white/10'
+                            }`}
+                        >
+                            <h3 className={`text-2xl font-black mb-2 font-display ${isLight ? 'text-slate-900' : 'text-white'}`}>Claim Business</h3>
+                            <p className={`text-xs mb-6 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
+                                Provide your details and ownership proof for verification.
+                            </p>
+                            
+                            <form onSubmit={handleSubmitClaim} className="space-y-4">
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest opacity-50 block mb-1.5 ml-1">Full Name</label>
+                                    <input 
+                                        type="text" required
+                                        value={claimForm.fullName}
+                                        onChange={(e) => setClaimForm({...claimForm, fullName: e.target.value})}
+                                        className={`w-full p-4 rounded-2xl border text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all ${
+                                            isLight ? 'bg-slate-50 border-slate-200 focus:border-primary' : 'bg-white/5 border-white/10 focus:border-primary text-white'
+                                        }`}
+                                        placeholder="Enter your full name"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-50 block mb-1.5 ml-1">Phone Number</label>
+                                        <input 
+                                            type="tel" required
+                                            value={claimForm.phoneNumber}
+                                            onChange={(e) => setClaimForm({...claimForm, phoneNumber: e.target.value})}
+                                            className={`w-full p-4 rounded-2xl border text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all ${
+                                                isLight ? 'bg-slate-50 border-slate-200 focus:border-primary' : 'bg-white/5 border-white/10 focus:border-primary text-white'
+                                            }`}
+                                            placeholder="Phone"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-50 block mb-1.5 ml-1">Email ID</label>
+                                        <input 
+                                            type="email" required
+                                            value={claimForm.email}
+                                            onChange={(e) => setClaimForm({...claimForm, email: e.target.value})}
+                                            className={`w-full p-4 rounded-2xl border text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all ${
+                                                isLight ? 'bg-slate-50 border-slate-200 focus:border-primary' : 'bg-white/5 border-white/10 focus:border-primary text-white'
+                                            }`}
+                                            placeholder="Email"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest opacity-50 block mb-1.5 ml-1">Owner Proof (PDF/Image)</label>
+                                    <input 
+                                        type="file" required accept="image/*,application/pdf"
+                                        onChange={(e) => setClaimForm({...claimForm, ownerProof: e.target.files?.[0] || null})}
+                                        className={`w-full p-4 rounded-2xl border text-sm file:mr-4 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-primary/10 file:text-primary hover:file:bg-primary/20 ${
+                                            isLight ? 'bg-slate-50 border-slate-200 text-slate-500' : 'bg-white/5 border-white/10 text-slate-400'
+                                        }`}
+                                    />
+                                </div>
+                                
+                                <div className="pt-2 flex gap-3">
+                                    <Button 
+                                        type="button" 
+                                        variant="outline" 
+                                        onClick={() => setIsClaimModalOpen(false)}
+                                        className="flex-1 rounded-xl py-6"
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button 
+                                        type="submit" 
+                                        disabled={claimLoading}
+                                        className="flex-1 rounded-xl py-6 bg-primary text-white hover:bg-primary/90"
+                                    >
+                                        {claimLoading ? <Loader2 className="animate-spin" size={18} /> : "Submit Claim"}
+                                    </Button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
             </div>
         </div>
     );

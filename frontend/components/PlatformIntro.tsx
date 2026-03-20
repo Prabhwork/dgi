@@ -93,28 +93,30 @@ export default function PlatformIntro() {
                         </div>
 
                         <div className="flex flex-wrap gap-4 pt-4">
-                            <Link href="/about-us">
-                                <Button
-                                    className={`px-8 py-6 text-sm font-bold rounded-full transition-all duration-300 group ${isLight
-                                        ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20'
-                                        : 'glow bg-primary text-background hover:scale-105'
-                                        }`}
-                                >
+                            <Button
+                                asChild
+                                className={`px-8 py-6 text-sm font-bold rounded-full transition-all duration-300 group ${isLight
+                                    ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20'
+                                    : 'glow bg-primary text-background hover:scale-105'
+                                    }`}
+                            >
+                                <Link href="/about-us">
                                     Learn More
                                     <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                                </Button>
-                            </Link>
-                            <Link href="/contact">
-                                <Button
-                                    variant="ghost"
-                                    className={`px-8 py-6 text-sm font-bold rounded-full border-2 border-solid transition-all duration-300 ${isLight
-                                        ? 'border-slate-300 text-slate-600 hover:bg-slate-50 hover:text-slate-800 active:border-blue-600 active:text-slate-800'
-                                        : 'border-white/20 !text-white hover:bg-white/5 hover:border-white/40 active:border-primary active:!text-white'
-                                        }`}
-                                >
+                                </Link>
+                            </Button>
+                            <Button
+                                asChild
+                                variant="ghost"
+                                className={`px-8 py-6 text-sm font-bold rounded-full border-2 border-solid transition-all duration-300 ${isLight
+                                    ? 'border-slate-300 text-slate-600 hover:bg-slate-50 hover:text-slate-800 active:border-blue-600 active:text-slate-800'
+                                    : 'border-white/20 !text-white hover:bg-white/5 hover:border-white/40 active:border-primary active:!text-white'
+                                    }`}
+                            >
+                                <Link href="/contact">
                                     Contact Us
-                                </Button>
-                            </Link>
+                                </Link>
+                            </Button>
                         </div>
                     </motion.div>
 

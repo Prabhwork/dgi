@@ -51,17 +51,7 @@ function CardImageSlider({ item }: { item: any }) {
                     }}
                 />
             ))}
-            {/* Indicators */}
-            {images.length > 1 && (
-                <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-10 pointer-events-none px-4">
-                    {images.map((_, idx) => (
-                        <div 
-                            key={idx} 
-                            className={`h-1.5 rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(0,0,0,0.5)] ${idx === currentIndex ? 'w-6 bg-white' : 'w-1.5 bg-white/40'}`}
-                        />
-                    ))}
-                </div>
-            )}
+            {/* Indicators removed per request */}
         </div>
     );
 }
@@ -239,56 +229,50 @@ function SearchResults() {
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: idx * 0.05 }}
-                                    className={`group flex flex-col rounded-[2.5rem] overflow-hidden backdrop-blur-2xl border transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(0,0,0,0.3)] ${
+                                    className={`group flex flex-col rounded-none overflow-hidden backdrop-blur-2xl border transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(0,0,0,0.3)] cursor-pointer ${
                                         isLight 
                                             ? 'bg-white/95 border-slate-200 hover:border-primary/30' 
                                             : 'bg-slate-900/80 border-white/10 hover:border-primary/40'
                                     }`}
+                                    onClick={() => router.push(`/business/${item._id}`)}
                                 >
                                     {/* Card Header Image */}
-                                    <div className="h-56 overflow-hidden relative">
+                                    <div className="h-44 overflow-hidden relative">
                                         <CardImageSlider item={item} />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
-                                        
-                                        <div className="absolute top-4 right-4 bg-black/40 backdrop-blur-md border border-white/10 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.1em] text-white/90">
-                                            {item.businessCategory || "Business"}
-                                        </div>
-
-                                        <div className="absolute bottom-5 left-6 right-6 flex justify-between items-end">
-                                            <div className="flex-1">
-                                                <h3 className="text-2xl font-black text-white leading-tight mb-2 truncate drop-shadow-xl font-display">
-                                                    {item.brandName || item.businessName}
-                                                </h3>
-                                                <div className="flex items-center gap-3">
-                                                    {(item.isVerified || item.aadhaarVerified || item.approvalStatus === 'approved') && (
-                                                        <div className="flex items-center gap-1.5 text-[10px] text-emerald-400 font-black uppercase tracking-wider bg-emerald-500/10 px-2.5 py-1 rounded-full backdrop-blur-md border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
-                                                            <BadgeCheck size={14} className="fill-emerald-500 text-black" />
-                                                            Verified
-                                                        </div>
-                                                    )}
-                                                    <div className="flex items-center gap-1 text-yellow-400 bg-black/40 px-2 py-0.5 rounded-full backdrop-blur-sm border border-white/5 text-[10px] font-bold">
-                                                        <Star size={12} fill="currentColor" /> 4.8
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
+                                        {/* Removed overlay to show photo clearly */}
                                     </div>
                                     
                                     {/* Card Body */}
-                                    <div className="p-7 flex-1 flex flex-col">
+                                    <div className="p-4 flex-1 flex flex-col">
                                         
-                                        <div className="space-y-4 mb-6">
-                                            <div className="flex items-start gap-4 text-sm text-foreground/70 group/loc">
-                                                <div className={`p-2 rounded-xl transition-colors ${isLight ? 'bg-primary/5 text-primary' : 'bg-primary/10 text-primary'}`}>
-                                                    <MapPin size={18} className="shrink-0" />
-                                                </div>
-                                                <span className="line-clamp-2 leading-relaxed font-medium pt-1">{item.registeredOfficeAddress || 'No address provided'}</span>
+                                        {/* Business Name & Verified Badge - Moved here from image overlay */}
+                                        <div className="mb-4">
+                                            <div className="flex items-start justify-between gap-2 mb-1.5">
+                                                <h3 className={`text-lg font-black leading-tight truncate font-display ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                                                    {item.brandName || item.businessName}
+                                                </h3>
+                                                {(item.isVerified || item.aadhaarVerified || item.approvalStatus === 'approved') && (
+                                                    <div className="flex items-center gap-1 text-[10px] text-emerald-400 font-bold uppercase tracking-wider bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 shrink-0">
+                                                        <BadgeCheck size={12} className="fill-emerald-500 text-black" />
+                                                        Verified
+                                                    </div>
+                                                )}
                                             </div>
-                                            <div className="flex items-start gap-4 text-sm text-foreground/70">
-                                                <div className={`p-2 rounded-xl transition-colors ${isLight ? 'bg-slate-100 text-slate-500' : 'bg-white/5 text-slate-400'}`}>
-                                                    <Clock size={18} className="shrink-0" />
+                                            {/* Rating removed per request */}
+                                        </div>
+                                        
+                                        <div className="space-y-3 mb-4">
+                                            <div className="flex items-start gap-3 text-[13px] text-foreground/70 group/loc">
+                                                <div className={`p-1.5 rounded-lg transition-colors ${isLight ? 'bg-primary/5 text-primary' : 'bg-primary/10 text-primary'}`}>
+                                                    <MapPin size={16} className="shrink-0" />
                                                 </div>
-                                                <div className="flex flex-col pt-1">
+                                                <span className="line-clamp-2 leading-snug pt-0.5">{item.registeredOfficeAddress || 'No address provided'}</span>
+                                            </div>
+                                            <div className="flex items-start gap-3 text-[13px] text-foreground/70">
+                                                <div className={`p-1.5 rounded-lg transition-colors ${isLight ? 'bg-slate-100 text-slate-500' : 'bg-white/5 text-slate-400'}`}>
+                                                    <Clock size={16} className="shrink-0" />
+                                                </div>
+                                                <div className="flex flex-col pt-0.5">
                                                     <span className="font-bold text-foreground">
                                                         {(() => {
                                                             const formatTime = (timeStr: string) => {
@@ -311,52 +295,47 @@ function SearchResults() {
                                             </div>
                                         </div>
 
-                                        <p className="text-sm text-foreground/60 line-clamp-2 mb-8 flex-1 leading-relaxed italic">
-                                            "{item.description || "No description available for this business."}"
+                                        <p className={`text-sm leading-relaxed mb-4 line-clamp-3 md:line-clamp-4 ${isLight ? 'text-slate-600' : 'text-foreground/80'}`}>
+                                            {item.description || "No description available for this business."}
                                         </p>
+
+                                        {/* Keywords */}
+                                        {item.keywords && item.keywords.length > 0 && (
+                                            <div className="flex flex-wrap gap-1.5 mb-4">
+                                                {item.keywords.slice(0, 3).map((kw: string, kIdx: number) => (
+                                                    <span key={kIdx} className={`text-[10px] px-2 py-0.5 rounded-md border ${isLight ? 'bg-blue-50/50 border-blue-100 text-blue-600' : 'bg-white/5 border-white/10 text-white/50'}`}>
+                                                        #{kw}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
                                         
-                                        {/* Action Buttons */}
-                                        <div className="grid grid-cols-2 gap-3 mb-3">
+                                        {/* Action Buttons - Compact Row */}
+                                        <div className="flex gap-2 h-10 mt-auto">
                                             <a 
                                                 href={`tel:${item.primaryContactNumber}`}
-                                                className="flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white py-3 rounded-2xl text-sm font-black transition-all hover:shadow-[0_10px_20px_rgba(16,185,129,0.3)] shadow-lg shadow-emerald-500/10"
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-[12px] font-bold transition-all"
+                                                title="Call Now"
                                             >
-                                                <Phone size={18} /> Call Now
+                                                <Phone size={14} /> Call
                                             </a>
                                             <a 
                                                 href={`https://wa.me/${item.officialWhatsAppNumber || item.primaryContactNumber}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className={`flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-black transition-all shadow-lg border ${
-                                                    isLight 
-                                                        ? 'bg-white text-emerald-600 border-emerald-100 hover:bg-emerald-50 hover:-translate-y-0.5' 
-                                                        : 'bg-white/5 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/10 hover:-translate-y-0.5'
-                                                }`}
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="flex-1 flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#22c35e] text-white rounded-lg text-[12px] font-bold transition-all shadow-lg shadow-[#25D366]/20"
                                             >
-                                                <MessageCircle size={18} /> WhatsApp
+                                                <MessageCircle size={14} /> WhatsApp
                                             </a>
-                                        </div>
-                                        
-                                        <div className="grid grid-cols-2 gap-3">
                                             <Link 
                                                 href={`/nearby-map?lat=${item.gpsCoordinates?.lat || ''}&lng=${item.gpsCoordinates?.lng || ''}&id=${item._id}`}
-                                                className={`flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold transition-all shadow-md border ${
-                                                    isLight 
-                                                        ? 'bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100/50 hover:-translate-y-0.5' 
-                                                        : 'bg-blue-500/5 text-blue-400 border-blue-500/10 hover:bg-blue-500/10 hover:-translate-y-0.5'
-                                                }`}
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="flex-1 flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[12px] font-bold transition-all shadow-lg shadow-blue-600/20"
+                                                title="Map View"
                                             >
-                                                <Navigation size={18} /> Map View
-                                            </Link>
-                                            <Link 
-                                                href={`/business/${item._id}`}
-                                                className={`flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-black transition-all shadow-md border ${
-                                                    isLight 
-                                                        ? 'bg-slate-900 text-white border-slate-900 hover:bg-slate-800 hover:-translate-y-0.5' 
-                                                        : 'bg-white/10 text-white border-white/20 hover:bg-white/20 hover:-translate-y-0.5 shadow-[0_5px_15px_rgba(255,255,255,0.05)]'
-                                                }`}
-                                            >
-                                                Details <ArrowRight size={16} />
+                                                <Navigation size={14} /> Map
                                             </Link>
                                         </div>
                                     </div>

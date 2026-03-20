@@ -32,6 +32,17 @@ interface Business {
     rejectionReason?: string;
     hasPendingChanges?: boolean;
     createdAt: string;
+    claims?: Claim[];
+}
+
+interface Claim {
+    _id: string;
+    fullName: string;
+    phoneNumber: string;
+    email: string;
+    ownerProof: string;
+    status: string;
+    createdAt: string;
 }
 
 export default function BusinessesPage() {
@@ -200,7 +211,7 @@ export default function BusinessesPage() {
                                                     }`}>
                                                         {b.approvalStatus}
                                                     </span>
-                                                    {b.hasPendingChanges && (
+                                                    {b.hasPendingChanges && b.approvalStatus !== 'approved' && (
                                                         <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase bg-orange-100 text-orange-700 w-fit tracking-wide">
                                                             ⚠ Changes Pending
                                                         </span>
@@ -230,12 +241,12 @@ export default function BusinessesPage() {
                             </div>
                             
                             <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
-                                {selectedBusiness.hasPendingChanges && (
+                                {selectedBusiness.hasPendingChanges && selectedBusiness.approvalStatus !== 'approved' && (
                                     <div className="flex items-start gap-3 bg-orange-50 border border-orange-200 rounded-xl p-3">
                                         <span className="text-orange-500 text-lg">⚠️</span>
                                         <div>
                                             <p className="text-xs font-bold text-orange-700">Profile Updated by Business</p>
-                                            <p className="text-[11px] text-orange-600 mt-0.5">This approved business has updated their details. Listing is still live. Review and re-approve to clear this flag.</p>
+                                            <p className="text-[11px] text-orange-600 mt-0.5">This business has updated their details. Review and approve to clear this flag.</p>
                                         </div>
                                     </div>
                                 )}
@@ -430,6 +441,56 @@ export default function BusinessesPage() {
                                     </div>
                                 )}
 
+                                {/* Ownership Claims Section */}
+                                {selectedBusiness.claims && selectedBusiness.claims.length > 0 && (
+                                    <div className="pt-6 border-t border-slate-100 mt-6 space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Ownership Claims</div>
+                                            <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-blue-100 text-blue-700 uppercase tracking-wider">
+                                                {selectedBusiness.claims.length} {selectedBusiness.claims.length === 1 ? 'Claim' : 'Claims'}
+                                            </span>
+                                        </div>
+                                        
+                                        <div className="space-y-4">
+                                            {selectedBusiness.claims.map((claim) => (
+                                                <div key={claim._id} className="bg-blue-50/50 border border-blue-100 rounded-2xl p-4 space-y-3">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="text-sm font-bold text-slate-900">{claim.fullName}</div>
+                                                        <span className={`text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider ${
+                                                            claim.status === 'pending' ? 'bg-amber-100 text-amber-700' : 
+                                                            claim.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                                        }`}>
+                                                            {claim.status}
+                                                        </span>
+                                                    </div>
+                                                    
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div className="flex flex-col gap-0.5">
+                                                            <span className="text-[10px] text-slate-400">Phone</span>
+                                                            <span className="text-xs text-slate-700 font-medium">{claim.phoneNumber}</span>
+                                                        </div>
+                                                        <div className="flex flex-col gap-0.5">
+                                                            <span className="text-[10px] text-slate-400">Email</span>
+                                                            <span className="text-xs text-slate-700 font-medium truncate">{claim.email}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="pt-2 border-t border-blue-100/50">
+                                                        <a 
+                                                            href={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}/${claim.ownerProof}`}
+                                                            target="_blank"
+                                                            className="flex items-center justify-center gap-2 w-full py-2 bg-white border border-blue-200 rounded-xl text-xs font-bold text-blue-700 hover:bg-blue-50 transition-colors"
+                                                        >
+                                                            <ExternalLink size={14} /> View Owner Proof
+                                                        </a>
+                                                    </div>
+                                                    <p className="text-[9px] text-slate-400 italic text-center">Submitted on {new Date(claim.createdAt).toLocaleDateString()}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
                                 {showRejectionInput && (
                                     <div className="space-y-3 pt-4 border-t border-slate-100 animate-in slide-in-from-bottom-2 duration-300">
                                         <label className="text-xs font-bold text-slate-700">Specify Rejection Reason</label>
@@ -464,10 +525,10 @@ export default function BusinessesPage() {
                                     <button 
                                         type="button"
                                         onClick={() => handleUpdateStatus(selectedBusiness._id, 'approved')}
-                                        disabled={selectedBusiness.approvalStatus === 'approved' || statusLoading}
+                                        disabled={(selectedBusiness.approvalStatus === 'approved' && !selectedBusiness.hasPendingChanges) || statusLoading}
                                         className="flex-1 flex items-center justify-center gap-2 bg-teal-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md active:scale-95"
                                     >
-                                        <CheckCircle size={18} /> {statusLoading ? "Wait..." : "Approve"}
+                                        <CheckCircle size={18} /> {statusLoading ? "Wait..." : (selectedBusiness.approvalStatus === 'approved' && selectedBusiness.hasPendingChanges ? "Clear Flag" : "Approve")}
                                     </button>
                                     <button 
                                         type="button"

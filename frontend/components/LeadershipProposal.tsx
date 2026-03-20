@@ -215,10 +215,11 @@ export default function LeadershipProposal({
                         </p>
                         
                         <div className="flex flex-wrap justify-center gap-4">
-                            <Link href="/contact">
-                                <button className="px-10 py-4 bg-primary text-white rounded-full font-bold hover:bg-primary/90 transition-all shadow-xl shadow-primary/20 flex items-center gap-2 text-sm sm:text-base cursor-pointer">
-                                    Become a {title} <ChevronRight size={18} />
-                                </button>
+                            <Link 
+                                href="/contact"
+                                className="px-10 py-4 bg-primary text-white rounded-full font-bold hover:bg-primary/90 transition-all shadow-xl shadow-primary/20 flex items-center gap-2 text-sm sm:text-base cursor-pointer"
+                            >
+                                Become a {title} <ChevronRight size={18} />
                             </Link>
                         </div>
                     </div>

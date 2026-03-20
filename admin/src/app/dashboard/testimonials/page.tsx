@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Search, X, CheckCircle, XCircle } from 'lucide-react';
+import { Trash2, Search, CheckCircle, XCircle } from 'lucide-react';
 import { Testimonial } from '@/types';
 import DeleteConfirmationModal from '@/components/DeleteConfirmationModal';
 
@@ -36,8 +36,9 @@ export default function TestimonialsPage() {
             } else {
                 setError(data.error || 'Failed to fetch testimonials');
             }
-        } catch (err: any) {
-            setError(err.message || 'Error connecting to server');
+        } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : 'Error connecting to server';
+            setError(errorMsg);
         } finally {
             setLoading(false);
         }
@@ -171,7 +172,7 @@ export default function TestimonialsPage() {
                                             <div className="text-xs font-semibold px-2 py-0.5 bg-slate-100 text-slate-600 rounded mt-1.5 inline-block">{testimonial.role}</div>
                                         </td>
                                         <td className="px-6 py-4 max-w-sm">
-                                            <p className="text-sm text-slate-700 line-clamp-3 italic">"{testimonial.quote}"</p>
+                                            <p className="text-sm text-slate-700 line-clamp-3 italic">&quot;{testimonial.quote}&quot;</p>
                                         </td>
                                         <td className="px-6 py-4 text-center text-sm text-slate-500">
                                             {new Date(testimonial.createdAt).toLocaleDateString()}

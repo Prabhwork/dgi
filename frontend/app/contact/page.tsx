@@ -65,7 +65,7 @@ export default function ContactPage() {
             <CursorGlow />
             <Navbar />
 
-            <main className="pt-32 pb-24 relative z-10 px-4">
+            <main className="pt-32 pb-24 relative z-10 px-2 md:px-4">
                 <div className="container mx-auto max-w-4xl text-center">
                     
                     {/* Contact Us Pill Badge */}
@@ -104,12 +104,12 @@ export default function ContactPage() {
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
-                        className="relative group lg:max-w-2xl lg:mx-auto"
+                        className="relative group w-full max-w-3xl mx-auto"
                     >
                         {/* Background glow effect */}
                         <div className="absolute -inset-1 bg-[#0066ff]/20 rounded-[2.5rem] blur-3xl opacity-30 group-hover:opacity-50 transition-opacity duration-500"></div>
                         
-                        <div className={`relative glass-strong border rounded-[2rem] p-8 md:p-12 backdrop-blur-3xl shadow-2xl transition-all duration-500 ${
+                        <div className={`relative glass-strong border rounded-[2rem] p-5 md:p-12 backdrop-blur-3xl shadow-2xl transition-all duration-500 ${
                             isLight ? 'bg-white/70 border-slate-200' : 'bg-[#020631]/40 border-white/5'
                         }`}>
                             {!isSubmitted ? (

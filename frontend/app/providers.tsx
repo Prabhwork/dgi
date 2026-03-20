@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { useState } from "react";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import GoogleAuthProviderWrapper from "@/components/GoogleAuthProvider";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
     const [queryClient] = useState(() => new QueryClient());
@@ -13,11 +14,13 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     return (
         <ThemeProvider>
             <QueryClientProvider client={queryClient}>
-                <TooltipProvider>
-                    <Toaster />
-                    <Sonner />
-                    {children}
-                </TooltipProvider>
+                <GoogleAuthProviderWrapper>
+                    <TooltipProvider>
+                        <Toaster />
+                        <Sonner />
+                        {children}
+                    </TooltipProvider>
+                </GoogleAuthProviderWrapper>
             </QueryClientProvider>
         </ThemeProvider>
     );

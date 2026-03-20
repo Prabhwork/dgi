@@ -371,7 +371,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                             </div>
 
                             <h2 className="text-white text-2xl md:text-3xl font-black mb-3 tracking-tight uppercase">Scanning Area</h2>
-                            <p className="text-white/40 text-xs md:text-sm font-bold animate-pulse max-w-[280px] md:max-w-md tracking-wider">Finding nearby businesses in your city...</p>
+                          
                         </div>
                     </motion.div>
                 )}

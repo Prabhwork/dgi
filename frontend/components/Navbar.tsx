@@ -196,6 +196,7 @@ export default function Navbar() {
     
     // Auth State
     const [businessUser, setBusinessUser] = useState<any>(null);
+    const [regularUser, setRegularUser] = useState<any>(null);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
 
     useEffect(() => {
@@ -280,20 +281,40 @@ export default function Navbar() {
         };
 
         const fetchUser = async () => {
-            const token = localStorage.getItem("businessToken");
-            if (!token) return;
-            try {
-                const res = await fetch(`${API}/business/me`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                const data = await res.json();
-                if (data.success) {
-                    setBusinessUser(data.data);
-                } else {
-                    localStorage.removeItem("businessToken");
+            const bToken = localStorage.getItem("businessToken");
+            const uToken = localStorage.getItem("userToken");
+            
+            if (bToken) {
+                try {
+                    const res = await fetch(`${API}/business/me`, {
+                        headers: { Authorization: `Bearer ${bToken}` }
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        setBusinessUser(data.data);
+                        return; // Business user takes precedence for now or we can show both
+                    } else {
+                        localStorage.removeItem("businessToken");
+                    }
+                } catch (err) {
+                    console.error("Failed to fetch business user:", err);
                 }
-            } catch (err) {
-                console.error("Failed to fetch user:", err);
+            }
+
+            if (uToken) {
+                try {
+                    const res = await fetch(`${API}/auth/me`, {
+                        headers: { Authorization: `Bearer ${uToken}` }
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        setRegularUser(data.data);
+                    } else {
+                        localStorage.removeItem("userToken");
+                    }
+                } catch (err) {
+                    console.error("Failed to fetch regular user:", err);
+                }
             }
         };
 
@@ -303,7 +324,9 @@ export default function Navbar() {
 
     const handleLogout = () => {
         localStorage.removeItem("businessToken");
+        localStorage.removeItem("userToken");
         setBusinessUser(null);
+        setRegularUser(null);
         window.location.href = '/';
     };
 
@@ -404,18 +427,23 @@ export default function Navbar() {
                         </motion.div>
                     </button>
 
-                    {businessUser ? (
+                    {businessUser || regularUser ? (
                         <div className="relative isolate" ref={dropdownRef}>
                             <button
                                 onClick={() => setUserMenuOpen(!userMenuOpen)}
                                 className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all border ${isLight ? 'bg-white border-slate-200 hover:border-primary/50 text-slate-900 shadow-sm' : 'bg-white/5 border-white/10 hover:border-white/30 text-white'}`}
                             >
                                 <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${isLight ? 'bg-primary/10 text-primary' : 'bg-primary/20 text-white'}`}>
-                                    {(businessUser.brandName || businessUser.businessName || 'B').charAt(0).toUpperCase()}
+                                    {(businessUser ? (businessUser.brandName || businessUser.businessName) : (regularUser?.name || 'U')).charAt(0).toUpperCase()}
                                 </div>
-                                <span className="text-sm font-bold truncate max-w-[120px]">
-                                    {businessUser.brandName || businessUser.businessName}
-                                </span>
+                                <div className="flex flex-col items-start leading-none gap-0.5 max-w-[120px]">
+                                    <span className="text-[11px] font-bold truncate w-full">
+                                        {businessUser ? (businessUser.brandName || businessUser.businessName) : regularUser?.name}
+                                    </span>
+                                    <span className="text-[8px] uppercase tracking-widest opacity-40 font-black">
+                                        {businessUser ? 'Business' : 'User'}
+                                    </span>
+                                </div>
                                 <ChevronDown size={14} className={`transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
                             </button>
                             
@@ -429,15 +457,15 @@ export default function Navbar() {
                                     >
                                         <div className="px-3 py-2 border-b border-solid mb-2 pb-3 pt-1">
                                             <p className={`text-xs uppercase tracking-wider font-bold opacity-50 ${isLight ? 'text-slate-500 border-slate-100' : 'text-slate-400 border-white/10'}`}>Signed in as</p>
-                                            <p className={`text-sm font-bold truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>{businessUser.officialEmailAddress}</p>
+                                            <p className={`text-sm font-bold truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>{businessUser ? businessUser.officialEmailAddress : regularUser?.email}</p>
                                         </div>
                                         
                                         <div className="space-y-1">
                                             <Link 
-                                                href="/profile"
+                                                href={businessUser ? "/profile" : "/user-profile"}
                                                 className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${isLight ? 'text-slate-700 hover:bg-slate-100 hover:text-primary' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}
                                             >
-                                                <User size={16} /> Profile
+                                                <User size={16} /> {businessUser ? 'Business Profile' : 'User Profile'}
                                             </Link>
                                             <Link 
                                                 href="#"
@@ -446,7 +474,7 @@ export default function Navbar() {
                                                 <Settings size={16} /> Settings
                                             </Link>
                                             <Link 
-                                                href="/settings/2fa"
+                                                href={businessUser ? "/settings/2fa" : "/user-settings/2fa"}
                                                 className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${isLight ? 'text-slate-700 hover:bg-slate-100 hover:text-primary' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}
                                             >
                                                 <ShieldCheck size={16} /> 2-Step Verification
@@ -466,19 +494,35 @@ export default function Navbar() {
                             </AnimatePresence>
                         </div>
                     ) : (
-                        <>
-                            <Button variant="outline-glow" size="sm" className={isLight ? "text-primary border-primary/20 hover:bg-primary/5" : ""} asChild>
-                                <Link href="/community/login">Log In</Link>
-                            </Button>
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center bg-white/5 rounded-full p-1 border border-white/10">
+                                <Link 
+                                    href="/login" 
+                                    className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-full transition-all hover:text-primary text-white/70`}
+                                >
+                                    Login
+                                </Link>
+                                <div className="w-px h-4 bg-white/10" />
+                                <Link 
+                                    href="/register" 
+                                    className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-full transition-all hover:text-primary text-white/70`}
+                                >
+                                    Sign Up
+                                </Link>
+                            </div>
+                            
                             <Button
                                 variant={isLight ? 'default' : 'glow'}
                                 size="sm"
-                                className={isLight ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20 font-bold" : "bg-primary text-white hover:opacity-90 shadow-[0_0_20px_rgba(59,130,246,0.5)] border-none"}
+                                className={isLight ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20 font-bold" : "bg-primary text-white hover:opacity-90 shadow-[0_0_20px_rgba(59,130,246,0.5)] border-none px-4 py-2"}
                                 asChild
                             >
-                                <Link href="/community/register">Sign Up</Link>
+                                <Link href="/community/register" className="flex items-center gap-2">
+                                    <Building2 size={14} />
+                                    <span>Business Portal</span>
+                                </Link>
                             </Button>
-                        </>
+                        </div>
                     )}
                 </div>
 
@@ -632,35 +676,35 @@ export default function Navbar() {
                                     </Link>
                                 ))}
                             </div>
-                            <div className="flex gap-3 mt-4">
-                                {businessUser ? (
+                            <div className="flex flex-col gap-3 mt-4 w-full">
+                                {businessUser || regularUser ? (
                                     <div className="w-full flex flex-col gap-2 mt-2">
                                         <div className={`p-4 rounded-2xl flex items-center gap-3 border ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-white/5 border-white/10'}`}>
                                             <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold shrink-0 ${isLight ? 'bg-primary/10 text-primary' : 'bg-primary/20 text-white'}`}>
-                                                {(businessUser.brandName || businessUser.businessName || 'B').charAt(0).toUpperCase()}
+                                                {(businessUser ? (businessUser.brandName || businessUser.businessName) : (regularUser?.name || 'U')).charAt(0).toUpperCase()}
                                             </div>
                                             <div className="flex flex-col overflow-hidden">
                                                 <span className={`text-sm font-bold truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                                                    {businessUser.brandName || businessUser.businessName}
+                                                    {businessUser ? (businessUser.brandName || businessUser.businessName) : regularUser?.name}
                                                 </span>
                                                 <span className={`text-[11px] truncate ${isLight ? 'text-slate-500' : 'text-white/50'}`}>
-                                                    {businessUser.officialEmailAddress}
+                                                    {businessUser ? businessUser.officialEmailAddress : regularUser?.email}
                                                 </span>
                                             </div>
                                         </div>
                                         
                                         <div className="grid grid-cols-3 gap-2">
-                                            <Link href="/profile" className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border text-center transition-colors ${isLight ? 'bg-white border-slate-200 text-slate-700 hover:border-primary/50' : 'bg-white/5 border-white/10 text-slate-300 hover:border-white/30'}`}>
+                                            <Link href={businessUser ? "/profile" : "/user-profile"} onClick={() => setMobileOpen(false)} className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border text-center transition-colors ${isLight ? 'bg-white border-slate-200 text-slate-700 hover:border-primary/50' : 'bg-white/5 border-white/10 text-slate-300 hover:border-white/30'}`}>
                                                 <User size={18} className={isLight ? "text-primary" : "text-white/80"} />
-                                                <span className="text-[10px] font-bold leading-tight">Business<br/>Profile</span>
+                                                <span className="text-[10px] font-bold leading-tight">{businessUser ? 'Business Profile' : 'User Profile'}</span>
                                             </Link>
-                                            <Link href="#" className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border text-center transition-colors ${isLight ? 'bg-white border-slate-200 text-slate-700 hover:border-primary/50' : 'bg-white/5 border-white/10 text-slate-300 hover:border-white/30'}`}>
+                                            <Link href="#" onClick={() => setMobileOpen(false)} className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border text-center transition-colors ${isLight ? 'bg-white border-slate-200 text-slate-700 hover:border-primary/50' : 'bg-white/5 border-white/10 text-slate-300 hover:border-white/30'}`}>
                                                 <Settings size={18} className={isLight ? "text-primary" : "text-white/80"} />
-                                                <span className="text-[10px] font-bold leading-tight">Account<br/>Settings</span>
+                                                <span className="text-[10px] font-bold leading-tight">Settings</span>
                                             </Link>
-                                            <Link href="/settings/2fa" className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border text-center transition-colors ${isLight ? 'bg-white border-slate-200 text-slate-700 hover:border-primary/50' : 'bg-white/5 border-white/10 text-slate-300 hover:border-white/30'}`}>
+                                            <Link href={businessUser ? "/settings/2fa" : "/user-settings/2fa"} onClick={() => setMobileOpen(false)} className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border text-center transition-colors ${isLight ? 'bg-white border-slate-200 text-slate-700 hover:border-primary/50' : 'bg-white/5 border-white/10 text-slate-300 hover:border-white/30'}`}>
                                                 <ShieldCheck size={18} className={isLight ? "text-primary" : "text-white/80"} />
-                                                <span className="text-[10px] font-bold leading-tight">2-Step<br/>Verification</span>
+                                                <span className="text-[10px] font-bold leading-tight">2FA<br/>Security</span>
                                             </Link>
                                         </div>
 
@@ -672,23 +716,30 @@ export default function Navbar() {
                                                 : 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20'
                                             }`}
                                         >
-                                            <LogOut size={16} />
-                                            Logout Securely
+                                            <LogOut size={16} /> Logout
                                         </button>
                                     </div>
                                 ) : (
                                     <>
-                                        <Button variant="outline-glow" size="lg" className="flex-1" asChild onClick={() => setMobileOpen(false)}>
-                                            <Link href="/community/login">Log In</Link>
-                                        </Button>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <Button variant="outline-glow" size="lg" className="w-full" asChild onClick={() => setMobileOpen(false)}>
+                                                <Link href="/login">User Login</Link>
+                                            </Button>
+                                            <Button variant="outline-glow" size="lg" className="w-full" asChild onClick={() => setMobileOpen(false)}>
+                                                <Link href="/register">Sign Up</Link>
+                                            </Button>
+                                        </div>
                                         <Button
                                             variant={isLight ? 'default' : 'glow'}
                                             size="lg"
-                                            className={`flex-1 ${isLight ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20 font-bold" : ""}`}
+                                            className={`w-full h-14 ${isLight ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20 font-bold" : ""}`}
                                             asChild
                                             onClick={() => setMobileOpen(false)}
                                         >
-                                            <Link href="/community/register">Sign Up</Link>
+                                            <Link href="/community/login" className="flex items-center justify-center gap-2">
+                                                <Building2 size={18} />
+                                                <span className="uppercase tracking-widest font-black text-xs">Business Login</span>
+                                            </Link>
                                         </Button>
                                     </>
                                 )}
