@@ -47,15 +47,32 @@ export default function PlatformIntro() {
                         transition={{ duration: 0.8, ease: "easeOut" }}
                     >
                         <div className="space-y-4">
-                            <motion.span
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={inView ? { opacity: 1, scale: 1 } : {}}
-                                transition={{ delay: 0.2 }}
-                                className={`inline-block rounded-full px-5 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] relative overflow-hidden backdrop-blur-2xl border border-solid transition-all duration-300 ${isLight ? 'bg-white/80 border-blue-600 text-primary' : 'bg-white/5 border-white/20 text-blue-400'
-                                    }`}
-                            >
-                                Digital Book Of India
-                            </motion.span>
+                            <div className="flex items-center gap-4">
+                                <motion.span
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={inView ? { opacity: 1, scale: 1 } : {}}
+                                    transition={{ delay: 0.2 }}
+                                    className={`inline-block rounded-full px-5 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] relative overflow-hidden backdrop-blur-2xl border border-solid transition-all duration-300 ${isLight ? 'bg-white/80 border-blue-600 text-primary' : 'bg-white/5 border-white/20 text-blue-400'
+                                        }`}
+                                >
+                                    Digital Book Of India
+                                </motion.span>
+                                <motion.div
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={inView ? { opacity: 1, x: 0 } : {}}
+                                    transition={{ delay: 0.3 }}
+                                    className="flex items-center gap-2"
+                                >
+                                    <div className="h-px w-8 bg-primary/20" />
+                                    <img 
+                                        src={isLight ? "/assets/swadeshi-logo-light.png" : "/assets/swadeshi-logo-dark.png"} 
+                                        alt="Swadeshi" 
+                                        className={`w-10 h-10 object-contain ${isLight ? 'mix-blend-multiply' : 'mix-blend-screen'}`} 
+                                        onError={(e) => (e.currentTarget.style.display = 'none')}
+                                    />
+                                    <span className="text-[11px] font-black uppercase tracking-widest text-primary/60">Swadeshi</span>
+                                </motion.div>
+                            </div>
 
                             <h2 className="text-4xl sm:text-6xl font-display font-black text-foreground leading-[1.1] tracking-tight">
                                 Empowering India&apos;s <br />

@@ -359,6 +359,37 @@ export default function HeroSection() {
                                 >
                                     Digital Book Of India is on its way to make your way of living more easier..stay tuned.
                                 </motion.p>
+
+                                {/* Swadeshi Platform Badge */}
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.8 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: 1.5, duration: 0.5 }}
+                                    className="mt-6 flex items-center gap-3 backdrop-blur-md px-5 py-2 rounded-full border border-blue-400/40 relative group overflow-hidden shadow-[0_0_25px_rgba(0,180,255,0.25)]"
+                                    style={{
+                                        background: "linear-gradient(90deg, rgba(255,153,51,0.08) 0%, rgba(255,255,255,0.05) 50%, rgba(19,136,8,0.08) 100%)",
+                                    }}
+                                >
+                                    {/* Inner glow effect */}
+                                    <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-white/5 to-green-500/5 opacity-50" />
+                                    
+                                    {/* Swadeshi Logo with Blending */}
+                                    <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
+                                        <img 
+                                            src="/assets/swadeshi-logo-dark.png" 
+                                            alt="Swadeshi" 
+                                            className="w-full h-full object-contain mix-blend-screen" 
+                                            onError={(e) => (e.currentTarget.style.display = 'none')}
+                                        />
+                                    </div>
+
+                                    <span className="relative text-[11px] font-black uppercase tracking-[0.15em] text-white whitespace-nowrap pointer-events-none">
+                                        Swadeshi Platform
+                                    </span>
+
+                                    {/* Hover shimmer */}
+                                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent group-hover:translate-x-full transition-transform duration-1000" />
+                                </motion.div>
                             </div>
                         </motion.div>
 
