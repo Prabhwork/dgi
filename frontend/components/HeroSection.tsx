@@ -362,19 +362,20 @@ export default function HeroSection() {
 
                                 {/* Swadeshi Platform Badge */}
                                 <motion.div
-                                    initial={{ opacity: 0, scale: 0.8 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{ delay: 1.5, duration: 0.5 }}
-                                    className="mt-6 flex items-center gap-3 backdrop-blur-md px-5 py-2 rounded-full border border-blue-400/40 relative group overflow-hidden shadow-[0_0_25px_rgba(0,180,255,0.25)]"
-                                    style={{
-                                        background: "linear-gradient(90deg, rgba(255,153,51,0.08) 0%, rgba(255,255,255,0.05) 50%, rgba(19,136,8,0.08) 100%)",
-                                    }}
+                                    initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    transition={{ delay: 1.2, duration: 0.8 }}
+                                    className="relative mt-4 sm:mt-8 px-4 sm:px-6 py-2 sm:py-3 rounded-2xl flex items-center gap-2 sm:gap-4 group outline outline-1 outline-white/10"
                                 >
+                                    {/* Frosted glass background */}
+                                    <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-xl rounded-2xl border border-white/10 transition-all duration-500 group-hover:bg-slate-900/60 group-hover:scale-105" />
+                                
+                                <div className="relative flex items-center gap-2 sm:gap-4">
                                     {/* Inner glow effect */}
                                     <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-white/5 to-green-500/5 opacity-50" />
                                     
                                     {/* Swadeshi Logo with Blending */}
-                                    <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
+                                    <div className="relative w-8 h-8 sm:w-12 sm:h-12 flex items-center justify-center shrink-0">
                                         <img 
                                             src="/assets/swadeshi-logo-dark.png" 
                                             alt="Swadeshi" 
@@ -383,13 +384,11 @@ export default function HeroSection() {
                                         />
                                     </div>
 
-                                    <span className="relative text-[11px] font-black uppercase tracking-[0.15em] text-white whitespace-nowrap pointer-events-none">
+                                    <span className="relative text-[9px] sm:text-[11px] font-black uppercase tracking-[0.1em] sm:tracking-[0.15em] text-white whitespace-nowrap pointer-events-none">
                                         Swadeshi Platform
                                     </span>
-
-                                    {/* Hover shimmer */}
-                                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent group-hover:translate-x-full transition-transform duration-1000" />
-                                </motion.div>
+                                </div>
+                            </motion.div>
                             </div>
                         </motion.div>
 

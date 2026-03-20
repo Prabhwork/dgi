@@ -350,21 +350,9 @@ export default function Navbar() {
                             className="w-full h-full object-contain"
                         />
                     </div>
-                    <div className="flex flex-col">
-                        <span className={`font-display font-bold text-lg sm:text-xl hidden sm:block tracking-tight truncate transition-colors leading-none ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                            Digital Book Of India
-                        </span>
-                        <div className="flex items-center gap-1.5 mt-1">
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Swadeshi</span>
-                            <div className="h-[1px] w-5 bg-primary/30" />
-                            <img 
-                                src={isLight ? "/assets/swadeshi-logo-light.png" : "/assets/swadeshi-logo-dark.png"} 
-                                alt="Swadeshi" 
-                                className={`w-5 h-5 object-contain ${isLight ? 'mix-blend-multiply' : 'mix-blend-screen'}`} 
-                                onError={(e) => (e.currentTarget.style.display = 'none')}
-                            />
-                        </div>
-                    </div>
+                    <span className={`font-display font-bold text-lg sm:text-xl hidden sm:block tracking-tight truncate transition-colors ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                        Digital Book Of India
+                    </span>
                 </Link>
 
                 <div className="hidden lg:flex items-center gap-6">
