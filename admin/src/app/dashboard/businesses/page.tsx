@@ -31,6 +31,11 @@ interface Business {
     approvalStatus: string;
     rejectionReason?: string;
     hasPendingChanges?: boolean;
+    paymentStatus?: string;
+    amountPaid?: number;
+    razorpayPaymentId?: string;
+    razorpayOrderId?: string;
+    razorpaySignature?: string;
     createdAt: string;
     claims?: Claim[];
 }
@@ -295,6 +300,42 @@ export default function BusinessesPage() {
                                                     <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded font-bold">VERIFIED</span>
                                                 )}
                                             </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Payment Information Section */}
+                                    <div className="pt-4 border-t border-slate-100 mt-4 space-y-3 bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
+                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center justify-between">
+                                            <span>Payment Details</span>
+                                            <span className="text-emerald-600">Razorpay</span>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4 mt-2">
+                                            <div className="flex flex-col gap-1 text-sm">
+                                                <span className="text-xs text-slate-500">Status</span>
+                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase w-fit tracking-wider ${
+                                                    selectedBusiness.paymentStatus === 'completed' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' :
+                                                    selectedBusiness.paymentStatus === 'failed' ? 'bg-red-100 text-red-700 border border-red-200' :
+                                                    'bg-amber-100 text-amber-700 border border-amber-200'
+                                                }`}>
+                                                    {selectedBusiness.paymentStatus || 'Pending'}
+                                                </span>
+                                            </div>
+                                            <div className="flex flex-col gap-1 text-sm">
+                                                <span className="text-xs text-slate-500">Amount Paid</span>
+                                                <span className="text-slate-900 font-bold font-mono">₹{selectedBusiness.amountPaid || '0.00'}</span>
+                                            </div>
+                                            {selectedBusiness.razorpayPaymentId && (
+                                                <div className="col-span-2 flex flex-col gap-1 text-sm">
+                                                    <span className="text-xs text-slate-500">Payment ID</span>
+                                                    <span className="text-slate-700 font-medium font-mono text-xs">{selectedBusiness.razorpayPaymentId}</span>
+                                                </div>
+                                            )}
+                                            {selectedBusiness.razorpayOrderId && (
+                                                <div className="col-span-2 flex flex-col gap-1 text-sm">
+                                                    <span className="text-xs text-slate-500">Order ID</span>
+                                                    <span className="text-slate-700 font-medium font-mono text-xs">{selectedBusiness.razorpayOrderId}</span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 

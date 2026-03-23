@@ -26,30 +26,31 @@ const createTransporter = () => {
     return nodemailer.createTransport(config);
 };
 
-const sendEmail = async (options) => {
-    if (!transporter) {
-        transporter = createTransporter();
-    }
+const sendEmail = (options) => {
+    // Run email sending in the background so we don't block API requests
+    (async () => {
+        if (!transporter) {
+            transporter = createTransporter();
+        }
 
-    const message = {
-        from: `"${process.env.FROM_NAME}" <no-reply@dbi.com>`,
-        replyTo: 'no-reply@dbi.com',
-        to: options.email,
-        subject: options.subject,
-        text: options.message,
-        html: options.html,
-    };
+        const message = {
+            from: `"${process.env.FROM_NAME}" <no-reply@dbi.com>`,
+            replyTo: 'no-reply@dbi.com',
+            to: options.email,
+            subject: options.subject,
+            text: options.message,
+            html: options.html,
+        };
 
-    try {
-        const info = await transporter.sendMail(message);
-        console.log('Message sent: %s', info.messageId);
-        return info;
-    } catch (error) {
-        console.error('Email send error details:', error);
-        // If connection lost, reset transporter for next try
-        transporter = null;
-        throw error;
-    }
+        try {
+            const info = await transporter.sendMail(message);
+            console.log('Message sent: %s', info.messageId);
+        } catch (error) {
+            console.error('Email send error details:', error);
+            // If connection lost, reset transporter for next try
+            transporter = null;
+        }
+    })();
 };
 
 module.exports = sendEmail;

@@ -91,7 +91,7 @@ exports.updateClaimStatus = async (req, res, next) => {
             await business.save({ validateBeforeSave: false });
 
             // Build reset link pointing to frontend
-            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+            const frontendUrl = process.env.FRONTEND_URL;
             const resetLink = `${frontendUrl}/community/reset-password/${rawToken}`;
 
             // ── 4. Email → Claimer: Ownership approved + reset password link ─────

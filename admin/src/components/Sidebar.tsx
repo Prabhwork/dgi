@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Layers, Tag, LogOut, Settings, X, ShieldCheck, Mail, Rocket, MessageSquare, UserCheck } from 'lucide-react';
+import { LayoutDashboard, Layers, Tag, LogOut, Settings, X, ShieldCheck, Mail, Rocket, MessageSquare, UserCheck, CreditCard } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -33,6 +33,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         { name: 'Categories', path: '/dashboard/categories', icon: Layers },
         { name: 'Subcategories', path: '/dashboard/subcategories', icon: Tag },
         { name: 'Business Approvals', path: '/dashboard/businesses', icon: ShieldCheck },
+        { name: 'Transactions', path: '/dashboard/transactions', icon: CreditCard },
         { name: 'User Management', path: '/dashboard/users', icon: UserCheck },
         { name: 'Features', path: '/dashboard/features', icon: Layers },
         { name: 'Solutions', path: '/dashboard/solutions', icon: Tag },

@@ -196,7 +196,7 @@ const getRejectionTemplate = (businessName, reason) => {
                 </div>
 
                 <div class="button-wrapper">
-                    <a href="http://localhost:3001/community/login" class="btn">Update My Details</a>
+                    <a href="${process.env.FRONTEND_URL}/community/login" class="btn">Update My Details</a>
                 </div>
 
                 <div class="steps">

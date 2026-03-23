@@ -147,6 +147,19 @@ const BusinessSchema = new mongoose.Schema({
         type: Date,
         select: false
     },
+    // Payment specific fields
+    paymentStatus: {
+        type: String,
+        enum: ['pending', 'completed', 'failed'],
+        default: 'pending'
+    },
+    razorpayOrderId: String,
+    razorpayPaymentId: String,
+    razorpaySignature: String,
+    amountPaid: {
+        type: Number,
+        default: 0
+    },
     createdAt: {
         type: Date,
         default: Date.now

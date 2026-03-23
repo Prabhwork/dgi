@@ -1,4 +1,5 @@
 const axios = require('axios');
+const Razorpay = require('razorpay');
 const Business = require('../models/Business');
 const Claim = require('../models/Claim');
 const OTP = require('../models/OTP');
@@ -39,6 +40,23 @@ exports.registerBusiness = async (req, res, next) => {
             return res.status(400).json({ success: false, error: 'Email already registered as a regular user' });
         }
 
+        const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+        if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+            return res.status(400).json({ success: false, error: 'Payment details are required to register.' });
+        }
+
+        const crypto = require('crypto');
+        const body = razorpay_order_id + "|" + razorpay_payment_id;
+        const expectedSignature = crypto
+            .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+            .update(body.toString())
+            .digest('hex');
+
+        if (expectedSignature !== razorpay_signature) {
+            return res.status(400).json({ success: false, error: 'Invalid Payment Signature' });
+        }
+
         let businessData = handleBusinessFiles(req, req.body);
 
         // Parse keywords and GPS if they are strings
@@ -53,26 +71,59 @@ exports.registerBusiness = async (req, res, next) => {
 
         // Set email as verified (since frontend verified it via OTP)
         businessData.isEmailVerified = true;
-        
-        // Aadhaar verified is false by default for manual check
         businessData.aadhaarVerified = false;
+        
+        // Save payment status directly as completed
+        businessData.paymentStatus = 'completed';
+        businessData.amountPaid = 365;
+        businessData.razorpayOrderId = razorpay_order_id;
+        businessData.razorpayPaymentId = razorpay_payment_id;
+        businessData.razorpaySignature = razorpay_signature;
 
         const business = await Business.create(businessData);
         
         // Send registration success email
         try {
-            const successHtml = getRegistrationSuccessTemplate(business.businessName);
+            const successHtml = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+                    <h2 style="color: #10b981; text-align: center;">Payment Successful & Registration Received! 🎉</h2>
+                    <p>Dear <strong>${business.businessName}</strong>,</p>
+                    <p>Thank you for registering with the Digital Book of India community. We have successfully received your payment of <strong>₹365</strong>.</p>
+                    
+                    <div style="background-color: #f9fafb; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                        <h3 style="margin-top: 0; color: #374151;">Transaction Details:</h3>
+                        <p style="margin: 5px 0;"><strong>Amount:</strong> ₹365</p>
+                        <p style="margin: 5px 0;"><strong>Payment ID:</strong> ${razorpay_payment_id}</p>
+                        <p style="margin: 5px 0;"><strong>Order ID:</strong> ${razorpay_order_id}</p>
+                    </div>
+
+                    <p><strong>Next Steps:</strong></p>
+                    <p>Our team will manually verify your Aadhaar card and other uploaded documents. This process typically takes 24-48 hours. Once approved, your listing will go live.</p>
+                    
+                    <p>In the meantime, you can log in to your account using the credentials you provided to check your current status.</p>
+                    
+                    <div style="text-align: center; margin-top: 30px;">
+                        <a href="${process.env.FRONTEND_URL}/community/login" style="background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Login to Your Account</a>
+                    </div>
+                    
+                    <p style="margin-top: 30px; font-size: 12px; color: #6b7280; text-align: center;">
+                        If you have any questions, please reply to this email.
+                    </p>
+                </div>
+            `;
             await sendEmail({
                 email: business.officialEmailAddress,
-                subject: 'Registration Received - DBI Community',
-                message: `Hello ${business.businessName}, your registration with DBI Community has been received. Please wait for your business approval. Verification will be completed within 24-48 hours.`,
+                subject: 'Payment Successful - Welcome to DBI Community',
                 html: successHtml
             });
         } catch (emailErr) {
             console.error('Error sending welcome email:', emailErr);
         }
 
-        sendTokenResponse(business, 201, res);
+        res.status(201).json({
+            success: true,
+            message: "Payment verified and registration complete"
+        });
     } catch (err) {
         res.status(400).json({ success: false, error: err.message });
     }
@@ -426,6 +477,25 @@ exports.updateBusinessStatus = async (req, res, next) => {
         res.status(200).json({ success: true, data: business });
     } catch (err) {
         res.status(400).json({ success: false, error: err.message });
+    }
+};
+
+// @desc    Get all transactions (Admin only)
+// @route   GET /api/business/transactions
+// @access  Private/Admin
+exports.getAllTransactions = async (req, res, next) => {
+    try {
+        const transactions = await Business.find({ paymentStatus: 'completed' })
+            .select('businessName officialEmailAddress primaryContactNumber amountPaid paymentStatus razorpayPaymentId razorpayOrderId razorpaySignature createdAt')
+            .sort({ createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            count: transactions.length,
+            data: transactions
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
     }
 };
 

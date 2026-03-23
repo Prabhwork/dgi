@@ -26,7 +26,7 @@ export default function ExistingCustomersPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 10;
 
-    const BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api').replace('/api', '');
+    const BASE_URL = (process.env.NEXT_PUBLIC_API_URL!).replace('/api', '');
 
     useEffect(() => {
         fetchCustomers();

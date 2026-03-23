@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 const adminSchema = new mongoose.Schema({
     email: {
@@ -36,6 +37,13 @@ adminSchema.pre('save', async function () {
 // Match user entered password to hashed password in database
 adminSchema.methods.matchPassword = async function (enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
+};
+
+// Sign JWT and return
+adminSchema.methods.getSignedJwtToken = function () {
+    return jwt.sign({ id: this._id, role: 'admin' }, process.env.JWT_SECRET, {
+        expiresIn: process.env.JWT_EXPIRE
+    });
 };
 
 module.exports = mongoose.model('Admin', adminSchema);

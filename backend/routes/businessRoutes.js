@@ -17,6 +17,7 @@ const {
     disable2FA,
     verify2FALogin,
     getNearbyBusinesses,
+    getAllTransactions,
     forgotPassword,
     resetPassword
 } = require('../controllers/businessController');
@@ -25,6 +26,7 @@ const {
     getClaims,
     updateClaimStatus
 } = require('../controllers/claimController');
+const { createRegistrationOrder } = require('../controllers/paymentController');
 
 const router = express.Router();
 
@@ -48,6 +50,7 @@ const uploadFields = upload.fields([
 ]);
 
 router.post('/register', uploadFields, registerBusiness);
+router.post('/create-payment-order', createRegistrationOrder);
 router.post('/login', loginBusiness);
 router.post('/send-otp', sendOTP);
 router.post('/verify-otp', verifyOTP);
@@ -62,6 +65,7 @@ router.get('/me', protect, getMe);
 // Admin Routes
 router.get('/', protect, authorize('admin'), getAllBusinesses);
 router.get('/:id', protect, authorize('admin'), getBusinessById);
+router.get('/transactions', protect, authorize('admin'), getAllTransactions);
 router.put('/:id/status', protect, authorize('admin'), updateBusinessStatus);
 router.get('/claims/all', protect, authorize('admin'), getClaims);
 router.put('/claims/:id', protect, authorize('admin'), updateClaimStatus);
