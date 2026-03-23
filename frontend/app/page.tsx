@@ -24,7 +24,7 @@ export default function Home() {
             <Navbar />
             <HeroSection />
             <PlatformIntro />
-            <ExistingCustomers />
+            {/* <ExistingCustomers /> */}
             <BrowseByNeed />
 
             <DiscoverSellers />

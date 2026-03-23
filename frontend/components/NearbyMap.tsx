@@ -54,6 +54,10 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
     const [mapLoaded, setMapLoaded] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [routeInfo, setRouteInfo] = useState<{ distance: number, duration: number, businessName: string } | null>(null);
+    const [isNavigating, setIsNavigating] = useState(false);
+    const watchIdRef = useRef<number | null>(null);
+    const userMarkerRef = useRef<mapboxgl.Marker | null>(null);
+    const startMarkerRef = useRef<mapboxgl.Marker | null>(null);
 
     const API = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api");
 
@@ -101,7 +105,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                 setUserLocation({ lat: 28.6139, lng: 77.2090 });
                 setLocating(false);
             },
-            { timeout: 8000 }
+            { enableHighAccuracy: false, maximumAge: 60000, timeout: 5000 }
         );
     }, [paramLat, paramLng]);
 
@@ -111,7 +115,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
         mapboxgl.accessToken = MAPBOX_TOKEN;
         const map = new mapboxgl.Map({
             container: mapContainer.current,
-            style: "mapbox://styles/prabhjotwork2004/cmn2zm0vd005701qy6oc8heo6",
+            style: "mapbox://styles/mapbox/dark-v11",
             center: [userLocation.lng, userLocation.lat],
             zoom: 14,
             pitch: 62,
@@ -175,19 +179,19 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                         paint: {
                             "fill-extrusion-color": [
                                 "interpolate", ["linear"], ["get", "height"],
-                                0, "#0f172a", // Deep slate/navy base
-                                15, "#1e293b",
-                                30, "#334155",
-                                60, "#475569",
-                                150, "#64748b"  // Lighter tops
+                                0, "#1e293b",
+                                15, "#334155",
+                                30, "#475569",
+                                60, "#64748b",
+                                150, "#94a3b8"
                             ],
                             "fill-extrusion-height": [
                                 "interpolate", ["linear"], ["zoom"],
-                                15, 0, 15.05, ["get", "height"]
+                                14, 0, 14.05, ["get", "height"]
                             ],
                             "fill-extrusion-base": [
                                 "interpolate", ["linear"], ["zoom"],
-                                15, 0, 15.05, ["get", "min_height"]
+                                14, 0, 14.05, ["get", "min_height"]
                             ],
                             "fill-extrusion-opacity": 0.85,
                             "fill-extrusion-vertical-gradient": true
@@ -207,11 +211,13 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                     <div style="position: absolute; inset: 4px; border-radius: 50%; background: white; border: 3px solid #0ea5e9; box-shadow: 0 0 15px #0ea5e9;"></div>
                 </div>
             `;
-            new mapboxgl.Marker(userEl).setLngLat([userLocation.lng, userLocation.lat]).addTo(map);
+            userMarkerRef.current = new mapboxgl.Marker(userEl).setLngLat([userLocation.lng, userLocation.lat]).addTo(map);
 
             map.flyTo({ center: [userLocation.lng, userLocation.lat], zoom: 15, pitch: 62, bearing: -17, duration: 2500, essential: true });
-            fetchNearbyBusinesses(userLocation.lat, userLocation.lng, category, radius);
         });
+
+        // Start fetching businesses concurrently while the map style loads
+        fetchNearbyBusinesses(userLocation.lat, userLocation.lng, category, radius);
 
         map.on("moveend", () => {
             const center = map.getCenter();
@@ -220,8 +226,18 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
 
         return () => {
             if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+            if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
             map.remove();
+            mapRef.current = null;
         };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [userLocation !== null]); 
+
+    // Keep user marker and camera updated during navigation
+    useEffect(() => {
+        if (userMarkerRef.current && userLocation) {
+            userMarkerRef.current.setLngLat([userLocation.lng, userLocation.lat]);
+        }
     }, [userLocation]);
 
     const initialSelectPerformed = useRef(false);
@@ -260,7 +276,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
 
             const el = document.createElement("div");
             el.className = "dbi-premium-marker";
-            el.style.cssText = "width: 54px; height: 54px; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative;";
+            el.style.cssText = "width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative;";
 
             el.innerHTML = `
                 <style>
@@ -272,11 +288,11 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                 </style>
                 <div class="dbi-glass-pin" style="
                     position: relative; z-index: 2;
-                    width: 38px; height: 38px; border-radius: 50%;
+                    width: 56px; height: 56px; border-radius: 50%;
                     background: rgba(10, 15, 35, 0.85); backdrop-filter: blur(8px);
-                    border: 2px solid ${color};
+                    border: 2.5px solid ${color};
                     display: flex; align-items: center; justify-content: center; color: white;
-                    font-size: 18px; box-shadow: inset 0 0 8px ${color}66, 0 4px 10px rgba(0,0,0,0.5);
+                    font-size: 28px; box-shadow: inset 0 0 12px ${color}66, 0 6px 15px rgba(0,0,0,0.6);
                     animation: dbi-pulse-${color.replace('#', '')} 2.5s infinite;
                     transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
                 ">
@@ -393,10 +409,44 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
         <div className="relative w-full h-screen overflow-hidden font-display" style={siteBackground}>
             <div ref={mapContainer} className="absolute inset-0 w-full h-full" style={{ backgroundColor: 'transparent' }} />
 
+            {/* Active Navigation Header */}
+            <AnimatePresence>
+                {isNavigating && (
+                    <motion.div initial={{ y: -100 }} animate={{ y: 0 }} exit={{ y: -100 }} className="absolute top-0 left-0 right-0 z-40 bg-black/40 backdrop-blur-2xl p-4 flex items-center justify-between shadow-[0_10px_40px_rgba(0,0,0,0.5)] border-b border-primary/30">
+                        <div className="flex items-center gap-3">
+                            <div className="relative">
+                                <div className="absolute inset-0 bg-primary/20 blur-lg rounded-full animate-pulse" />
+                                <Navigation size={24} className="text-primary relative z-10 animate-bounce" />
+                            </div>
+                            <div>
+                                <h2 className="text-white font-black text-xl tracking-tighter leading-tight flex items-center gap-2">
+                                    NAVIGATING
+                                    <span className="w-2 h-2 rounded-full bg-primary animate-ping" />
+                                </h2>
+                                <p className="text-primary/60 font-bold text-[10px] uppercase tracking-[0.2em]">Live Traffic Feed Active</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => {
+                                setIsNavigating(false);
+                                if (watchIdRef.current !== null) {
+                                    navigator.geolocation.clearWatch(watchIdRef.current);
+                                    watchIdRef.current = null;
+                                }
+                                mapRef.current?.easeTo({ pitch: 45, zoom: 15, duration: 1500 });
+                            }}
+                            className="bg-red-500 text-white font-bold py-2 px-4 rounded-xl shadow-lg border border-red-400 hover:bg-red-600 transition-all"
+                        >
+                            END
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* Top Navigation Bar */}
-            <div className="absolute top-0 left-0 right-0 z-20 p-4 md:p-6 flex items-start gap-2 md:gap-3 max-w-7xl mx-auto pointer-events-none">
-                <div className="flex-1 flex flex-col gap-2 relative pointer-events-auto">
-                    <div className="h-12 md:h-14 flex items-center gap-3 bg-black/40 backdrop-blur-2xl border border-white/20 rounded-2xl md:rounded-3xl px-4 md:px-6 shadow-[0_8px_32px_rgba(0,0,0,0.5)] transition-all focus-within:bg-black/60 focus-within:border-primary/50">
+            <div className="absolute top-0 left-0 right-0 z-20 p-3 md:p-6 flex flex-col md:flex-row items-stretch md:items-start gap-3 max-w-7xl mx-auto pointer-events-none">
+                <div className="flex-1 flex flex-col gap-2 relative pointer-events-auto order-2 md:order-1">
+                    <div className="h-12 md:h-14 flex items-center gap-3 bg-black/40 backdrop-blur-3xl border border-white/20 rounded-2xl md:rounded-3xl px-4 md:px-6 shadow-[0_8px_32px_rgba(0,0,0,0.5)] transition-all focus-within:bg-black/60 focus-within:border-primary/50">
                         <Search size={18} className="text-primary animate-pulse shrink-0" />
                         <input
                             type="text"
@@ -455,14 +505,16 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                     </AnimatePresence>
                 </div>
 
-                <div className="flex items-center gap-2 pointer-events-auto h-12 md:h-14">
-                    <button onClick={zoomIn} className="w-12 h-12 md:w-14 md:h-14 rounded-2xl md:rounded-3xl bg-black/40 backdrop-blur-2xl border border-white/20 flex items-center justify-center text-white/90 hover:text-primary hover:bg-black/60 hover:border-primary/50 transition-all shadow-[0_8px_32px_rgba(0,0,0,0.5)] font-bold text-2xl shrink-0">+</button>
-                    <button onClick={zoomOut} className="w-12 h-12 md:w-14 md:h-14 rounded-2xl md:rounded-3xl bg-black/40 backdrop-blur-2xl border border-white/20 flex items-center justify-center text-white/90 hover:text-primary hover:bg-black/60 hover:border-primary/50 transition-all shadow-[0_8px_32px_rgba(0,0,0,0.5)] font-bold text-2xl shrink-0">−</button>
-                </div>
+                <div className="flex items-center justify-between gap-2 pointer-events-auto order-1 md:order-2">
+                    <div className="flex items-center gap-2">
+                        <button onClick={zoomIn} className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-3xl bg-black/40 backdrop-blur-3xl border border-white/20 flex items-center justify-center text-white/90 hover:text-primary hover:bg-black/60 hover:border-primary/50 transition-all shadow-lg font-bold text-xl md:text-2xl shrink-0">+</button>
+                        <button onClick={zoomOut} className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-3xl bg-black/40 backdrop-blur-3xl border border-white/20 flex items-center justify-center text-white/90 hover:text-primary hover:bg-black/60 hover:border-primary/50 transition-all shadow-lg font-bold text-xl md:text-2xl shrink-0">−</button>
+                    </div>
 
-                <button onClick={onClose} className="w-12 h-12 md:w-14 md:h-14 rounded-2xl md:rounded-3xl bg-black/40 backdrop-blur-2xl border border-white/20 flex items-center justify-center text-white/90 hover:text-red-400 hover:bg-black/60 hover:border-red-500/50 transition-all shadow-[0_8px_32px_rgba(0,0,0,0.5)] pointer-events-auto shrink-0">
-                    <X size={20} />
-                </button>
+                    <button onClick={onClose} className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-3xl bg-black/40 backdrop-blur-3xl border border-white/20 flex items-center justify-center text-white/90 hover:text-red-400 hover:bg-black/60 hover:border-red-500/50 transition-all shadow-lg shrink-0">
+                        <X size={18} />
+                    </button>
+                </div>
             </div>
 
             {/* No Results Feedback */}
@@ -474,34 +526,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                 )}
             </AnimatePresence>
 
-            {/* Scanning / Loading UI */}
-            <AnimatePresence>
-                {(locating || (loading && businesses.length === 0)) && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-[#020631]/80 backdrop-blur-sm"
-                    >
-                        <div className="flex flex-col items-center justify-center text-center px-6">
-                            <div className="relative mb-10">
-                                <div className="w-32 h-32 border-4 border-primary/20 rounded-full animate-ping" />
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                    <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(59,130,246,0.6)] z-10 transition-transform duration-500">
-                                        <MapPin size={32} className="text-white animate-bounce" />
-                                    </div>
-                                </div>
-                                {/* Scanning wave */}
-                                <div className="absolute inset-0 border-2 border-primary rounded-full animate-[spin_3s_linear_infinite] scale-125 opacity-20" style={{ borderRightColor: 'transparent', borderBottomColor: 'transparent' }} />
-                                <div className="absolute inset-0 border-2 border-primary rounded-full animate-[spin_4s_linear_infinite_reverse] scale-150 opacity-10" style={{ borderLeftColor: 'transparent', borderTopColor: 'transparent' }} />
-                            </div>
-
-                            <h2 className="text-white text-2xl md:text-3xl font-black mb-3 tracking-tight uppercase">Scanning Area</h2>
-
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            {/* Scanning / Loading UI Removed */}
 
             {/* CSS for animations & Mapbox Overrides */}
             <style>{`
@@ -559,7 +584,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
 
                                     try {
                                         const query = await fetch(
-                                            `https://api.mapbox.com/directions/v5/mapbox/driving/${userLocation.lng},${userLocation.lat};${selectedBusiness.gpsCoordinates.lng},${selectedBusiness.gpsCoordinates.lat}?steps=true&geometries=geojson&access_token=${MAPBOX_TOKEN}`,
+                                            `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${userLocation.lng},${userLocation.lat};${selectedBusiness.gpsCoordinates.lng},${selectedBusiness.gpsCoordinates.lat}?steps=true&geometries=geojson&access_token=${MAPBOX_TOKEN}`,
                                             { method: 'GET' }
                                         );
                                         const json = await query.json();
@@ -588,6 +613,26 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                             if (map.getLayer(id)) map.removeLayer(id);
                                         });
                                         if (map.getSource('route')) map.removeSource('route');
+                                        
+                                        if (startMarkerRef.current) {
+                                            startMarkerRef.current.remove();
+                                            startMarkerRef.current = null;
+                                        }
+
+                                        const startCoord = route[0];
+                                        const nextCoord = route[1];
+                                        const bearing = nextCoord ? (Math.atan2(nextCoord[0] - startCoord[0], nextCoord[1] - startCoord[1]) * 180 / Math.PI) : 0;
+
+                                        const startEl = document.createElement("div");
+                                        startEl.className = "start-location-arrow";
+                                        startEl.innerHTML = `
+                                            <div style="transform: rotate(${bearing}deg); filter: drop-shadow(0 0 8px #0ea5e9);">
+                                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <path d="M12 3L20 21L12 17L4 21L12 3Z" fill="#0ea5e9" stroke="white" stroke-width="1" stroke-linejoin="round"/>
+                                                </svg>
+                                            </div>
+                                        `;
+                                        startMarkerRef.current = new mapboxgl.Marker(startEl).setLngLat(startCoord).addTo(map);
 
                                         map.addSource('route', {
                                             type: 'geojson',
@@ -654,10 +699,10 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                         }, new mapboxgl.LngLatBounds(route[0], route[0]));
                                         
                                         map.fitBounds(bounds, {
-                                            padding: {top: 100, bottom: 350, left: 100, right: 100},
-                                            duration: 2000,
-                                            pitch: 60,
-                                            bearing: -20,
+                                            padding: {top: 150, bottom: 350, left: 50, right: 50},
+                                            duration: 2500,
+                                            pitch: 62,
+                                            bearing: bearing, // Align map with route start
                                             essential: true
                                         });
 
@@ -699,6 +744,54 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                     </span>
                                     <span className="text-primary/60 text-xs font-bold tracking-widest uppercase">({routeInfo.distance.toFixed(1)} KM)</span>
                                 </div>
+                                {!isNavigating && (
+                                    <button
+                                        onClick={() => {
+                                            setIsNavigating(true);
+                                            // Get route bearing again for precise alignment
+                                            const map = mapRef.current!;
+                                            let bearing = 0;
+                                            if (startMarkerRef.current) {
+                                                const transform = startMarkerRef.current.getElement().querySelector('div')?.style.transform;
+                                                const match = transform?.match(/rotate\((.*)deg\)/);
+                                                if (match && match[1]) bearing = parseFloat(match[1]);
+                                            }
+                                            
+                                            map.flyTo({ 
+                                                center: [userLocation!.lng, userLocation!.lat], 
+                                                zoom: 19, 
+                                                pitch: 75, 
+                                                bearing: bearing,
+                                                duration: 2000 
+                                            });
+                                            if (navigator.geolocation) {
+                                                watchIdRef.current = navigator.geolocation.watchPosition(
+                                                    (pos) => {
+                                                        const lat = pos.coords.latitude;
+                                                        const lng = pos.coords.longitude;
+                                                        const heading = pos.coords.heading;
+                                                        setUserLocation({ lat, lng });
+                                                        
+                                                        // Animate map smoothly as they move
+                                                        mapRef.current?.easeTo({
+                                                            center: [lng, lat],
+                                                            bearing: heading !== null && !isNaN(heading) ? heading : mapRef.current.getBearing(),
+                                                            pitch: 70,
+                                                            zoom: 18.5,
+                                                            duration: 1000,
+                                                            easing: (t) => t
+                                                        });
+                                                    },
+                                                    (err) => console.log("Watch pos err:", err),
+                                                    { enableHighAccuracy: true, maximumAge: 0 }
+                                                );
+                                            }
+                                        }}
+                                        className="mt-4 bg-primary text-white font-bold py-2 px-6 rounded-xl hover:bg-primary/80 transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(59,130,246,0.4)]"
+                                    >
+                                        <Navigation size={16} /> START NAV
+                                    </button>
+                                )}
                             </div>
                             <button 
                                 onClick={() => {
@@ -709,6 +802,10 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                             if (map.getLayer(id)) map.removeLayer(id);
                                         });
                                         if (map.getSource('route')) map.removeSource('route');
+                                        if (startMarkerRef.current) {
+                                            startMarkerRef.current.remove();
+                                            startMarkerRef.current = null;
+                                        }
                                         if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
                                     }
                                     if (userLocation) {

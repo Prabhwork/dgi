@@ -207,7 +207,7 @@ export default function HeroSection() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         whileHover={{ scale: 1.05, y: -3 }}
                         whileTap={{ scale: 0.95 }}
-                        transition={{ duration: 0.8, type: "spring", stiffness: 400, damping: 10 }}
+                        transition={{ delay: 0.5, duration: 1.5, type: "spring", stiffness: 150, damping: 15 }}
                         className="hidden lg:flex relative px-5 py-2 rounded-2xl items-center gap-3 group multicolor-vibrate z-50 shadow-2xl cursor-pointer pointer-events-auto overflow-hidden shrink-0"
                     >
                         <div className="relative flex items-center gap-3 z-10">
@@ -341,7 +341,7 @@ export default function HeroSection() {
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             whileHover={{ scale: 1.05, y: -5 }}
                             whileTap={{ scale: 0.95 }}
-                            transition={{ duration: 0.8, type: "spring", stiffness: 400, damping: 10 }}
+                            transition={{ delay: 0.5, duration: 1.5, type: "spring", stiffness: 150, damping: 15 }}
                             className="relative mb-4 sm:mb-6 lg:hidden px-5 sm:px-8 py-2.5 sm:py-3 rounded-2xl flex items-center gap-3 sm:gap-5 group multicolor-vibrate z-50 shadow-2xl scale-90 sm:scale-100 cursor-pointer pointer-events-auto overflow-hidden"
                         >
                             <div className="relative flex items-center gap-2 sm:gap-4 z-10">

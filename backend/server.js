@@ -18,6 +18,7 @@ const allowedOrigins = [
   'https://www.digitalbookofindia.com',
   'https://digitalbookofindia.com',
   'https://dgi-bpu3.onrender.com',
+  
   "https://coleen-unvirulent-rafael.ngrok-free.dev"
 ];
 

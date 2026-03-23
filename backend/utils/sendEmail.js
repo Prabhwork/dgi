@@ -28,7 +28,7 @@ const createTransporter = () => {
 
 const sendEmail = (options) => {
     // Run email sending in the background so we don't block API requests
-    (async () => {
+    return (async () => {
         if (!transporter) {
             transporter = createTransporter();
         }
