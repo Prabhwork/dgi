@@ -17,6 +17,18 @@ import Footer from "@/components/Footer";
 import CursorGlow from "@/components/CursorGlow";
 import ParticleNetworkWrapper from "@/components/ParticleNetworkWrapper";
 
+const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+        if (typeof window === "undefined") return resolve(false);
+        if ((window as any).Razorpay) return resolve(true);
+        const script = document.createElement("script");
+        script.src = "https://checkout.razorpay.com/v1/checkout.js";
+        script.onload = () => resolve(true);
+        script.onerror = () => resolve(false);
+        document.body.appendChild(script);
+    });
+};
+
 const steps = [
     { id: 1, title: "Identity", icon: Building2 },
     { id: 2, title: "Contact", icon: MapPin },
@@ -325,61 +337,142 @@ function RegisterPageContent() {
         setLoading(true);
         setError(null);
 
-        const apiBody = new FormData();
-
-        // Append text fields
-        Object.entries(formData).forEach(([key, value]) => {
-            if (typeof value === 'object') {
-                apiBody.append(key, JSON.stringify(value));
-            } else {
-                apiBody.append(key, value.toString());
-            }
-        });
-
-        // Append files
-        Object.entries(files).forEach(([key, value]) => {
-            if (value instanceof File) {
-                apiBody.append(key, value);
-            } else if (Array.isArray(value)) {
-                value.forEach(file => apiBody.append(key, file));
-            }
-        });
-
-        const url = isUpdateMode 
-            ? `${process.env.NEXT_PUBLIC_API_URL}/business/update-details`
-            : `${process.env.NEXT_PUBLIC_API_URL}/business/register`;
-        
-        const method = isUpdateMode ? "PUT" : "POST";
-        const headers: any = {};
-        if (isUpdateMode) {
-            const token = localStorage.getItem("businessToken");
-            if (token) headers["Authorization"] = `Bearer ${token}`;
+        if (!isUpdateMode && (!formData.joinBulkBuying || !formData.joinFraudAlerts)) {
+            setError("You must agree to join Bulk Buying and receive Fraud Alerts to proceed with registration.");
+            setLoading(false);
+            return;
         }
 
-        try {
-            const res = await fetch(url, {
-                method,
-                headers,
-                body: apiBody
+        const buildApiBody = () => {
+            const apiBody = new FormData();
+            Object.entries(formData).forEach(([key, value]) => {
+                if (typeof value === 'object') apiBody.append(key, JSON.stringify(value));
+                else apiBody.append(key, value.toString());
             });
+            Object.entries(files).forEach(([key, value]) => {
+                if (value instanceof File) apiBody.append(key, value);
+                else if (Array.isArray(value)) value.forEach(file => apiBody.append(key, file));
+            });
+            return apiBody;
+        };
 
-            const contentType = res.headers.get("content-type");
-            if (contentType && contentType.includes("application/json")) {
-                const data = await res.json();
-                if (data.success) {
-                    setSuccess(true);
+        if (isUpdateMode) {
+            const token = localStorage.getItem("businessToken");
+            const headers: any = {};
+            if (token) headers["Authorization"] = `Bearer ${token}`;
+            
+            try {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/business/update-details`, {
+                    method: "PUT", headers, body: buildApiBody()
+                });
+                const contentType = res.headers.get("content-type");
+                if (contentType && contentType.includes("application/json")) {
+                    const data = await res.json();
+                    if (data.success) {
+                        setSuccess(true);
+                    } else {
+                        setError(data.error || "Update failed");
+                    }
                 } else {
-                    setError(data.error || (isUpdateMode ? "Update failed" : "Registration failed"));
+                    setError(`Server Error: ${res.status} ${res.statusText}`);
                 }
-            } else {
-                const text = await res.text();
-                console.error("Non-JSON response:", text);
-                setError(`Server Error: ${res.status} ${res.statusText}`);
+            } catch (err) {
+                setError("Network error or server connection failed.");
+            } finally {
+                setLoading(false);
             }
+            return;
+        }
+
+        // --- NEW REGISTRATION FLOW ---
+        try {
+            // 1. Create Payment Order first
+            const orderRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/business/create-payment-order`, {
+                method: "POST"
+            });
+            const contentType = orderRes.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+                setError(`Server Error while creating order.`);
+                setLoading(false);
+                return;
+            }
+
+            const orderData = await orderRes.json();
+            
+            if (!orderData.success) {
+                setError(orderData.error || "Failed to create payment order");
+                setLoading(false);
+                return;
+            }
+
+            // 2. Open Razorpay Checktout Modal
+            const resLoader = await loadRazorpayScript();
+            if (!resLoader) {
+                setError("Failed to load payment gateway. Please check your internet connection.");
+                setLoading(false); 
+                return;
+            }
+
+            const options = {
+                key: orderData.keyId,
+                amount: orderData.amount * 100, // in paise
+                currency: orderData.currency,
+                name: "Digital Book Of India",
+                description: "Business Registration Fee",
+                order_id: orderData.orderId,
+                handler: async function (paymentResponse: any) {
+                    try {
+                        setLoading(true);
+                        // 3. Register Business with Payment Details after successful payment
+                        const apiBody = buildApiBody();
+                        apiBody.append("razorpay_order_id", paymentResponse.razorpay_order_id);
+                        apiBody.append("razorpay_payment_id", paymentResponse.razorpay_payment_id);
+                        apiBody.append("razorpay_signature", paymentResponse.razorpay_signature);
+
+                        const verifyRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/business/register`, {
+                            method: "POST",
+                            body: apiBody
+                        });
+                        const verifyContentType = verifyRes.headers.get("content-type");
+                        if (verifyContentType && verifyContentType.includes("application/json")) {
+                            const verifyData = await verifyRes.json();
+                            if (verifyData.success) {
+                                setSuccess(true);
+                                setTimeout(() => router.push("/community/login"), 4000);
+                            } else {
+                                setError(verifyData.error || "Registration failed after payment");
+                            }
+                        } else {
+                            setError(`Registration Server Error: ${verifyRes.status}`);
+                        }
+                    } catch (err) {
+                        setError("Registration submission error. Please contact support.");
+                    } finally {
+                        setLoading(false);
+                    }
+                },
+                prefill: {
+                    name: formData.businessName,
+                    email: formData.officialEmailAddress,
+                    contact: formData.primaryContactNumber
+                },
+                theme: { color: "#10b981" },
+                modal: {
+                    ondismiss: function() {
+                        setLoading(false);
+                    }
+                }
+            };
+
+            const paymentObject = new (window as any).Razorpay(options);
+            paymentObject.on("payment.failed", function (response: any) {
+                setLoading(false);
+                setError("Payment failed: " + response.error.description);
+            });
+            paymentObject.open();
+
         } catch (err) {
-            console.error("Submission error:", err);
-            setError("Network error or server connection failed. Please check your internet and try again.");
-        } finally {
+            setError("Failed to initiate payment. Please try again.");
             setLoading(false);
         }
     };
@@ -750,191 +843,183 @@ function RegisterPageContent() {
 
     if (success) {
         return (
-            <div className="min-h-screen bg-background text-white relative overflow-hidden">
-                <ParticleNetworkWrapper className="z-0 opacity-40" />
-                <Navbar />
-                <main className="pt-32 pb-24 container mx-auto px-4 max-w-2xl text-center space-y-8 relative z-10">
-                    <motion.div 
-                        initial={{ scale: 0.5, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        className="space-y-6"
-                    >
-                        <div className="relative inline-block">
-                            <CheckCircle2 className="w-24 h-24 text-primary mx-auto" />
-                            <motion.div 
-                                className="absolute inset-0 bg-primary/20 blur-3xl -z-10 rounded-full"
-                                animate={{ scale: [1, 1.2, 1] }}
-                                transition={{ duration: 2, repeat: Infinity }}
-                            />
-                        </div>
-                        <h1 className="text-4xl md:text-5xl font-display font-bold uppercase tracking-widest">
-                            Registration <span className="text-primary italic">Received</span>
-                        </h1>
-                    </motion.div>
+            <main className="pt-32 pb-24 container mx-auto px-4 max-w-2xl text-center space-y-8 relative z-10">
+                <motion.div 
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="space-y-6"
+                >
+                    <div className="relative inline-block">
+                        <CheckCircle2 className="w-24 h-24 text-primary mx-auto" />
+                        <motion.div 
+                            className="absolute inset-0 bg-primary/20 blur-3xl -z-10 rounded-full"
+                            animate={{ scale: [1, 1.2, 1] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                        />
+                    </div>
+                    <h1 className="text-4xl md:text-5xl font-display font-bold uppercase tracking-widest">
+                        Registration <span className="text-primary italic">Received</span>
+                    </h1>
+                </motion.div>
 
-                    <div className="glass-strong p-8 rounded-3xl border border-white/10 space-y-6">
-                        <p className="text-xl text-white/70 leading-relaxed">
-                            Welcome to the DBI Community! Your membership application has been successfully submitted to our verification board.
+                <div className="glass-strong p-8 rounded-3xl border border-white/10 space-y-6">
+                    <p className="text-xl text-white/70 leading-relaxed">
+                        Welcome to the DBI Community! Your membership application has been successfully submitted to our verification board.
+                    </p>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+                        <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                            <h3 className="text-primary font-bold uppercase text-xs tracking-widest mb-2 flex items-center gap-2">
+                                <Clock size={14} /> Approval Window
+                            </h3>
+                            <p className="text-sm text-white/50">Our team manually verifies all documents. This typically takes <strong>24 to 48 hours</strong>.</p>
+                        </div>
+                        <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                            <h3 className="text-primary font-bold uppercase text-xs tracking-widest mb-2 flex items-center gap-2">
+                                <ShieldCheck size={14} /> Verification
+                            </h3>
+                            <p className="text-sm text-white/50">Both manual and automated checks are performed on your legal and identity documents.</p>
+                        </div>
+                    </div>
+
+                    <div className="p-4 bg-blue-500/10 rounded-2xl border border-blue-500/20 text-center">
+                        <p className="text-sm text-blue-300">
+                            You will receive an email confirmation once your account is activated.
                         </p>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
-                            <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
-                                <h3 className="text-primary font-bold uppercase text-xs tracking-widest mb-2 flex items-center gap-2">
-                                    <Clock size={14} /> Approval Window
-                                </h3>
-                                <p className="text-sm text-white/50">Our team manually verifies all documents. This typically takes <strong>24 to 48 hours</strong>.</p>
-                            </div>
-                            <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
-                                <h3 className="text-primary font-bold uppercase text-xs tracking-widest mb-2 flex items-center gap-2">
-                                    <ShieldCheck size={14} /> Verification
-                                </h3>
-                                <p className="text-sm text-white/50">Both manual and automated checks are performed on your legal and identity documents.</p>
-                            </div>
-                        </div>
-
-                        <div className="p-4 bg-blue-500/10 rounded-2xl border border-blue-500/20 text-center">
-                            <p className="text-sm text-blue-300">
-                                You will receive an email confirmation once your account is activated.
-                            </p>
-                        </div>
                     </div>
+                </div>
 
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Button variant="glow" size="lg" asChild className="rounded-2xl px-12">
-                            <a href="/community/login">Go to Login Portal</a>
-                        </Button>
-                        <Button variant="outline" size="lg" asChild className="rounded-2xl px-12 border-white/10 text-white/50">
-                            <a href="/">Back to Home</a>
-                        </Button>
-                    </div>
-                </main>
-                <Footer />
-            </div>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    <Button variant="glow" size="lg" asChild className="rounded-2xl px-12">
+                        <a href="/community/login">Go to Login Portal</a>
+                    </Button>
+                    <Button variant="outline" size="lg" asChild className="rounded-2xl px-12 border-white/10 text-white/50">
+                        <a href="/">Back to Home</a>
+                    </Button>
+                </div>
+            </main>
         );
     }
 
     return (
-        <div className="min-h-screen bg-background relative overflow-hidden text-white font-sans">
-            <ParticleNetworkWrapper className="z-0 opacity-40" />
-            <CursorGlow />
-            <Navbar />
+        <main className="pt-32 pb-24 relative z-10 px-4">
+            <div className="max-w-4xl mx-auto">
+                <div className="text-center mb-8 md:mb-12">
+                    <h1 className="text-2xl sm:text-3xl md:text-5xl font-display font-bold uppercase tracking-widest mb-3 md:mb-4 px-2">
+                        DBI <span className="text-primary italic">Community</span> Registration
+                    </h1>
+                    <p className="text-muted-foreground uppercase text-[10px] sm:text-xs md:text-sm tracking-[0.15em] sm:tracking-[0.2em]">Join the trusted network of businesses</p>
+                </div>
 
-            <main className="pt-32 pb-24 relative z-10 px-4">
-                <div className="max-w-4xl mx-auto">
-                    <div className="text-center mb-8 md:mb-12">
-                        <h1 className="text-2xl sm:text-3xl md:text-5xl font-display font-bold uppercase tracking-widest mb-3 md:mb-4 px-2">
-                            DBI <span className="text-primary italic">Community</span> Registration
-                        </h1>
-                        <p className="text-muted-foreground uppercase text-[10px] sm:text-xs md:text-sm tracking-[0.15em] sm:tracking-[0.2em]">Join the trusted network of businesses</p>
+                {isUpdateMode && rejectionReason && (
+                    <div className="max-w-2xl mx-auto mb-8 p-6 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400">
+                        <div className="flex items-center gap-3 mb-2">
+                            <AlertCircle size={20} />
+                            <h3 className="font-bold uppercase tracking-widest text-xs">Rejection Reason</h3>
+                        </div>
+                        <p className="text-sm font-medium">{rejectionReason}</p>
+                        <p className="text-[10px] uppercase tracking-wider mt-4 opacity-50">Please correct the highlighted fields and resubmit.</p>
                     </div>
+                )}
 
-                    {isUpdateMode && rejectionReason && (
-                        <div className="max-w-2xl mx-auto mb-8 p-6 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400">
-                            <div className="flex items-center gap-3 mb-2">
-                                <AlertCircle size={20} />
-                                <h3 className="font-bold uppercase tracking-widest text-xs">Rejection Reason</h3>
+                {/* Progress Bar */}
+                <div className="max-w-2xl mx-auto mb-12 px-4">
+                    <div className="relative flex justify-between items-start isolate">
+                        <div className="absolute top-5 left-0 w-full h-[1px] bg-white/10 -translate-y-1/2 z-0" />
+                        <motion.div
+                            className="absolute top-5 left-0 h-[2px] bg-primary -translate-y-1/2 z-0"
+                            initial={{ width: "0%" }}
+                            animate={{ width: `${((currentStep - 1) / (steps.length - 1)) * 100}%` }}
+                        />
+                        {steps.map((step) => (
+                            <div key={step.id} className="relative z-10 flex flex-col items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => (isUpdateMode || step.id < currentStep) && setCurrentStep(step.id)}
+                                    className={`relative w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-500 border-2 ${currentStep === step.id ? "bg-primary border-primary text-white scale-110 glow-sm" :
+                                        currentStep > step.id ? "bg-primary/10 border-primary/50 text-primary backdrop-blur-md" : "bg-slate-900 border-white/20 text-white/40"
+                                        }`}
+                                >
+                                    <step.icon size={16} className="sm:w-[18px] sm:h-[18px]" />
+                                </button>
+                                <span className={`text-[8px] sm:text-[10px] font-bold uppercase tracking-tighter sm:tracking-widest ${currentStep === step.id ? "text-primary" : "text-white/40"}`}>
+                                    {step.title}
+                                </span>
                             </div>
-                            <p className="text-sm font-medium">{rejectionReason}</p>
-                            <p className="text-[10px] uppercase tracking-wider mt-4 opacity-50">Please correct the highlighted fields and resubmit.</p>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Form Container */}
+                <div className="max-w-2xl mx-auto glass-strong border-white/10 rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-8 md:p-12 shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+
+                    {error && (
+                        <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center gap-3">
+                            <AlertCircle size={20} />
+                            <span className="text-sm font-medium">{error}</span>
                         </div>
                     )}
 
-                    {/* Progress Bar */}
-                    <div className="max-w-2xl mx-auto mb-12 px-4">
-                        <div className="relative flex justify-between items-start isolate">
-                            <div className="absolute top-5 left-0 w-full h-[1px] bg-white/10 -translate-y-1/2 z-0" />
-                            <motion.div
-                                className="absolute top-5 left-0 h-[2px] bg-primary -translate-y-1/2 z-0"
-                                initial={{ width: "0%" }}
-                                animate={{ width: `${((currentStep - 1) / (steps.length - 1)) * 100}%` }}
-                            />
-                            {steps.map((step) => (
-                                <div key={step.id} className="relative z-10 flex flex-col items-center gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => (isUpdateMode || step.id < currentStep) && setCurrentStep(step.id)}
-                                        className={`relative w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-500 border-2 ${currentStep === step.id ? "bg-primary border-primary text-white scale-110 glow-sm" :
-                                            currentStep > step.id ? "bg-primary/10 border-primary/50 text-primary backdrop-blur-md" : "bg-slate-900 border-white/20 text-white/40"
-                                            }`}
-                                    >
-                                        <step.icon size={16} className="sm:w-[18px] sm:h-[18px]" />
-                                    </button>
-                                    <span className={`text-[8px] sm:text-[10px] font-bold uppercase tracking-tighter sm:tracking-widest ${currentStep === step.id ? "text-primary" : "text-white/40"}`}>
-                                        {step.title}
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                    <form onSubmit={handleSubmit}>
+                        <AnimatePresence mode="wait">
+                            {renderStep()}
+                        </AnimatePresence>
 
-                    {/* Form Container */}
-                    <div className="max-w-2xl mx-auto glass-strong border-white/10 rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-8 md:p-12 shadow-2xl relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+                        <div className="mt-12 flex items-center justify-between pt-8 border-t border-white/10">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={prevStep}
+                                disabled={currentStep === 1 || loading}
+                                className="rounded-xl px-4 sm:px-8 border-white/10 text-white/70 hover:bg-white/5 hover:text-white disabled:opacity-30 transition-all font-display uppercase tracking-widest text-[10px] sm:text-xs h-10 sm:h-12"
+                            >
+                                <ChevronLeft className="mr-1 sm:mr-2 w-3 h-3 sm:w-4 h-4" /> Prev
+                            </Button>
 
-                        {error && (
-                            <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center gap-3">
-                                <AlertCircle size={20} />
-                                <span className="text-sm font-medium">{error}</span>
-                            </div>
-                        )}
-
-                        <form onSubmit={handleSubmit}>
-                            <AnimatePresence mode="wait">
-                                {renderStep()}
-                            </AnimatePresence>
-
-                            <div className="mt-12 flex items-center justify-between pt-8 border-t border-white/10">
+                            {currentStep < 6 ? (
                                 <Button
                                     type="button"
-                                    variant="outline"
-                                    onClick={prevStep}
-                                    disabled={currentStep === 1 || loading}
-                                    className="rounded-xl px-4 sm:px-8 border-white/10 text-white/70 hover:bg-white/5 hover:text-white disabled:opacity-30 transition-all font-display uppercase tracking-widest text-[10px] sm:text-xs h-10 sm:h-12"
+                                    variant="glow"
+                                    onClick={nextStep}
+                                    className="rounded-xl px-8 sm:px-12 font-display uppercase tracking-widest text-[10px] sm:text-xs h-10 sm:h-12"
                                 >
-                                    <ChevronLeft className="mr-1 sm:mr-2 w-3 h-3 sm:w-4 h-4" /> Prev
+                                    Next <ChevronRight className="ml-1 sm:ml-2 w-3 h-3 sm:w-4 h-4" />
                                 </Button>
-
-                                {currentStep < 6 ? (
-                                    <Button
-                                        type="button"
-                                        variant="glow"
-                                        onClick={nextStep}
-                                        className="rounded-xl px-8 sm:px-12 font-display uppercase tracking-widest text-[10px] sm:text-xs h-10 sm:h-12"
-                                    >
-                                        Next <ChevronRight className="ml-1 sm:ml-2 w-3 h-3 sm:w-4 h-4" />
-                                    </Button>
-                                ) : (
-                                    <Button
-                                        type="submit"
-                                        variant="glow"
-                                        disabled={loading}
-                                        className="rounded-xl px-8 sm:px-12 font-display uppercase tracking-widest text-[10px] sm:text-xs h-10 sm:h-12 bg-primary text-white"
-                                    >
-                                        {loading ? "Registering..." : "Submit"}
-                                    </Button>
-                                )}
-                            </div>
-                        </form>
-                    </div>
+                            ) : (
+                                <Button
+                                    type="submit"
+                                    variant="glow"
+                                    disabled={loading}
+                                    className="rounded-xl px-8 sm:px-12 font-display uppercase tracking-widest text-[10px] sm:text-xs h-10 sm:h-12 bg-primary text-white"
+                                >
+                                    {loading ? "Registering..." : "Submit"}
+                                </Button>
+                            )}
+                        </div>
+                    </form>
                 </div>
-            </main>
-
-            {/* DigiLocker Simulation Modal */}
-                    {/* DigiLocker Modal Removed */}
-
-            <Footer />
-        </div>
+            </div>
+        </main>
     );
 }
 
 export default function RegisterPage() {
     return (
-        <Suspense fallback={
-            <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-center p-6">
-                <Loader2 className="w-16 h-16 text-primary animate-spin mx-auto" />
-            </div>
-        }>
-            <RegisterPageContent />
-        </Suspense>
+        <div className="min-h-screen bg-background relative overflow-hidden text-white font-sans">
+            <ParticleNetworkWrapper className="z-0 opacity-40" />
+            <CursorGlow />
+            <Navbar />
+            
+            <Suspense fallback={
+                <div className="min-h-screen flex flex-col items-center justify-center text-center p-6">
+                    <Loader2 className="w-16 h-16 text-primary animate-spin mx-auto" />
+                </div>
+            }>
+                <RegisterPageContent />
+            </Suspense>
+
+            <Footer />
+        </div>
     );
 }

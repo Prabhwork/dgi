@@ -105,7 +105,7 @@ export default function MappingPlans() {
                         viewport={{ once: true }}
                     >
                         <span className={`rounded-full px-5 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] relative overflow-hidden backdrop-blur-2xl border border-solid transition-all duration-300 ${theme === 'light'
-                            ? 'bg-white/80 border-blue-600 text-primary shadow-none'
+                            ? 'bg-[#FFFFF0]/80 border-blue-600 text-primary shadow-none'
                             : 'bg-white/10 border-white/30 text-primary'
                             }`}>
                             Our Plans

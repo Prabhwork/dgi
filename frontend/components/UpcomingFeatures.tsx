@@ -74,41 +74,51 @@ export default function UpcomingFeatures() {
         fetchFeatures();
     }, []);
 
-    const half = Math.ceil(features.length / 2);
-    const row1 = features.slice(0, half);
-    const row2 = features.slice(half);
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.1
+            }
+        }
+    };
 
-    const repeatedRow1 = [...row1, ...row1, ...row1];
-    const repeatedRow2 = [...row2, ...row2, ...row2];
+    const itemVariants = {
+        hidden: { opacity: 0, y: 20, scale: 0.95 },
+        visible: { 
+            opacity: 1, 
+            y: 0, 
+            scale: 1,
+            transition: { type: "spring", stiffness: 300, damping: 24 }
+        }
+    };
 
     const renderCard = (f: UpcomingItem, i: number) => {
         const IconComponent = ICON_MAP[f.icon] || Rocket;
         const hasDetail = f._id && !FALLBACK_FEATURES.find(fb => fb._id === f._id);
 
         const cardContent = (
-            <div
+            <motion.div
                 key={i}
-                className={`flex-shrink-0 flex items-center gap-4 rounded-[2rem] px-8 py-4 border border-solid hover:border-white/50 transition-all duration-300 cursor-pointer group/card relative overflow-hidden backdrop-blur-md ${theme === 'light' ? 'bg-white/10 border-blue-600 shadow-none hover:border-blue-700' : 'bg-white/[0.01] border-white/20 hover:bg-white/[0.05] hover:border-white/40 shadow-[0_4px_24px_rgba(0,0,0,0.15)]'
+                whileHover={{ y: -2, scale: 1.01 }}
+                className={`flex items-center gap-1.5 rounded-lg sm:rounded-2xl px-2 py-1.5 sm:px-6 sm:py-4 border border-solid transition-all duration-300 cursor-pointer backdrop-blur-md ${theme === 'light' ? 'bg-white border-slate-200 shadow-sm hover:border-primary/30' : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/30 shadow-xl'
                     }`}
             >
-                {/* Inner shiny highlight */}
-                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 pointer-events-none" />
-
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-300 shadow-inner relative z-10 border-[1px] ${theme === 'light' ? 'bg-primary/10 border-primary/20 group-hover/card:bg-primary/20' : 'bg-white/5 border-white/20 group-hover/card:bg-white/10'
+                <div className={`w-6 h-6 sm:w-10 sm:h-10 rounded-md sm:rounded-xl flex items-center justify-center transition-colors duration-300 ${theme === 'light' ? 'bg-primary/5 text-primary' : 'bg-white/5 text-white/80'
                     }`}>
-                    <IconComponent size={18} className={`transition-colors shadow-sm ${theme === 'light' ? 'text-primary' : 'text-white/80 group-hover/card:text-white group-hover/card:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]'
-                        }`} />
+                    <IconComponent size={12} className="sm:size-5" />
                 </div>
-                <span className={`font-display font-bold text-base sm:text-lg transition-colors relative z-10 ${theme === 'light' ? 'text-slate-900 group-hover/card:text-primary' : 'text-white/90 group-hover/card:text-white'
+                <span className={`font-display font-medium text-[9px] sm:text-base tracking-tight transition-colors leading-tight ${theme === 'light' ? 'text-slate-900 group-hover:text-primary' : 'text-white/95'
                     }`}>
                     {f.title}
                 </span>
-            </div>
+            </motion.div>
         );
 
         if (hasDetail) {
             return (
-                <Link href={`/upcoming/${f._id}`} key={i} className="flex-shrink-0">
+                <Link href={`/upcoming/${f._id}`} key={i} className="block">
                     {cardContent}
                 </Link>
             );
@@ -118,37 +128,28 @@ export default function UpcomingFeatures() {
     };
 
     return (
-        <section className="pt-6 pb-20 relative z-10 -mt-12 overflow-hidden" id="upcoming" ref={ref}>
+        <section className="pt-8 sm:pt-20 pb-16 relative z-10 overflow-hidden" id="upcoming" ref={ref}>
             <div className="container mx-auto px-4">
-                <motion.div initial={{ opacity: 0, y: 30 }} animate={inView ? { opacity: 1, y: 0 } : {}} className="text-center mb-16">
-                    <span className={`rounded-full px-5 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] relative overflow-hidden backdrop-blur-2xl border border-solid transition-all duration-300 ${theme === 'light'
-                        ? 'bg-white/80 border-blue-600 text-primary shadow-none'
-                        : 'bg-white/10 border-white/30 text-white'}`}>
-                        Future Board
+                <div className="text-center mb-2 sm:mb-10">
+                    <span className={`rounded-full px-4 py-0 sm:px-5 sm:py-1.5 text-[7px] sm:text-[11px] font-bold uppercase tracking-[0.2em] relative overflow-hidden backdrop-blur-2xl border border-solid transition-all duration-300 ${theme === 'light'
+                        ? 'bg-white border-blue-600 text-primary shadow-none'
+                        : 'bg-white/10 border-white/30 text-white/80'}`}>
+                        Upcoming Board
                     </span>
-                    <h2 className="text-4xl sm:text-6xl font-display font-black text-foreground mt-4 tracking-tight">
+                    <h2 className="text-lg sm:text-5xl font-display font-black text-foreground mt-0.5 sm:mt-4 tracking-tight leading-tight">
                         Upcoming <span className="gradient-text">Categories</span>
                     </h2>
-                    <p className="mt-4 text-muted-foreground max-w-2xl mx-auto text-sm sm:text-base">
-                        Get ready for powerful new tools and directories we are bringing to the Digital Book of India platform very soon.
+                    <p className="mt-1 text-muted-foreground max-w-2xl mx-auto text-[8px] sm:text-base hidden sm:block opacity-80">
+                        New tools we are bringing soon to the platform.
                     </p>
-                </motion.div>
-            </div>
-
-            {/* Dual Marquee Rows */}
-            <div className="relative flex flex-col gap-6 w-full max-w-[100vw] overflow-hidden group">
-
-                {/* Top Row - Scrolling Left */}
-                <div className="flex animate-marquee gap-6 whitespace-nowrap items-center min-w-max hover:[animation-play-state:paused] px-4" style={{ animationDuration: "35s" }}>
-                    {repeatedRow1.map((f, i) => renderCard(f, i))}
                 </div>
 
-                {/* Bottom Row */}
-                <div
-                    className="flex animate-marquee gap-6 whitespace-nowrap items-center min-w-max hover:[animation-play-state:paused] px-4"
-                    style={{ animationDuration: "40s" }}
-                >
-                    {repeatedRow2.map((f, i) => renderCard(f, i))}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5 sm:gap-6">
+                    {features.map((f, i) => (
+                        <div key={i}>
+                            {renderCard(f, i)}
+                        </div>
+                    ))}
                 </div>
             </div>
         </section>

@@ -22,12 +22,12 @@ export default function MissionDigitalBharat() {
     const { theme } = useTheme();
 
     return (
-        <section className="pt-6 pb-20 overflow-hidden relative z-10 -mt-6" id="mission" ref={ref}>
+        <section className="pt-6 pb-12 overflow-hidden relative z-10 -mt-6" id="mission" ref={ref}>
             <div className="container mx-auto px-4">
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     animate={inView ? { opacity: 1, y: 0 } : {}}
-                    className="text-center mb-16"
+                    className="text-center mb-6"
                 >
                     <span className={`rounded-full px-5 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] relative overflow-hidden backdrop-blur-2xl border border-solid transition-all duration-300 ${theme === 'light'
                         ? 'bg-white/80 border-blue-600 text-primary shadow-none'

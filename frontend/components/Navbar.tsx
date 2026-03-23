@@ -70,7 +70,7 @@ const NavDropdown = ({
                     >
                         {/* Left Panel — Categories */}
                         <div className={`w-80 p-2 rounded-2xl border border-solid shadow-2xl backdrop-blur-xl ${isLight 
-                            ? 'bg-white/80 border-slate-200/50 shadow-blue-500/10' 
+                            ? 'bg-[#FFFFF0]/80 border-slate-200/50 shadow-blue-500/10' 
                             : 'bg-slate-900/80 border-white/10 shadow-black/40'
                             }`}>
                             <div className="max-h-[65vh] overflow-y-auto custom-scrollbar relative">
@@ -134,7 +134,7 @@ const NavDropdown = ({
                                             y: { type: "spring", stiffness: 300, damping: 30 } 
                                         }}
                                         className={`w-72 ml-2 p-2 rounded-2xl border border-solid shadow-2xl h-fit backdrop-blur-xl pointer-events-auto ${isLight 
-                                            ? 'bg-white/80 border-slate-200/50 shadow-blue-500/10' 
+                                            ? 'bg-[#FFFFF0]/80 border-slate-200/50 shadow-blue-500/10' 
                                             : 'bg-slate-900/80 border-white/10 shadow-black/40'
                                             }`}
                                     >
@@ -336,7 +336,7 @@ export default function Navbar() {
             animate={{ y: 0 }}
             transition={{ duration: 0.6 }}
             className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled
-                ? isLight ? "bg-white/80 border-b border-blue-100 backdrop-blur-md shadow-lg shadow-blue-500/5" : "bg-[#020631]/80 border-b border-white/5 backdrop-blur-xl shadow-2xl"
+                ? isLight ? "bg-[#FFFFF0]/80 border-b border-blue-100 backdrop-blur-md shadow-lg shadow-blue-500/5" : "bg-[#020631]/80 border-b border-white/5 backdrop-blur-xl shadow-2xl"
                 : "bg-transparent border-b border-white/0"
                 }`}
         >
@@ -431,7 +431,7 @@ export default function Navbar() {
                         <div className="relative isolate" ref={dropdownRef}>
                             <button
                                 onClick={() => setUserMenuOpen(!userMenuOpen)}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all border ${isLight ? 'bg-white border-slate-200 hover:border-primary/50 text-slate-900 shadow-sm' : 'bg-white/5 border-white/10 hover:border-white/30 text-white'}`}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all border ${isLight ? 'bg-[#FFFFF0] border-slate-200 hover:border-primary/50 text-slate-900 shadow-sm' : 'bg-white/5 border-white/10 hover:border-white/30 text-white'}`}
                             >
                                 <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${isLight ? 'bg-primary/10 text-primary' : 'bg-primary/20 text-white'}`}>
                                     {(businessUser ? (businessUser.brandName || businessUser.businessName) : (regularUser?.name || 'U')).charAt(0).toUpperCase()}
@@ -453,7 +453,7 @@ export default function Navbar() {
                                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                         animate={{ opacity: 1, y: 0, scale: 1 }}
                                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                        className={`absolute right-0 top-full mt-2 w-56 p-2 rounded-2xl border backdrop-blur-xl shadow-2xl z-[100] ${isLight ? 'bg-white/90 border-slate-200' : 'bg-slate-900/90 border-white/10'}`}
+                                        className={`absolute right-0 top-full mt-2 w-56 p-2 rounded-2xl border backdrop-blur-xl shadow-2xl z-[100] ${isLight ? 'bg-[#FFFFF0]/90 border-slate-200' : 'bg-slate-900/90 border-white/10'}`}
                                     >
                                         <div className="px-3 py-2 border-b border-solid mb-2 pb-3 pt-1">
                                             <p className={`text-xs uppercase tracking-wider font-bold opacity-50 ${isLight ? 'text-slate-500 border-slate-100' : 'text-slate-400 border-white/10'}`}>Signed in as</p>
@@ -549,7 +549,7 @@ export default function Navbar() {
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
-                        className={`lg:hidden border-t border-solid transition-colors duration-500 px-4 pb-10 overflow-y-auto max-h-[85vh] ${isLight ? 'bg-white/95 border-blue-50 shadow-xl backdrop-blur-xl' : 'bg-slate-900/95 border-white/5 shadow-2xl backdrop-blur-xl'}`}
+                        className={`lg:hidden border-t border-solid transition-colors duration-500 px-4 pb-10 overflow-y-auto max-h-[85vh] ${isLight ? 'bg-[#FFFFF0]/95 border-blue-50 shadow-xl backdrop-blur-xl' : 'bg-slate-900/95 border-white/5 shadow-2xl backdrop-blur-xl'}`}
                     >
                         <div className="pt-4 grid gap-1">
                             {/* Mobile Sections */}

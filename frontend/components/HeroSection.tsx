@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, MapPin, Store, CheckCircle2, Compass, ChevronDown, Loader2, Trophy, TrendingUp, Zap } from "lucide-react";
+import { Search, MapPin, Store, CheckCircle2, Compass, ChevronDown, Loader2, Trophy, TrendingUp, Zap, ChevronRight } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 import { useRouter } from "next/navigation";
 import {
@@ -166,7 +166,7 @@ export default function HeroSection() {
                 <div className="container mx-auto flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-0 w-full sm:w-auto sm:flex-1 sm:max-w-md group">
                         <div className={`flex items-center flex-1 backdrop-blur-md border rounded-l-lg px-3 py-2.5 transition-all ${theme === 'light'
-                            ? 'bg-white/80 border-slate-200 group-hover:border-primary/50'
+                            ? 'bg-[#FFFFF0]/80 border-slate-200 group-hover:border-primary/50'
                             : 'bg-black/40 border-white/20 group-hover:border-primary/50'
                             }`}>
                             <input
@@ -200,6 +200,32 @@ export default function HeroSection() {
                             <span className="sm:hidden">Map</span>
                         </Link>
                     </div>
+
+                    {/* Swadeshi badge — desktop only, inline with search bar */}
+                    <motion.div
+                        initial={{ opacity: 0, y: -10, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        whileHover={{ scale: 1.05, y: -3 }}
+                        whileTap={{ scale: 0.95 }}
+                        transition={{ duration: 0.8, type: "spring", stiffness: 400, damping: 10 }}
+                        className="hidden lg:flex relative px-5 py-2 rounded-2xl items-center gap-3 group multicolor-vibrate z-50 shadow-2xl cursor-pointer pointer-events-auto overflow-hidden shrink-0"
+                    >
+                        <div className="relative flex items-center gap-3 z-10">
+                            <div className="relative w-8 h-8 flex items-center justify-center shrink-0">
+                                <div className="absolute inset-0 bg-white/10 rounded-full blur-sm group-hover:bg-white/20 transition-colors" />
+                                <img
+                                    src="/assets/swadeshi-logo-dark.png"
+                                    alt="Swadeshi"
+                                    className="w-full h-full object-contain mix-blend-screen brightness-110 contrast-125"
+                                    onError={(e) => (e.currentTarget.style.display = 'none')}
+                                />
+                            </div>
+                            <span className="relative text-white font-display font-black text-xs tracking-[0.2em] uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+                                Swadeshi Platform
+                            </span>
+                        </div>
+                    </motion.div>
+
                     {/* Quick links — visible on all screens */}
                     <div className="flex items-center justify-center sm:justify-end gap-3 sm:gap-5 text-[10px] sm:text-sm text-foreground w-full md:w-auto">
 
@@ -291,7 +317,7 @@ export default function HeroSection() {
                                     transition={{ delay: i * 0.1, duration: 0.3 }}
                                     onClick={() => router.push(`/search?mainCategory=${encodeURIComponent(cat.name)}`)}
                                     className={`rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:scale-110 transition-all duration-700 w-[140px] h-[130px] group relative overflow-hidden backdrop-blur-md border border-solid ${theme === 'light'
-                                        ? 'bg-white border-slate-200 hover:border-primary/40 shadow-xl'
+                                        ? 'bg-[#FFFFF0] border-slate-200 hover:border-primary/40 shadow-xl'
                                         : 'bg-white/[0.02] border-white/10 hover:bg-white/[0.08] hover:border-primary/50 shadow-2xl'
                                         }`}
                                 >
@@ -308,20 +334,47 @@ export default function HeroSection() {
                     </AnimatePresence>
 
                     {/* Center portal — Globe */}
-                    <div className="w-full flex flex-col items-center text-center mt-8 sm:mt-0">
+                    <div className="w-full flex flex-col items-center text-center mt-8 sm:mt-0 relative">
+                        {/* Swadeshi Platform Badge - ROBUST TOP CENTER */}
+                        <motion.div
+                            initial={{ opacity: 0, y: -20, scale: 0.9 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            whileHover={{ scale: 1.05, y: -5 }}
+                            whileTap={{ scale: 0.95 }}
+                            transition={{ duration: 0.8, type: "spring", stiffness: 400, damping: 10 }}
+                            className="relative mb-4 sm:mb-6 lg:hidden px-5 sm:px-8 py-2.5 sm:py-3 rounded-2xl flex items-center gap-3 sm:gap-5 group multicolor-vibrate z-50 shadow-2xl scale-90 sm:scale-100 cursor-pointer pointer-events-auto overflow-hidden"
+                        >
+                            <div className="relative flex items-center gap-2 sm:gap-4 z-10">
+                                <div className="relative w-8 h-8 sm:w-12 sm:h-12 flex items-center justify-center shrink-0">
+                                    <div className="absolute inset-0 bg-white/10 rounded-full blur-sm group-hover:bg-white/20 transition-colors" />
+                                    <img 
+                                        src="/assets/swadeshi-logo-dark.png" 
+                                        alt="Swadeshi" 
+                                        className="w-full h-full object-contain mix-blend-screen brightness-110 contrast-125" 
+                                        onError={(e) => (e.currentTarget.style.display = 'none')}
+                                    />
+                                </div>
+                                <span className="relative text-white font-display font-black text-xs sm:text-base tracking-[0.1em] sm:tracking-[0.2em] uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+                                    Swadeshi Platform
+                                </span>
+                              
+                            </div>
+                        </motion.div>
+
                         <motion.div
                             initial={{ scale: 0, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             transition={{ duration: 1, ease: "easeOut" }}
-                            className="relative w-72 h-72 sm:w-[300px] sm:h-[300px] md:w-[340px] md:h-[340px] lg:w-[420px] lg:h-[420px] rounded-full mt-6 sm:mt-0 overflow-hidden"
+                            className="relative w-72 h-72 sm:w-[300px] sm:h-[300px] md:w-[340px] md:h-[340px] lg:w-[420px] lg:h-[420px] rounded-full mt-6 sm:mt-0"
                         >
                             {/* Rotating Globe fills the circle */}
-                            <div className="absolute inset-0">
+                            <div className="absolute inset-0 rounded-full overflow-hidden">
                                 <MiniGlobe />
                             </div>
 
                             {/* Text overlay on top of globe */}
                             <div className="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none select-none px-3">
+
                                 <motion.h1
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
@@ -359,37 +412,8 @@ export default function HeroSection() {
                                 >
                                     Digital Book Of India is on its way to make your way of living more easier..stay tuned.
                                 </motion.p>
-
-                                {/* Swadeshi Platform Badge */}
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20, scale: 0.9 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    transition={{ delay: 1.2, duration: 0.8 }}
-                                    className="relative mt-4 sm:mt-8 px-4 sm:px-6 py-2 sm:py-3 rounded-2xl flex items-center gap-2 sm:gap-4 group outline outline-1 outline-white/10"
-                                >
-                                    {/* Frosted glass background */}
-                                    <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-xl rounded-2xl border border-white/10 transition-all duration-500 group-hover:bg-slate-900/60 group-hover:scale-105" />
-                                
-                                <div className="relative flex items-center gap-2 sm:gap-4">
-                                    {/* Inner glow effect */}
-                                    <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-white/5 to-green-500/5 opacity-50" />
-                                    
-                                    {/* Swadeshi Logo with Blending */}
-                                    <div className="relative w-8 h-8 sm:w-12 sm:h-12 flex items-center justify-center shrink-0">
-                                        <img 
-                                            src="/assets/swadeshi-logo-dark.png" 
-                                            alt="Swadeshi" 
-                                            className="w-full h-full object-contain mix-blend-screen" 
-                                            onError={(e) => (e.currentTarget.style.display = 'none')}
-                                        />
-                                    </div>
-
-                                    <span className="relative text-[9px] sm:text-[11px] font-black uppercase tracking-[0.1em] sm:tracking-[0.15em] text-white whitespace-nowrap pointer-events-none">
-                                        Swadeshi Platform
-                                    </span>
-                                </div>
-                            </motion.div>
                             </div>
+
                         </motion.div>
 
                         {/* Mobile category hybrid scroll strip */}
@@ -412,7 +436,7 @@ export default function HeroSection() {
                                         key={`${cat.name}-${i}`}
                                         onClick={() => router.push(`/search?mainCategory=${encodeURIComponent(cat.name)}`)}
                                         className={`flex-shrink-0 flex flex-col items-center justify-center p-4 rounded-[2rem] border transition-all duration-300 cursor-pointer w-[150px] h-[150px] relative overflow-hidden backdrop-blur-md ${theme === 'light'
-                                            ? 'bg-white border-blue-600/30 text-slate-900 active:scale-95 shadow-lg'
+                                            ? 'bg-[#FFFFF0] border-blue-600/30 text-slate-900 active:scale-95 shadow-lg'
                                             : 'bg-white/5 border-white/20 text-white active:scale-95 shadow-2xl'
                                             }`}
                                     >
@@ -447,7 +471,7 @@ export default function HeroSection() {
                                     transition={{ delay: i * 0.1, duration: 0.3 }}
                                     onClick={() => router.push(`/search?mainCategory=${encodeURIComponent(cat.name)}`)}
                                     className={`rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:scale-110 transition-all duration-700 w-[140px] h-[130px] group relative overflow-hidden backdrop-blur-md border border-solid ${theme === 'light'
-                                        ? 'bg-white border-slate-200 hover:border-primary/40 shadow-xl'
+                                        ? 'bg-[#FFFFF0] border-slate-200 hover:border-primary/40 shadow-xl'
                                         : 'bg-white/[0.02] border-white/10 hover:bg-white/[0.08] hover:border-primary/50 shadow-2xl'
                                         }`}
                                 >

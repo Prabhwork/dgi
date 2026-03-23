@@ -51,7 +51,7 @@ export default function PlatformIntro() {
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 animate={inView ? { opacity: 1, scale: 1 } : {}}
                                 transition={{ delay: 0.2 }}
-                                className={`inline-block rounded-full px-5 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] relative overflow-hidden backdrop-blur-2xl border border-solid transition-all duration-300 ${isLight ? 'bg-white/80 border-blue-600 text-primary' : 'bg-white/5 border-white/20 text-blue-400'
+                                className={`inline-block rounded-full px-5 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] relative overflow-hidden backdrop-blur-2xl border border-solid transition-all duration-300 ${isLight ? 'bg-[#FFFFF0]/80 border-blue-600 text-primary' : 'bg-white/5 border-white/20 text-blue-400'
                                     }`}
                             >
                                 Digital Book Of India
@@ -76,7 +76,7 @@ export default function PlatformIntro() {
                                     animate={inView ? { opacity: 1, y: 0 } : {}}
                                     transition={{ delay: 0.4 + (i * 0.1) }}
                                     className={`p-4 rounded-2xl border border-solid transition-all duration-300 flex items-start gap-4 ${isLight
-                                        ? 'bg-white/80 border-slate-200 hover:border-blue-600/30'
+                                        ? 'bg-[#FFFFF0]/80 border-slate-200 hover:border-blue-600/30'
                                         : 'bg-white/5 border-white/10 hover:border-white/30'
                                         }`}
                                 >
