@@ -19,6 +19,7 @@ const allowedOrigins = [
   'https://digitalbookofindia.com',
   'https://dgi-bpu3.onrender.com',
   'https://dgi-sss1.vercel.app',
+  'https://dgi-r3dl.vercel.app',
   "https://coleen-unvirulent-rafael.ngrok-free.dev"
 ];
 
