@@ -342,6 +342,11 @@
   scrollbar-width: none;
 }
 
+.mask-linear-right {
+  mask-image: linear-gradient(to right, black 85%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+}
+
 /* Animations */
 @keyframes border-vibrate {
 
@@ -400,8 +405,9 @@
   background: linear-gradient(90deg, #ff9933, #ffffff, #128807, #00d4ff, #ff9933) border-box;
   background-size: 300% 100%;
   -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: destination-out;
+  mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   mask-composite: exclude;
+  -webkit-mask-composite: destination-out;
   animation: reflect-shift 8s linear infinite;
   pointer-events: none;
   z-index: 1;
@@ -485,6 +491,7 @@
   background: linear-gradient(90deg, #ff9933, #ffffff, #128807, #00d4ff, #ff9933);
   background-size: 300% 100%;
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask-composite: exclude;
   -webkit-mask-composite: destination-out;
   animation: reflect-shift 4s linear infinite;

@@ -2,42 +2,50 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { apiFetch } from '@/lib/api';
-import { Category, Subcategory, PaginationInfo } from '@/types';
-import { Edit2, Trash2, X, Check, Search, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
+import { Edit2, Trash2, X, Check, Search, Filter } from 'lucide-react';
+
+interface MainCategory {
+    _id: string;
+    name: string;
+    isActive: boolean;
+}
+
+interface Subcategory {
+    _id: string;
+    name: string;
+    mainCategory: MainCategory | string;
+    isActive: boolean;
+}
 
 export default function SubcategoriesPage() {
-    const [categories, setCategories] = useState<Category[]>([]);
+    const [mainCategories, setMainCategories] = useState<MainCategory[]>([]);
     const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // Search, Filter & Pagination state
+    // Search & Filter state
     const [searchTerm, setSearchTerm] = useState('');
-    const [filterCategory, setFilterCategory] = useState('');
-    const [page, setPage] = useState(1);
-    const [limit] = useState(10);
-    const [pagination] = useState<PaginationInfo | null>(null);
-    const [total] = useState(0);
+    const [filterMainCategory, setFilterMainCategory] = useState('');
 
     // Create Modal state
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-    const [selectedCategoryId, setSelectedCategoryId] = useState('');
+    const [selectedMainCategoryId, setSelectedMainCategoryId] = useState('');
     const [newSubcategoryName, setNewSubcategoryName] = useState('');
     const [error, setError] = useState('');
 
     // Edit Modal state
     const [editingSubcategory, setEditingSubcategory] = useState<Subcategory | null>(null);
     const [editName, setEditName] = useState('');
-    const [editCategoryId, setEditCategoryId] = useState(''); // To potentially change parent mapping
+    const [editMainCategoryId, setEditMainCategoryId] = useState('');
 
     const fetchInitialData = useCallback(async () => {
         setLoading(true);
         try {
-            const [catsRes, subcatsRes] = await Promise.all([
-                apiFetch('/categories'),
+            const [mainCatsRes, subcatsRes] = await Promise.all([
+                apiFetch('/main-categories?limit=200'),
                 apiFetch('/subcategories')
             ]);
 
-            if (catsRes.success) setCategories(catsRes.data);
+            if (mainCatsRes.success) setMainCategories(mainCatsRes.data);
             if (subcatsRes.success) setSubcategories(subcatsRes.data);
         } catch (err) {
             console.error("Failed to fetch data", err);
@@ -48,40 +56,37 @@ export default function SubcategoriesPage() {
 
     useEffect(() => {
         fetchInitialData();
-    }, [fetchInitialData, page, limit, searchTerm, filterCategory]);
+    }, [fetchInitialData]);
 
     const handleCreateSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
 
-        if (!selectedCategoryId) {
-            setError('Please select a category');
+        if (!selectedMainCategoryId) {
+            setError('Please select a main category');
             return;
         }
-
         if (!newSubcategoryName.trim()) {
             setError('Subcategory name is required');
             return;
         }
 
         try {
-            const data = await apiFetch(`/categories/${selectedCategoryId}/subcategories`, {
+            const data = await apiFetch(`/main-categories/${selectedMainCategoryId}/subcategories`, {
                 method: 'POST',
-                body: JSON.stringify({
-                    name: newSubcategoryName,
-                    description: newSubcategoryName
-                })
+                body: JSON.stringify({ name: newSubcategoryName, description: newSubcategoryName })
             });
 
             if (data.success) {
                 fetchInitialData();
                 setIsCreateModalOpen(false);
                 setNewSubcategoryName('');
-                setSelectedCategoryId('');
+                setSelectedMainCategoryId('');
+            } else {
+                setError(data.error || 'Failed to create subcategory');
             }
         } catch (err) {
-            const errorMsg = err instanceof Error ? err.message : 'Failed to create subcategory';
-            setError(errorMsg);
+            setError(err instanceof Error ? err.message : 'Failed to create subcategory');
         }
     };
 
@@ -90,31 +95,28 @@ export default function SubcategoriesPage() {
         if (!editingSubcategory) return;
 
         try {
-            // Technically subcat API is /subcategories/:id but our backend router maps updating subcategory
             const data = await apiFetch(`/subcategories/${editingSubcategory._id}`, {
                 method: 'PUT',
                 body: JSON.stringify({
                     name: editName,
                     description: editName,
-                    category: editCategoryId
+                    mainCategory: editMainCategoryId
                 })
             });
 
             if (data.success) {
-                fetchInitialData(); // Re-fetch all to get fully populated nested categories
+                fetchInitialData();
                 setEditingSubcategory(null);
                 setEditName('');
-                setEditCategoryId('');
+                setEditMainCategoryId('');
             }
         } catch (err) {
-            const errorMsg = err instanceof Error ? err.message : 'Failed to update subcategory';
-            alert(errorMsg);
+            alert(err instanceof Error ? err.message : 'Failed to update subcategory');
         }
     };
 
     const handleDelete = async (id: string) => {
         if (!confirm('Are you sure you want to delete this subcategory?')) return;
-
         try {
             await apiFetch(`/subcategories/${id}`, { method: 'DELETE' });
             setSubcategories(subcategories.filter(s => s._id !== id));
@@ -123,16 +125,13 @@ export default function SubcategoriesPage() {
         }
     };
 
-    const handleToggleStatus = async (subcategory: Subcategory) => {
+    const handleToggleStatus = async (subcat: Subcategory) => {
         try {
-            const data = await apiFetch(`/subcategories/${subcategory._id}`, {
+            const data = await apiFetch(`/subcategories/${subcat._id}`, {
                 method: 'PUT',
-                body: JSON.stringify({ isActive: !subcategory.isActive })
+                body: JSON.stringify({ isActive: !subcat.isActive })
             });
-
-            if (data.success) {
-                fetchInitialData(); // Using fetchInitialData to reliably pull in the updated population
-            }
+            if (data.success) fetchInitialData();
         } catch {
             alert('Failed to update status');
         }
@@ -141,10 +140,19 @@ export default function SubcategoriesPage() {
     const openEditModal = (subcat: Subcategory) => {
         setEditingSubcategory(subcat);
         setEditName(subcat.name);
-        // Safely extract category ID string whether it's an object or string
-        const parentId = typeof subcat.category === 'string' ? subcat.category : subcat.category._id;
-        setEditCategoryId(parentId);
+        const parentId = typeof subcat.mainCategory === 'string' ? subcat.mainCategory : subcat.mainCategory._id;
+        setEditMainCategoryId(parentId);
     };
+
+    // Filtered subcategories
+    const filtered = subcategories.filter(subcat => {
+        const mainCatName = typeof subcat.mainCategory === 'object' ? subcat.mainCategory.name : '';
+        const mainCatId = typeof subcat.mainCategory === 'object' ? subcat.mainCategory._id : subcat.mainCategory;
+        const matchSearch = subcat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            mainCatName.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchFilter = filterMainCategory ? mainCatId === filterMainCategory : true;
+        return matchSearch && matchFilter;
+    });
 
     return (
         <div className="space-y-6">
@@ -167,12 +175,9 @@ export default function SubcategoriesPage() {
                     <input
                         type="text"
                         className="block w-full p-2.5 pl-10 text-sm text-slate-900 border border-slate-300 rounded focus:ring-teal-500 focus:border-teal-500 bg-slate-50"
-                        placeholder="Search subcategories by name..."
+                        placeholder="Search subcategories..."
                         value={searchTerm}
-                        onChange={(e) => {
-                            setSearchTerm(e.target.value);
-                            setPage(1);
-                        }}
+                        onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
 
@@ -182,14 +187,11 @@ export default function SubcategoriesPage() {
                     </div>
                     <select
                         className="block w-full p-2.5 pl-10 text-sm text-slate-900 border border-slate-300 rounded focus:ring-teal-500 focus:border-teal-500 bg-slate-50 appearance-none"
-                        value={filterCategory}
-                        onChange={(e) => {
-                            setFilterCategory(e.target.value);
-                            setPage(1);
-                        }}
+                        value={filterMainCategory}
+                        onChange={(e) => setFilterMainCategory(e.target.value)}
                     >
-                        <option value="">All Categories</option>
-                        {categories.map((cat) => (
+                        <option value="">All Main Categories</option>
+                        {mainCategories.map((cat) => (
                             <option key={cat._id} value={cat._id}>{cat.name}</option>
                         ))}
                     </select>
@@ -202,7 +204,7 @@ export default function SubcategoriesPage() {
                         <thead>
                             <tr className="bg-slate-50 border-b border-slate-200 text-slate-700">
                                 <th className="py-3 px-6 font-semibold w-24">Seq. No</th>
-                                <th className="py-3 px-6 font-semibold">Category Name</th>
+                                <th className="py-3 px-6 font-semibold">Main Category</th>
                                 <th className="py-3 px-6 font-semibold">Sub Category Name</th>
                                 <th className="py-3 px-6 font-semibold w-48">Action</th>
                             </tr>
@@ -212,18 +214,17 @@ export default function SubcategoriesPage() {
                                 <tr>
                                     <td colSpan={4} className="py-8 text-center text-slate-500">Loading subcategories...</td>
                                 </tr>
-                            ) : subcategories.length === 0 ? (
+                            ) : filtered.length === 0 ? (
                                 <tr>
                                     <td colSpan={4} className="py-8 text-center text-slate-500">No subcategories found.</td>
                                 </tr>
                             ) : (
-                                subcategories.map((subcat, index) => {
-                                    const categoryName = typeof subcat.category === 'object' ? subcat.category.name : 'Unknown Category';
-
+                                filtered.map((subcat, index) => {
+                                    const mainCatName = typeof subcat.mainCategory === 'object' ? subcat.mainCategory.name : 'Unknown';
                                     return (
                                         <tr key={subcat._id} className={`border-b border-slate-100 hover:bg-slate-50 transition-colors ${!subcat.isActive ? 'opacity-60 bg-slate-50/50' : ''}`}>
-                                            <td className="py-3 px-6 text-slate-600">{(page - 1) * limit + index + 1}</td>
-                                            <td className="py-3 px-6 text-slate-600">{categoryName}</td>
+                                            <td className="py-3 px-6 text-slate-600">{index + 1}</td>
+                                            <td className="py-3 px-6 text-slate-600">{mainCatName}</td>
                                             <td className="py-3 px-6 font-medium text-slate-800">{subcat.name}</td>
                                             <td className="py-3 px-6">
                                                 <div className="flex items-center gap-2">
@@ -244,87 +245,42 @@ export default function SubcategoriesPage() {
                                                         className={`p-1.5 text-white rounded transition-colors ${subcat.isActive ? 'bg-red-400 hover:bg-red-500' : 'bg-slate-400 hover:bg-slate-500'}`}
                                                         title={subcat.isActive ? "Deactivate" : "Activate"}
                                                     >
-                                                        {/* Uses Check based on user screenshot */}
                                                         {subcat.isActive ? <Check size={14} /> : <X size={14} />}
                                                     </button>
                                                 </div>
                                             </td>
                                         </tr>
-                                    )
+                                    );
                                 })
                             )}
                         </tbody>
                     </table>
                 </div>
-
-                {/* Pagination Controls */}
-                {!loading && subcategories.length > 0 && (
-                    <div className="flex items-center justify-between border-t border-slate-200 bg-white px-4 py-3 sm:px-6">
-                        <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-                            <div>
-                                <p className="text-sm text-slate-700">
-                                    Showing <span className="font-medium">{(page - 1) * limit + 1}</span> to <span className="font-medium">{Math.min(page * limit, total)}</span> of{' '}
-                                    <span className="font-medium">{total}</span> results
-                                </p>
-                            </div>
-                            <div>
-                                <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-                                    <button
-                                        onClick={() => setPage(page - 1)}
-                                        disabled={!pagination?.prev}
-                                        className="relative inline-flex items-center rounded-l-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        <span className="sr-only">Previous</span>
-                                        <ChevronLeft className="h-5 w-5" aria-hidden="true" />
-                                    </button>
-                                    <span className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-slate-900 ring-1 ring-inset ring-slate-300 focus:z-20 focus:outline-offset-0">
-                                        Page {page}
-                                    </span>
-                                    <button
-                                        onClick={() => setPage(page + 1)}
-                                        disabled={!pagination?.next}
-                                        className="relative inline-flex items-center rounded-r-md px-2 py-2 text-slate-400 ring-1 ring-inset ring-slate-300 hover:bg-slate-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        <span className="sr-only">Next</span>
-                                        <ChevronRight className="h-5 w-5" aria-hidden="true" />
-                                    </button>
-                                </nav>
-                            </div>
-                        </div>
-                    </div>
-                )}
             </div>
 
             {/* Create Subcategory Modal */}
             {isCreateModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-white w-full max-w-lg rounded shadow-xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                    <div className="bg-white w-full max-w-lg rounded shadow-xl overflow-hidden">
                         <div className="bg-teal-500 text-white px-6 py-4 flex justify-between items-center">
                             <h2 className="text-xl font-medium">Add Sub Category</h2>
-                            <button
-                                onClick={() => setIsCreateModalOpen(false)}
-                                className="text-teal-100 hover:text-white transition-colors"
-                            >
+                            <button onClick={() => setIsCreateModalOpen(false)} className="text-teal-100 hover:text-white">
                                 <X size={20} />
                             </button>
                         </div>
                         <div className="p-6">
-                            {error && (
-                                <div className="mb-4 p-3 bg-red-50 text-red-700 text-sm rounded border border-red-100">
-                                    {error}
-                                </div>
-                            )}
+                            {error && <div className="mb-4 p-3 bg-red-50 text-red-700 text-sm rounded border border-red-100">{error}</div>}
                             <form onSubmit={handleCreateSubmit} className="space-y-6">
                                 <div className="flex flex-col md:flex-row md:items-center gap-4">
-                                    <label className="text-slate-600 font-medium md:w-1/3">Category Name</label>
+                                    <label className="text-slate-600 font-medium md:w-1/3">Main Category</label>
                                     <select
-                                        value={selectedCategoryId}
-                                        onChange={(e) => setSelectedCategoryId(e.target.value)}
-                                        className="flex-1 px-4 py-2 border border-slate-300 rounded text-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 bg-white"
+                                        value={selectedMainCategoryId}
+                                        onChange={(e) => setSelectedMainCategoryId(e.target.value)}
+                                        className="flex-1 px-4 py-2 border border-slate-300 rounded text-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-500 bg-white"
                                         required
                                     >
-                                        <option value="" disabled>Select Category</option>
-                                        {categories.map(cat => (
+                                        <option value="" disabled>Select Main Category</option>
+                                        {mainCategories.map(cat => (
                                             <option key={cat._id} value={cat._id}>{cat.name}</option>
                                         ))}
                                     </select>
@@ -336,17 +292,14 @@ export default function SubcategoriesPage() {
                                         type="text"
                                         value={newSubcategoryName}
                                         onChange={(e) => setNewSubcategoryName(e.target.value)}
-                                        placeholder="Enter Category Name"
-                                        className="flex-1 px-4 py-2 border border-slate-300 rounded text-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
+                                        placeholder="Enter Sub Category Name"
+                                        className="flex-1 px-4 py-2 border border-slate-300 rounded text-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-500"
                                         required
                                     />
                                 </div>
 
                                 <div className="flex md:pl-[33%] pl-0 pt-2">
-                                    <button
-                                        type="submit"
-                                        className="bg-teal-500 hover:bg-teal-600 text-white font-medium py-2 px-8 rounded transition-colors"
-                                    >
+                                    <button type="submit" className="bg-teal-500 hover:bg-teal-600 text-white font-medium py-2 px-8 rounded transition-colors">
                                         Submit
                                     </button>
                                 </div>
@@ -359,28 +312,25 @@ export default function SubcategoriesPage() {
             {/* Edit Subcategory Modal */}
             {editingSubcategory && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-white w-full max-w-lg rounded shadow-xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                    <div className="bg-white w-full max-w-lg rounded shadow-xl overflow-hidden">
                         <div className="bg-teal-500 text-white px-6 py-4 flex justify-between items-center">
                             <h2 className="text-xl font-medium">Edit Sub Category</h2>
-                            <button
-                                onClick={() => setEditingSubcategory(null)}
-                                className="text-teal-100 hover:text-white transition-colors"
-                            >
+                            <button onClick={() => setEditingSubcategory(null)} className="text-teal-100 hover:text-white">
                                 <X size={20} />
                             </button>
                         </div>
                         <div className="p-6">
                             <form onSubmit={handleEditSubmit} className="space-y-6">
                                 <div className="flex flex-col md:flex-row md:items-center gap-4">
-                                    <label className="text-slate-600 font-medium md:w-1/3">Category Name</label>
+                                    <label className="text-slate-600 font-medium md:w-1/3">Main Category</label>
                                     <select
-                                        value={editCategoryId}
-                                        onChange={(e) => setEditCategoryId(e.target.value)}
-                                        className="flex-1 px-4 py-2 border border-slate-300 rounded text-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 bg-white"
+                                        value={editMainCategoryId}
+                                        onChange={(e) => setEditMainCategoryId(e.target.value)}
+                                        className="flex-1 px-4 py-2 border border-slate-300 rounded text-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-500 bg-white"
                                         required
                                     >
-                                        <option value="" disabled>Select Category</option>
-                                        {categories.map(cat => (
+                                        <option value="" disabled>Select Main Category</option>
+                                        {mainCategories.map(cat => (
                                             <option key={cat._id} value={cat._id}>{cat.name}</option>
                                         ))}
                                     </select>
@@ -392,24 +342,17 @@ export default function SubcategoriesPage() {
                                         type="text"
                                         value={editName}
                                         onChange={(e) => setEditName(e.target.value)}
-                                        placeholder="Enter Category Name"
-                                        className="flex-1 px-4 py-2 border border-slate-300 rounded text-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
+                                        placeholder="Enter Sub Category Name"
+                                        className="flex-1 px-4 py-2 border border-slate-300 rounded text-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-500"
                                         required
                                     />
                                 </div>
 
                                 <div className="flex md:pl-[33%] pl-0 pt-2 gap-3">
-                                    <button
-                                        type="submit"
-                                        className="bg-teal-500 hover:bg-teal-600 text-white font-medium py-2 px-8 rounded transition-colors"
-                                    >
+                                    <button type="submit" className="bg-teal-500 hover:bg-teal-600 text-white font-medium py-2 px-8 rounded transition-colors">
                                         Update
                                     </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setEditingSubcategory(null)}
-                                        className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium py-2 px-6 rounded transition-colors"
-                                    >
+                                    <button type="button" onClick={() => setEditingSubcategory(null)} className="bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium py-2 px-6 rounded transition-colors">
                                         Cancel
                                     </button>
                                 </div>

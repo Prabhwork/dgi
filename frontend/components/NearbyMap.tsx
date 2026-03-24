@@ -3,7 +3,7 @@
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useEffect, useRef, useState, useCallback } from "react";
 import mapboxgl from "mapbox-gl";
-import { Search, X, MapPin, Phone, Star, Filter, Loader2, Navigation, SlidersHorizontal, Circle, ChevronDown, Globe, MessageCircle, Share2, ExternalLink } from "lucide-react";
+import { Search, X, MapPin, Phone, Star, Filter, Loader2, Navigation as NavigationIcon, SlidersHorizontal, Circle, ChevronDown, Globe, MessageCircle, Share2, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -416,7 +416,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                         <div className="flex items-center gap-3">
                             <div className="relative">
                                 <div className="absolute inset-0 bg-primary/20 blur-lg rounded-full animate-pulse" />
-                                <Navigation size={24} className="text-primary relative z-10 animate-bounce" />
+                                <NavigationIcon size={24} className="text-primary relative z-10 animate-bounce" />
                             </div>
                             <div>
                                 <h2 className="text-white font-black text-xl tracking-tighter leading-tight flex items-center gap-2">
@@ -713,7 +713,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                 }}
                                 className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] uppercase font-black tracking-widest mt-6 hover:bg-blue-500/20 transition-all cursor-pointer"
                             >
-                                <Navigation size={14} /> SHOW ROUTE
+                                <NavigationIcon size={14} /> SHOW ROUTE
                             </button>
                         </div>
                     </motion.div>
@@ -789,7 +789,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                         }}
                                         className="mt-4 bg-primary text-white font-bold py-2 px-6 rounded-xl hover:bg-primary/80 transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(59,130,246,0.4)]"
                                     >
-                                        <Navigation size={16} /> START NAV
+                                        <NavigationIcon size={16} /> START NAV
                                     </button>
                                 )}
                             </div>

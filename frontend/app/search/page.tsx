@@ -7,7 +7,7 @@ import Footer from "@/components/Footer";
 import { Search, MapPin, Star, Clock, Phone, Globe, ArrowRight, Loader2, Filter, BadgeCheck, MessageCircle, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/components/ThemeProvider";
 import ParticleNetwork from "@/components/ParticleNetwork";
 import Link from "next/link";
@@ -70,21 +70,42 @@ function SearchResults() {
     // State
     const [searchInput, setSearchInput] = useState(initialQuery);
     const [categoryInput, setCategoryInput] = useState(categoryParam);
+    const [locationInput, setLocationInput] = useState(searchParams.get("location") || "");
+    const [searchCoords, setSearchCoords] = useState<{lat: string, lng: string} | null>(
+        lat && lng ? {lat, lng} : null
+    );
     const [results, setResults] = useState<any[]>([]);
+    const [mainSubcategories, setMainSubcategories] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [isLocating, setIsLocating] = useState(false);
 
-    const fetchResults = async (q: string, cat: string) => {
+    const fetchMainSubcategories = async (catName: string) => {
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/main-subcategories?mainCategoryName=${encodeURIComponent(catName)}&limit=50`);
+            const data = await res.json();
+            if (data.success) {
+                setMainSubcategories(data.data);
+            }
+        } catch (err) {
+            console.error("Failed to fetch subcategories:", err);
+        }
+    };
+
+    const fetchResults = async (q: string, cat: string, overrideCoords?: {lat: string, lng: string}) => {
         setLoading(true);
         try {
             let url = `${process.env.NEXT_PUBLIC_API_URL}/business/search?`;
             const params = new URLSearchParams();
             if (q) params.append("q", q);
             if (cat) params.append("category", cat);
-            if (lat && lng) {
-                params.append("lat", lat);
-                params.append("lng", lng);
+            
+            const effectiveLat = overrideCoords?.lat || lat;
+            const effectiveLng = overrideCoords?.lng || lng;
+
+            if (effectiveLat && effectiveLng) {
+                params.append("lat", effectiveLat);
+                params.append("lng", effectiveLng);
             }
             
             const res = await fetch(url + params.toString());
@@ -103,20 +124,90 @@ function SearchResults() {
     };
 
     useEffect(() => {
-        fetchResults(initialQuery, categoryParam);
+        const prepareSearch = async () => {
+            let overrideCoords = undefined;
+            
+            const locationParam = searchParams.get("location");
+            if (locationParam && (!lat || !lng)) {
+                try {
+                    const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(locationParam)}.json?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}&limit=1`);
+                    const data = await res.json();
+                    if (data.features && data.features.length > 0) {
+                        overrideCoords = {
+                            lat: data.features[0].center[1].toString(),
+                            lng: data.features[0].center[0].toString()
+                        };
+                        setSearchCoords(overrideCoords);
+                    }
+                } catch (err) {
+                    console.error("Geocoding failed in SearchPage:", err);
+                }
+            }
+
+            fetchResults(initialQuery, categoryParam, overrideCoords);
+        };
+
+        prepareSearch();
+
+        if (categoryParam) {
+            fetchMainSubcategories(categoryParam);
+        } else {
+            setMainSubcategories([]);
+        }
         setSearchInput(initialQuery);
         setCategoryInput(categoryParam);
-    }, [initialQuery, categoryParam, lat, lng]);
+        setLocationInput(searchParams.get("location") || "");
+    }, [initialQuery, categoryParam, lat, lng, searchParams.get("location")]);
 
-    const handleSearchSubmit = (e: React.FormEvent) => {
+    const handleSearchSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const params = new URLSearchParams();
-        if (searchInput) params.append("q", searchInput);
-        if (categoryInput) params.append("mainCategory", categoryInput);
-        if (lat && lng) {
-            params.append("lat", lat as string);
-            params.append("lng", lng as string);
+        if (!searchInput.trim()) return;
+
+        let query = searchInput.trim();
+        let location = "";
+        let latToUse = "";
+        let lngToUse = "";
+
+        // 1. Check for " in " pattern
+        if (query.toLowerCase().includes(" in ")) {
+            const parts = query.toLowerCase().split(" in ");
+            if (parts.length >= 2) {
+                query = parts[0].trim();
+                location = parts[1].trim();
+            }
         }
+
+        // 2. Try to geocode the location part (or whole query if suspected city)
+        const geocodeTarget = location || query;
+        try {
+            const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(geocodeTarget)}.json?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}&limit=1&types=region,postcode,district,place,locality,neighborhood`);
+            const data = await res.json();
+            if (data.features && data.features.length > 0) {
+                const bestMatch = data.features[0];
+                if (bestMatch.relevance > 0.85) {
+                    latToUse = bestMatch.center[1].toString();
+                    lngToUse = bestMatch.center[0].toString();
+                    if (!location) location = query;
+                }
+            }
+        } catch (err) {
+            console.error("Geocoding failed in SearchPage submit:", err);
+        }
+
+        const params = new URLSearchParams();
+        if (query) params.append("q", query);
+        if (categoryInput) params.append("mainCategory", categoryInput);
+        if (location) params.append("location", location);
+        
+        if (latToUse && lngToUse) {
+            params.append("lat", latToUse);
+            params.append("lng", lngToUse);
+        } else if (lat && lng) {
+            // Keep existing coords if we didn't find new ones
+            params.append("lat", lat);
+            params.append("lng", lng);
+        }
+        
         router.push(`/search?${params.toString()}`);
     };
 
@@ -166,10 +257,14 @@ function SearchResults() {
                     <div className="mb-12 max-w-4xl mx-auto">
                         <div className="mb-6 text-center">
                             <h1 className="text-3xl md:text-5xl font-display font-black tracking-tight mb-3 text-foreground">
-                                Discover <span className="gradient-text">Businesses</span>
+                                Discover <span className="gradient-text">Businesses</span> {locationInput && <span className="text-primary/60">in {locationInput}</span>}
                             </h1>
                             <p className="text-muted-foreground">
-                                {loading ? "Searching for the best businesses..." : `Found ${results.length} businesses matching your criteria`}
+                                {loading ? "Searching for the best businesses..." : (
+                                    results.length > 0 
+                                      ? `Found ${results.length} businesses matching your criteria`
+                                      : "No businesses found. Try a different search term or location."
+                                )}
                             </p>
                         </div>
 
@@ -202,6 +297,57 @@ function SearchResults() {
                             </Button>
                         </form>
                     </div>
+
+                    {/* Subcategory Exploration */}
+                    <AnimatePresence>
+                        {categoryParam && mainSubcategories.length > 0 && (
+                            <motion.div 
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                className="mb-12"
+                            >
+                                <div className="flex items-center justify-between mb-4 px-2">
+                                    <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-primary">
+                                        Explore {categoryParam} Specialties
+                                    </h3>
+                                    <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest bg-muted px-2 py-0.5 rounded border border-border">
+                                        {mainSubcategories.length} Options
+                                    </span>
+                                </div>
+                                <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide px-1 mask-linear-right">
+                                    {mainSubcategories.map((sub, idx) => (
+                                        <motion.button
+                                            key={sub._id}
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            transition={{ delay: idx * 0.03 }}
+                                            onClick={() => {
+                                                setSearchInput(sub.name);
+                                                const params = new URLSearchParams(searchParams.toString());
+                                                params.set("q", sub.name);
+                                                router.push(`/search?${params.toString()}`);
+                                            }}
+                                            className={`flex-shrink-0 px-5 py-2.5 rounded-2xl border backdrop-blur-md transition-all duration-300 font-bold text-xs flex items-center gap-2 group ${
+                                                searchInput.toLowerCase() === sub.name.toLowerCase()
+                                                    ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-105'
+                                                    : isLight 
+                                                        ? 'bg-white border-slate-200 text-slate-700 hover:border-primary/50 hover:bg-slate-50' 
+                                                        : 'bg-white/5 border-white/10 text-white/80 hover:bg-white/10 hover:border-white/30'
+                                            }`}
+                                        >
+                                            <div className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+                                                searchInput.toLowerCase() === sub.name.toLowerCase() 
+                                                    ? 'bg-white scale-125' 
+                                                    : 'bg-primary/40 group-hover:bg-primary'
+                                            }`} />
+                                            {sub.name}
+                                        </motion.button>
+                                    ))}
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
 
                     {/* Results Grid */}
                     {loading ? (

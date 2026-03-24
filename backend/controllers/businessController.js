@@ -8,6 +8,8 @@ const { getOTPTemplate, getRegistrationSuccessTemplate, getRejectionTemplate, ge
 const speakeasy = require('speakeasy');
 const qrcode = require('qrcode');
 const jwt = require('jsonwebtoken');
+const MainCategory = require('../models/MainCategory');
+const MainSubcategory = require('../models/MainSubcategory');
 
 const handleBusinessFiles = (req, existingData = {}) => {
     const businessData = { ...existingData };
@@ -79,6 +81,43 @@ exports.registerBusiness = async (req, res, next) => {
         businessData.razorpayOrderId = razorpay_order_id;
         businessData.razorpayPaymentId = razorpay_payment_id;
         businessData.razorpaySignature = razorpay_signature;
+
+        // Handle Custom Categories/Subcategories
+        let { businessCategory, subcategory, isCustomCategory, customCategory, isCustomSubcategory, customSubcategory } = req.body;
+
+        // Ensure subcategory is an array
+        if (typeof businessData.subcategory === 'string') {
+            try {
+                businessData.subcategory = JSON.parse(businessData.subcategory);
+            } catch (e) {
+                businessData.subcategory = businessData.subcategory.split(',').map(s => s.trim()).filter(s => s);
+            }
+        } else if (!Array.isArray(businessData.subcategory)) {
+            businessData.subcategory = businessData.subcategory ? [businessData.subcategory] : [];
+        }
+
+        if (isCustomCategory === 'true' || isCustomCategory === true) {
+            let cat = await MainCategory.findOne({ name: customCategory });
+            if (!cat) {
+                cat = await MainCategory.create({ name: customCategory });
+            }
+            businessData.businessCategory = cat.name;
+        }
+
+        if (isCustomSubcategory === 'true' || isCustomSubcategory === true) {
+            const catName = businessData.businessCategory || businessCategory;
+            const cat = await MainCategory.findOne({ name: catName });
+            if (cat) {
+                let sub = await MainSubcategory.findOne({ name: customSubcategory, mainCategory: cat._id });
+                if (!sub) {
+                    sub = await MainSubcategory.create({ name: customSubcategory, mainCategory: cat._id });
+                }
+                // Add the custom subcategory to the array if not already present
+                if (!businessData.subcategory.includes(sub.name)) {
+                    businessData.subcategory.push(sub.name);
+                }
+            }
+        }
 
         const business = await Business.create(businessData);
         
@@ -893,5 +932,104 @@ exports.resetPassword = async (req, res, next) => {
         });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+// @desc    Get Search Suggestions
+// @route   GET /api/business/suggestions
+// @access  Public
+const categoryKeywords = {
+    "Shopping": ["Wholesale", "Retail", "Best Prices", "Latest Collection", "Discount Store", "Imported Goods", "Trusted Seller", "Fast Delivery", "Bulk Buying", "Quality Products"],
+    "Food & Beverage": ["Home Delivery", "Pure Veg", "Non-Veg", "Party Orders", "Authentic Taste", "Best in Town", "Fresh Ingredients", "Healthy Food", "Quick Bite", "Dine In"],
+    "Real Estate": ["Plots", "Flats", "Commercial Space", "Low Budget", "Prime Location", "Brokerage Free", "Verified Property", "Rental", "Ready to Move", "Investment"],
+    "Automobile": ["Best Service", "Genuine Parts", "Car Wash", "Second Hand", "Expert Mechanics", "Quick Repair", "Insurance Claim", "Tyre Shop", "Engine Work", "Detailing"],
+    "Beauty & Wellness": ["Unisex Salon", "Bridal Makeup", "Organic Products", "Skin Care", "Affordable Packages", "Certified Experts", "Spa", "Hair Cut", "Weight Loss", "Yoga"],
+    "Education": ["Best Coaching", "Home Tutors", "Competitive Exams", "Skill Development", "Career Counseling", "Online Classes", "Computer Course", "Language Classes", "School", "Academy"],
+    "Healthcare": ["Top Doctors", "24/7 Pharmacy", "Diagnostic Lab", "Emergency Care", "Specialized Clinic", "Trustworthy Care", "Home Health", "Dental Care", "Optician", "Wellness"],
+    "Religious Organizations": ["Worship", "Prayer", "Meditation", "Temple", "Church", "Mosque", "Gurudwara", "Spiritual", "Community", "Divine", "Blessings", "Satsang", "Peace", "Charity"],
+    "Professional Services": ["Legal Advice", "CA Services", "Tax Consultation", "IT Support", "Design Agency", "Marketing", "Consultancy", "Documentation", "Insurance Agent", "Courier"],
+    "Travel & Tourism": ["Tour Packages", "Hotel Booking", "Flight Tickets", "Taxi Service", "Car Rental", "Visa Service", "Local Tour", "Adventure", "Pilgrimage", "HoneyMoon"],
+    "Spiritual Centers": ["Yoga", "Mindfulness", "Healing", "Retreat", "Soul", "Enlightenment", "Guru", "Inner Peace", "Reiki", "Chakra Balancing"]
+};
+
+const indianCities = [
+    "Mumbai", "Delhi", "Bangalore", "Hyderabad", "Ahmedabad", "Chennai", "Kolkata", "Surat", "Pune", "Jaipur", 
+    "Lucknow", "Kanpur", "Nagpur", "Indore", "Thane", "Bhopal", "Visakhapatnam", "Pimpri-Chinchwad", "Patna", "Vadodara",
+    "Ghaziabad", "Ludhiana", "Agra", "Nashik", "Faridabad", "Meerut", "Rajkot", "Kalyan-Dombivli", "Vasai-Virar", "Varanasi",
+    "Srinagar", "Aurangabad", "Dhanbad", "Amritsar", "Navi Mumbai", "Allahabad", "Ranchi", "Howrah", "Jabalpur", "Gwalior"
+];
+
+exports.getSearchSuggestions = async (req, res, next) => {
+    try {
+        const { q, category, subcategory, page = 1, limit = 20 } = req.query;
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+        const maxLimit = parseInt(limit);
+        
+        const lookupKeys = [];
+        if (category) lookupKeys.push(category);
+        if (subcategory) lookupKeys.push(subcategory);
+
+        let allPotentialSuggestions = [];
+
+        // 1. Contextual Keywords (Highest Priority)
+        let recommendedKeywords = new Set();
+        lookupKeys.forEach(key => {
+            if (categoryKeywords[key]) {
+                categoryKeywords[key].forEach(k => recommendedKeywords.add(k));
+            }
+        });
+
+        // 2. Add Places (Locations) - Related to Indian Cities
+        const placeSuggestions = indianCities.map(city => `${city}`);
+
+        // 3. Filter and Combine based on query 'q'
+        if (!q || q.length < 1) {
+            // If focused but no text, show all recommended keywords + some cities
+            allPotentialSuggestions = [
+                ...Array.from(recommendedKeywords).map(k => ({ text: k, type: 'recommended' })),
+                ...placeSuggestions.slice(0, 10).map(p => ({ text: p, type: 'place' }))
+            ];
+        } else {
+            const query = q.toLowerCase();
+            
+            // Filter keywords by query
+            const filteredKeywords = Array.from(recommendedKeywords)
+                .filter(k => k.toLowerCase().includes(query))
+                .map(k => ({ text: k, type: 'keyword' }));
+
+            // Filter places by query
+            const filteredPlaces = placeSuggestions
+                .filter(p => p.toLowerCase().includes(query))
+                .map(p => ({ text: p, type: 'place' }));
+
+            // Find database matches (Businesses, Categories, Subcategories)
+            const regex = new RegExp(q, 'i');
+            const [businesses, mainCats, subCats] = await Promise.all([
+                Business.find({ businessName: regex, approvalStatus: 'approved' }).limit(10).select('businessName'),
+                MainCategory.find({ name: regex }).limit(10).select('name'),
+                MainSubcategory.find({ name: regex }).limit(10).select('name')
+            ]);
+
+            allPotentialSuggestions = [
+                ...filteredKeywords,
+                ...filteredPlaces,
+                ...mainCats.map(c => ({ text: c.name, type: 'category' })),
+                ...subCats.map(s => ({ text: s.name, type: 'subcategory' })),
+                ...businesses.map(b => ({ text: b.businessName, type: 'business' }))
+            ];
+        }
+
+        // Apply Pagination
+        const paginatedData = allPotentialSuggestions.slice(skip, skip + maxLimit);
+        const hasMore = allPotentialSuggestions.length > (skip + maxLimit);
+
+        res.status(200).json({ 
+            success: true, 
+            data: paginatedData,
+            hasMore,
+            total: allPotentialSuggestions.length
+        });
+    } catch (err) {
+        res.status(400).json({ success: false, error: err.message });
     }
 };

@@ -14,6 +14,7 @@ const BusinessSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Please add a business category']
     },
+    subcategory: [String],
     description: String,
     keywords: [String],
 

@@ -19,7 +19,8 @@ const {
     getNearbyBusinesses,
     getAllTransactions,
     forgotPassword,
-    resetPassword
+    resetPassword,
+    getSearchSuggestions
 } = require('../controllers/businessController');
 const {
     submitClaim,
@@ -57,6 +58,7 @@ router.post('/verify-otp', verifyOTP);
 router.get('/digilocker/authorize', authorizeDigiLocker);
 router.post('/digilocker/callback', handleDigiLockerCallback);
 router.get('/search', searchBusinesses);
+router.get('/suggestions', getSearchSuggestions);
 router.get('/nearby', getNearbyBusinesses);
 router.get('/public/:id', getBusinessById); // Reusing getBusinessById since we can just use the same logic
 router.post('/claim/:id', uploadFields, submitClaim);

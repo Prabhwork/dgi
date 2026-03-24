@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, MapPin, Store, CheckCircle2, Compass, ChevronDown, Loader2, Trophy, TrendingUp, Zap, ChevronRight } from "lucide-react";
+import { Search, MapPin, Store, CheckCircle2, Compass, ChevronDown, Loader2, Trophy, TrendingUp, Zap, ChevronRight, Navigation as NavigationIcon, Tag } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 import { useRouter } from "next/navigation";
 import {
@@ -26,7 +26,7 @@ const MiniGlobe = dynamic(() => import("./MiniGlobe"), { ssr: false });
 export default function HeroSection() {
     const { theme } = useTheme();
     const router = useRouter();
-    const [locationInput, setLocationInput] = useState("");
+    const [searchInput, setSearchInput] = useState("");
     const [detectedLocation, setDetectedLocation] = useState("");
     const [isLocating, setIsLocating] = useState(false);
     const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -34,6 +34,11 @@ export default function HeroSection() {
     const [currentSet, setCurrentSet] = useState(0);
     const mobileScrollRef = useRef<HTMLDivElement>(null);
     const [isInteractingMobile, setIsInteractingMobile] = useState(false);
+    const [suggestions, setSuggestions] = useState<any[]>([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const [isSearchingSuggestions, setIsSearchingSuggestions] = useState(false);
+    const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
+    const suggestionRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const fetchCategories = async () => {
@@ -43,7 +48,7 @@ export default function HeroSection() {
                 const res = await fetch(`${API_URL}/main-categories?sort=createdAt&limit=100`);
                 const data = await res.json();
                 if (data.success && data.data) {
-                    const fetchedCats = data.data
+                    let fetchedCats = data.data
                         .filter((c: any) => c.isActive !== false)
                         .map((c: any, i: number) => {
                             const catImg = c.image?.startsWith('uploads') ? c.image : `uploads/${c.image}`;
@@ -57,6 +62,15 @@ export default function HeroSection() {
                                 delay: i * 0.1
                             };
                         });
+
+                    // Pad to 24 items if we have 21 (or any amount less than 24)
+                    // The user specifically asked for 24 items total (8, 16, 24)
+                    if (fetchedCats.length > 0 && fetchedCats.length < 24) {
+                        const needed = 24 - fetchedCats.length;
+                        const repeats = fetchedCats.slice(0, needed);
+                        fetchedCats = [...fetchedCats, ...repeats];
+                    }
+                    
                     setAllCategories(fetchedCats);
                 }
             } catch (err) {
@@ -88,6 +102,24 @@ export default function HeroSection() {
         return () => cancelAnimationFrame(animationFrameId);
     }, [isInteractingMobile, allCategories]);
 
+    const [placeholderIndex, setPlaceholderIndex] = useState(0);
+    const placeholders = [
+        "Search for Restaurants in Ludhiana...",
+        "Find the best Plumbers near you...",
+        "Discover Pizza places in Delhi...",
+        "Looking for a Dentist?",
+        "Explore Home & Garden services...",
+        "Find top-rated Electricians...",
+        "Search for Chinese food..."
+    ];
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setPlaceholderIndex((prev) => (prev + 1) % placeholders.length);
+        }, 3000);
+        return () => clearInterval(interval);
+    }, []);
+
     useEffect(() => {
         if (allCategories.length <= 8) return;
 
@@ -106,12 +138,133 @@ export default function HeroSection() {
     const leftCategories = visibleSlice.slice(0, 4);
     const rightCategories = visibleSlice.slice(4, 8);
 
-    const handleSearch = () => {
-        let url = `/search?q=${encodeURIComponent(locationInput)}`;
-        if (userCoords) {
-            url += `&lat=${userCoords.lat}&lng=${userCoords.lng}`;
+    useEffect(() => {
+        const fetchSuggestions = async () => {
+            if (!searchInput.trim() || searchInput.trim().length < 1) {
+                setSuggestions([]);
+                setShowSuggestions(false);
+                return;
+            }
+
+            setIsSearchingSuggestions(true);
+            try {
+                const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+                const res = await fetch(`${API_URL}/suggestions?q=${encodeURIComponent(searchInput)}`);
+                const data = await res.json();
+                if (data.success) {
+                    setSuggestions(data.data);
+                    setShowSuggestions(data.data.length > 0);
+                    setActiveSuggestionIndex(-1);
+                }
+            } catch (err) {
+                console.error("Suggestions fetch failed:", err);
+            } finally {
+                setIsSearchingSuggestions(false);
+            }
+        };
+
+        const timeoutId = setTimeout(fetchSuggestions, 300);
+        return () => clearTimeout(timeoutId);
+    }, [searchInput]);
+
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (suggestionRef.current && !suggestionRef.current.contains(e.target as Node)) {
+                setShowSuggestions(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (!showSuggestions) {
+            if (e.key === 'Enter') handleSearch();
+            return;
         }
-        router.push(url);
+
+        if (e.key === "ArrowDown") {
+            e.preventDefault();
+            setActiveSuggestionIndex(prev => (prev < suggestions.length - 1 ? prev + 1 : prev));
+        } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            setActiveSuggestionIndex(prev => (prev > -1 ? prev - 1 : prev));
+        } else if (e.key === "Enter") {
+            if (activeSuggestionIndex >= 0) {
+                e.preventDefault();
+                const selected = suggestions[activeSuggestionIndex];
+                handleSuggestionClick(selected.text);
+            } else {
+                handleSearch();
+            }
+        } else if (e.key === "Escape") {
+            setShowSuggestions(false);
+        }
+    };
+
+    const handleSuggestionClick = (text: string) => {
+        setSearchInput(text);
+        setShowSuggestions(false);
+        setTimeout(() => handleSearch(text), 10);
+    };
+
+    const handleSearch = async (overrideQuery?: string) => {
+        const queryToSearch = overrideQuery || searchInput;
+        if (!queryToSearch.trim()) return;
+        setShowSuggestions(false);
+
+        let query = queryToSearch.trim();
+        let location = "";
+        let lat = "";
+        let lng = "";
+
+        // 1. Check for " in " pattern
+        if (query.toLowerCase().includes(" in ")) {
+            const parts = query.toLowerCase().split(" in ");
+            if (parts.length >= 2) {
+                query = parts[0].trim();
+                location = parts[1].trim();
+            }
+        }
+
+        // 2. Try to geocode the location part (or the whole query if it might be a location)
+        const geocodeTarget = location || query;
+        try {
+            const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(geocodeTarget)}.json?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}&types=region,postcode,district,place,locality,neighborhood`);
+            const data = await res.json();
+            
+            if (data.features && data.features.length > 0) {
+                const bestMatch = data.features[0];
+                // If the match is very high relevance, we assume it's a location intent
+                if (bestMatch.relevance > 0.85) {
+                    lat = bestMatch.center[1].toString();
+                    lng = bestMatch.center[0].toString();
+                    
+                    // If we didn't have a split query, but the whole query was a location,
+                    // we might want to keep the query empty or keep it as is.
+                    // Let's say: if user types "Ludhiana", query="Ludhiana", location="Ludhiana".
+                    // The search page will find "Ludhiana" businesses NEAR Ludhiana.
+                    if (!location) {
+                        location = query;
+                    }
+                }
+            }
+        } catch (err) {
+            console.error("Geocoding failed:", err);
+        }
+
+        const params = new URLSearchParams();
+        if (query) params.set("q", query);
+        if (location) params.set("location", location);
+        if (lat && lng) {
+            params.set("lat", lat);
+            params.set("lng", lng);
+        } else if (userCoords) {
+            params.set("lat", userCoords.lat.toString());
+            params.set("lng", userCoords.lng.toString());
+        }
+
+        router.push(`/search?${params.toString()}`);
     };
 
     useEffect(() => {
@@ -164,40 +317,124 @@ export default function HeroSection() {
                 className="relative z-20 mt-24 sm:mt-32 lg:mt-24 px-4"
             >
                 <div className="container mx-auto flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-0 w-full sm:w-auto sm:flex-1 sm:max-w-md group">
-                        <div className={`flex items-center flex-1 backdrop-blur-md border rounded-l-lg px-3 py-2.5 transition-all ${theme === 'light'
-                            ? 'bg-[#FFFFF0]/80 border-slate-200 group-hover:border-primary/50'
-                            : 'bg-black/40 border-white/20 group-hover:border-primary/50'
+                    <div className="flex items-center gap-0 w-full sm:w-auto sm:flex-1 sm:max-w-md group relative">
+                        {/* Advanced Shadow Glow */}
+                        <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/20 rounded-2xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-700 -z-10" />
+                        
+                        <div className={`flex items-center flex-1 backdrop-blur-2xl border rounded-l-lg px-3 py-2.5 transition-all duration-500 ${theme === 'light'
+                            ? 'bg-white/80 border-slate-200 group-focus-within:border-primary shadow-xl shadow-blue-900/5'
+                            : 'bg-black/40 border-white/10 group-focus-within:border-primary/50 shadow-2xl'
                             }`}>
-                            <input
-                                type="text"
-                                placeholder={isLocating ? "Detecting location..." : (detectedLocation ? `Near ${detectedLocation}` : "Search near you...")}
-                                value={locationInput}
-                                onChange={(e) => setLocationInput(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                                suppressHydrationWarning
-                                className={`bg-transparent text-sm outline-none w-full ${theme === 'light'
-                                    ? 'text-slate-900 placeholder:text-slate-400'
-                                    : 'text-white placeholder:text-white/60'
-                                    }`}
-                            />
-                            {isLocating ? (
-                                <Loader2 size={18} className="text-primary animate-spin ml-2 shrink-0" />
-                            ) : (
-                                <Search 
-                                    size={18} 
-                                    className={`${theme === 'light' ? 'text-slate-400' : 'text-white'} ml-2 shrink-0 cursor-pointer hover:text-primary transition-colors`} 
-                                    onClick={handleSearch}
+                            <div className="relative flex-1 flex items-center">
+                                <motion.input
+                                    type="text"
+                                    placeholder={isLocating ? "Detecting location..." : (detectedLocation ? `Near ${detectedLocation}` : "Search restaurants, services, or cities...")}
+                                    value={searchInput}
+                                    onChange={(e) => {
+                                        setSearchInput(e.target.value);
+                                        setShowSuggestions(true);
+                                    }}
+                                    onFocus={() => {
+                                        if (suggestions.length > 0) setShowSuggestions(true);
+                                    }}
+                                    onKeyDown={handleKeyDown}
+                                    suppressHydrationWarning
+                                    className={`bg-transparent text-sm font-medium outline-none w-full pr-8 ${theme === 'light'
+                                        ? 'text-slate-900 placeholder:text-slate-400'
+                                        : 'text-white placeholder:text-white/40'
+                                        }`}
                                 />
-                            )}
+                                
+                                {/* Suggestions Dropdown */}
+                                <AnimatePresence>
+                                    {showSuggestions && suggestions.length > 0 && (
+                                        <motion.div
+                                            ref={suggestionRef}
+                                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                            className={`absolute top-full left-0 right-[-1px] mt-2 rounded-xl border border-solid shadow-2xl overflow-hidden z-[100] backdrop-blur-2xl ${theme === 'light'
+                                                ? 'bg-[#FFFFF0]/95 border-slate-200'
+                                                : 'bg-[#020631]/95 border-white/10'
+                                                }`}
+                                        >
+                                            <div className="py-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+                                                {suggestions.map((s, i) => (
+                                                    <button
+                                                        key={`${s.text}-${i}`}
+                                                        onClick={() => handleSuggestionClick(s.text)}
+                                                        onMouseEnter={() => setActiveSuggestionIndex(i)}
+                                                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors duration-200 ${activeSuggestionIndex === i
+                                                            ? theme === 'light' ? 'bg-primary/5 text-primary' : 'bg-white/5 text-white'
+                                                            : theme === 'light' ? 'text-slate-600' : 'text-slate-300'
+                                                            }`}
+                                                    >
+                                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${activeSuggestionIndex === i
+                                                            ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                                                            : theme === 'light' ? 'bg-slate-100 text-slate-400' : 'bg-white/5 text-slate-500'
+                                                            }`}>
+                                                            {s.type === 'category' ? <ChevronRight size={14} /> : (s.type === 'subcategory' ? <Tag size={14} /> : <Store size={14} />)}
+                                                        </div>
+                                                        <div className="flex-1 overflow-hidden">
+                                                            <div className="text-sm font-bold truncate">{s.text}</div>
+                                                            <div className="text-[10px] uppercase tracking-wider opacity-50 font-black">{s.type}</div>
+                                                        </div>
+                                                        <Search size={12} className="opacity-20" />
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                                
+                                {/* Inner Location Button */}
+                                <button
+                                    onClick={() => {
+                                        setIsLocating(true);
+                                        if (navigator.geolocation) {
+                                            navigator.geolocation.getCurrentPosition(
+                                                async (pos) => {
+                                                    const { latitude, longitude } = pos.coords;
+                                                    try {
+                                                        const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}`);
+                                                        const data = await res.json();
+                                                        if (data.features && data.features[0]) {
+                                                            const place = data.features[0].text;
+                                                            setDetectedLocation(place);
+                                                            setSearchInput(place);
+                                                        }
+                                                    } catch (e) {} finally { setIsLocating(false); }
+                                                },
+                                                () => setIsLocating(false)
+                                            );
+                                        }
+                                    }}
+                                    className={`absolute right-0 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all ${
+                                        isLocating ? 'animate-spin text-primary' : 'text-muted-foreground hover:text-primary hover:bg-primary/10'
+                                    }`}
+                                    title="Detect My Location"
+                                    suppressHydrationWarning
+                                >
+                                    <NavigationIcon size={16} className={isLocating ? "" : "rotate-45"} />
+                                </button>
+                            </div>
                         </div>
+
                         <Link 
                             href="/nearby-map"
-                            className="flex items-center gap-1.5 bg-primary text-white px-5 py-2.5 rounded-r-lg text-sm font-bold hover:bg-primary/80 transition-all whitespace-nowrap shadow-lg shadow-primary/20"
+                            className="relative overflow-hidden flex items-center gap-1.5 bg-primary text-white px-5 py-2.5 rounded-r-lg text-sm font-bold hover:bg-primary/90 transition-all whitespace-nowrap shadow-lg shadow-primary/20 group/btn"
                         >
-                            <MapPin size={15} />
+                            <motion.div
+                                animate={{ scale: [1, 1.2, 1] }}
+                                transition={{ duration: 2, repeat: Infinity }}
+                                className="absolute inset-0 bg-white/20 opacity-0 group-hover/btn:opacity-100 transition-opacity"
+                            />
+                            <MapPin size={18} className="group-hover/btn:animate-bounce" />
                             <span className="hidden sm:inline">See On Map</span>
                             <span className="sm:hidden">Map</span>
+                            
+                            {/* Animated Shine */}
+                            <div className="absolute top-0 -left-full w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-[-20deg] group-hover/btn:animate-[shimmer-sweep_2s_infinite] pointer-events-none" />
                         </Link>
                     </div>
 
@@ -315,7 +552,7 @@ export default function HeroSection() {
                                     initial={{ opacity: 0, scale: 0.9 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{ delay: i * 0.1, duration: 0.3 }}
-                                    onClick={() => router.push(`/search?mainCategory=${encodeURIComponent(cat.name)}`)}
+                                    onClick={() => router.push(`/main-category/${encodeURIComponent(cat.name)}`)}
                                     className={`rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:scale-110 transition-all duration-700 w-[140px] h-[130px] group relative overflow-hidden backdrop-blur-md border border-solid ${theme === 'light'
                                         ? 'bg-[#FFFFF0] border-slate-200 hover:border-primary/40 shadow-xl'
                                         : 'bg-white/[0.02] border-white/10 hover:bg-white/[0.08] hover:border-primary/50 shadow-2xl'
@@ -434,7 +671,7 @@ export default function HeroSection() {
                                 {mobilePool.map((cat, i) => (
                                     <div
                                         key={`${cat.name}-${i}`}
-                                        onClick={() => router.push(`/search?mainCategory=${encodeURIComponent(cat.name)}`)}
+                                        onClick={() => router.push(`/main-category/${encodeURIComponent(cat.name)}`)}
                                         className={`flex-shrink-0 flex flex-col items-center justify-center p-4 rounded-[2rem] border transition-all duration-300 cursor-pointer w-[150px] h-[150px] relative overflow-hidden backdrop-blur-md ${theme === 'light'
                                             ? 'bg-[#FFFFF0] border-blue-600/30 text-slate-900 active:scale-95 shadow-lg'
                                             : 'bg-white/5 border-white/20 text-white active:scale-95 shadow-2xl'
@@ -469,7 +706,7 @@ export default function HeroSection() {
                                     initial={{ opacity: 0, scale: 0.9 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{ delay: i * 0.1, duration: 0.3 }}
-                                    onClick={() => router.push(`/search?mainCategory=${encodeURIComponent(cat.name)}`)}
+                                    onClick={() => router.push(`/main-category/${encodeURIComponent(cat.name)}`)}
                                     className={`rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:scale-110 transition-all duration-700 w-[140px] h-[130px] group relative overflow-hidden backdrop-blur-md border border-solid ${theme === 'light'
                                         ? 'bg-[#FFFFF0] border-slate-200 hover:border-primary/40 shadow-xl'
                                         : 'bg-white/[0.02] border-white/10 hover:bg-white/[0.08] hover:border-primary/50 shadow-2xl'

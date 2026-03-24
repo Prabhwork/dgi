@@ -4,7 +4,7 @@ const Category = require('../models/Category');
 // @desc    Get all subcategories
 // @route   GET /api/subcategories
 // @route   GET /api/categories/:categoryId/subcategories
-// @access  Private
+// @access  Public
 exports.getSubcategories = async (req, res, next) => {
     try {
         if (req.params.categoryId) {
@@ -20,7 +20,7 @@ exports.getSubcategories = async (req, res, next) => {
 
 // @desc    Get single subcategory
 // @route   GET /api/subcategories/:id
-// @access  Private
+// @access  Public
 exports.getSubcategory = async (req, res, next) => {
     try {
         const subcategory = await Subcategory.findById(req.params.id).populate({

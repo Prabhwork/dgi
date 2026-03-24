@@ -126,7 +126,7 @@ export default function BrowseByNeed() {
                             key={`${cat.title}-${i}`}
                             whileHover={{ y: -15 }}
                             whileTap={{ scale: 0.98 }}
-                            onClick={() => router.push(`/search?mainCategory=${encodeURIComponent(cat.title)}`)}
+                            onClick={() => router.push(`/main-category/${encodeURIComponent(cat.title)}`)}
                             className={`w-[280px] sm:w-[350px] flex-shrink-0 rounded-[2.5rem] cursor-pointer transition-all duration-500 group relative isolate overflow-hidden backdrop-blur-md border border-solid ${theme === 'light'
                                 ? 'bg-white/60 border-blue-600/20 hover:border-blue-600/40 shadow-none'
                                 : 'bg-white/[0.01] border-white/20 hover:bg-white/[0.05] hover:border-white/40 shadow-[0_4px_24px_rgba(0,0,0,0.2)] hover:shadow-[0_8px_32px_rgba(255,255,255,0.15)]'

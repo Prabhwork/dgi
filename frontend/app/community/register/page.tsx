@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useRef } from "react";
+
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Building2, MapPin, Clock, ShieldCheck, Image as ImageIcon, Users,
@@ -8,6 +9,14 @@ import {
     Loader2, CheckCircle, ExternalLink, Fingerprint, Plus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -42,6 +51,8 @@ function RegisterPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const isUpdateMode = searchParams.get("mode") === "update";
+    const formContainerRef = useRef<HTMLDivElement>(null);
+
     const [currentStep, setCurrentStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [otpLoading, setOtpLoading] = useState(false);
@@ -49,30 +60,12 @@ function RegisterPageContent() {
     const [success, setSuccess] = useState(false);
     const [rejectionReason, setRejectionReason] = useState<string | null>(null);
 
-    // OTP State
-    const [otp, setOtp] = useState("");
-    const [showOTPField, setShowOTPField] = useState(false);
-    const [isEmailVerified, setIsEmailVerified] = useState(false);
-    const [isLocating, setIsLocating] = useState(false);
-    const [mainCategories, setMainCategories] = useState<{ _id: string, name: string }[]>([]);
-
-    // Timings State
-    const [timings, setTimings] = useState<{ open: string; close: string }[]>([{ open: "", close: "" }]);
-
-    // Sync timings to formData
-    useEffect(() => {
-        setFormData(prev => ({
-            ...prev,
-            openingTime: timings.map(t => t.open).join(','),
-            closingTime: timings.map(t => t.close).join(',')
-        }));
-    }, [timings]);
-
     // Form State
     const [formData, setFormData] = useState({
         businessName: "",
         brandName: "",
         businessCategory: "Automobile",
+        subcategory: [] as string[],
         description: "",
         keywords: "",
         gpsCoordinates: { lat: 0, lng: 0, address: "" },
@@ -87,8 +80,176 @@ function RegisterPageContent() {
         aadhaarNumber: "",
         website: "",
         joinBulkBuying: false,
-        joinFraudAlerts: false
+        joinFraudAlerts: false,
+        isCustomCategory: false,
+        customCategory: "",
+        isCustomSubcategory: false,
+        customSubcategory: ""
     });
+
+    // OTP State
+    const [otp, setOtp] = useState("");
+    const [showOTPField, setShowOTPField] = useState(false);
+    const [isEmailVerified, setIsEmailVerified] = useState(false);
+    const [isLocating, setIsLocating] = useState(false);
+    const [mainCategories, setMainCategories] = useState<{ _id: string, name: string }[]>([]);
+    const [mainSubcategories, setMainSubcategories] = useState<{ _id: string, name: string }[]>([]);
+    
+    // Keyword Suggestions State
+    const [keywordInput, setKeywordInput] = useState("");
+    const [keywordSuggestions, setKeywordSuggestions] = useState<{ text: string, type: string }[]>([]);
+    const [showKeywordSuggestions, setShowKeywordSuggestions] = useState(false);
+    const [keywordPage, setKeywordPage] = useState(1);
+    const [hasMoreKeywords, setHasMoreKeywords] = useState(false);
+    const [isLoadingMoreKeywords, setIsLoadingMoreKeywords] = useState(false);
+    const suggestionRef = useRef<HTMLDivElement>(null);
+
+    const fetchKeywordSuggestions = async (query: string, pageNum: number = 1, append: boolean = false) => {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        if (pageNum > 1) setIsLoadingMoreKeywords(true);
+        
+        try {
+            let url = `${API_URL}/business/suggestions?q=${encodeURIComponent(query)}&page=${pageNum}&limit=20`;
+            if (formData.businessCategory) {
+                url += `&category=${encodeURIComponent(formData.businessCategory)}`;
+            }
+            if (formData.subcategory.length > 0) {
+                url += `&subcategory=${encodeURIComponent(formData.subcategory.join(','))}`;
+            }
+
+            const res = await fetch(url);
+            const data = await res.json();
+            
+            if (data.success) {
+                if (append) {
+                    setKeywordSuggestions(prev => {
+                        // Avoid duplicates if any
+                        const existingTexts = new Set(prev.map(p => p.text));
+                        const newOnes = data.data.filter((d: any) => !existingTexts.has(d.text));
+                        return [...prev, ...newOnes];
+                    });
+                } else {
+                    setKeywordSuggestions(data.data);
+                    setShowKeywordSuggestions(data.data.length > 0);
+                }
+                setHasMoreKeywords(data.hasMore);
+                setKeywordPage(pageNum);
+            }
+        } catch (err) {
+            console.error("Failed to fetch suggestions:", err);
+        } finally {
+            setIsLoadingMoreKeywords(false);
+        }
+    };
+
+    // Keyword debounced fetch (Reset to page 1)
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            fetchKeywordSuggestions(keywordInput, 1, false);
+        }, 300);
+        return () => clearTimeout(timeoutId);
+    }, [keywordInput, formData.businessCategory, formData.subcategory]);
+
+    // Click outside to close suggestions
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (suggestionRef.current && !suggestionRef.current.contains(event.target as Node)) {
+                setShowKeywordSuggestions(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    // Keyword Logic
+    const addKeyword = (keyword: string) => {
+        const trimmed = keyword.trim().toLowerCase();
+        if (!trimmed) return;
+        
+        const existing = formData.keywords ? formData.keywords.split(',').map(k => k.trim().toLowerCase()) : [];
+        if (!existing.includes(trimmed)) {
+            const newKeywords = [...existing, trimmed].join(', ');
+            setFormData(prev => ({ ...prev, keywords: newKeywords }));
+        }
+        setKeywordInput("");
+        setShowKeywordSuggestions(false);
+    };
+
+    const removeKeyword = (keywordToRemove: string) => {
+        const existing = formData.keywords ? formData.keywords.split(',').map(k => k.trim().toLowerCase()) : [];
+        const filtered = existing.filter(k => k !== keywordToRemove.toLowerCase()).join(', ');
+        setFormData(prev => ({ ...prev, keywords: filtered }));
+    };
+
+    const handleKeywordScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+        if (scrollHeight - scrollTop <= clientHeight + 30 && hasMoreKeywords && !isLoadingMoreKeywords) {
+            fetchKeywordSuggestions(keywordInput, keywordPage + 1, true);
+        }
+    };
+
+    // Subcategory Logic
+    const addSubcategory = (sub: string) => {
+        if (!sub || sub === "add-new") return;
+        if (!formData.subcategory.includes(sub)) {
+            setFormData(prev => ({
+                ...prev,
+                subcategory: [...prev.subcategory, sub]
+            }));
+        }
+    };
+
+    const removeSubcategory = (subToRemove: string) => {
+        setFormData(prev => ({
+            ...prev,
+            subcategory: prev.subcategory.filter(s => s !== subToRemove)
+        }));
+    };
+
+    // Timings State
+    const [timings, setTimings] = useState<{ open: string; close: string }[]>([{ open: "", close: "" }]);
+
+    // Sync timings to formData
+    useEffect(() => {
+        setFormData(prev => ({
+            ...prev,
+            openingTime: timings.map(t => t.open).join(','),
+            closingTime: timings.map(t => t.close).join(',')
+        }));
+    }, [timings]);
+
+
+    useEffect(() => {
+        const fetchMainCats = async () => {
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+            try {
+                const res = await fetch(`${API_URL}/main-categories?limit=100`);
+                const data = await res.json();
+                if (data.success) setMainCategories(data.data);
+            } catch (err) {}
+        };
+        fetchMainCats();
+    }, []);
+
+    useEffect(() => {
+        const fetchSubCats = async () => {
+            if (!formData.businessCategory || formData.isCustomCategory) {
+                setMainSubcategories([]);
+                return;
+            }
+            
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+            try {
+                const cat = mainCategories.find(c => c.name === formData.businessCategory);
+                if (!cat) return;
+
+                const res = await fetch(`${API_URL}/main-categories/${cat._id}/main-subcategories?limit=100`);
+                const data = await res.json();
+                if (data.success) setMainSubcategories(data.data);
+            } catch (err) {}
+        };
+        fetchSubCats();
+    }, [formData.businessCategory, formData.isCustomCategory, mainCategories]);
 
 
     // File State
@@ -208,6 +369,7 @@ function RegisterPageContent() {
                             businessName: b.businessName || "",
                             brandName: b.brandName || "",
                             businessCategory: b.businessCategory || "Automobile",
+                            subcategory: b.subcategory || [], // Ensure this is an array
                             description: b.description || "",
                             keywords: (b.keywords || []).join(", "),
                             gpsCoordinates: b.gpsCoordinates || { lat: 0, lng: 0, address: "" },
@@ -222,7 +384,11 @@ function RegisterPageContent() {
                             aadhaarNumber: b.aadhaarNumber || "",
                             website: b.website || "",
                             joinBulkBuying: b.joinBulkBuying || false,
-                            joinFraudAlerts: b.joinFraudAlerts || false
+                            joinFraudAlerts: b.joinFraudAlerts || false,
+                            isCustomCategory: false, // Reset these for update mode
+                            customCategory: "",
+                            isCustomSubcategory: false,
+                            customSubcategory: ""
                         });
                         
                         // Parse mult-timings
@@ -329,8 +495,16 @@ function RegisterPageContent() {
         }
         setError(null);
         setCurrentStep(prev => Math.min(prev + 1, 6));
+        setTimeout(() => {
+            formContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 50);
     };
-    const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
+    const prevStep = () => {
+        setCurrentStep(prev => Math.max(prev - 1, 1));
+        setTimeout(() => {
+            formContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 50);
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -346,8 +520,13 @@ function RegisterPageContent() {
         const buildApiBody = () => {
             const apiBody = new FormData();
             Object.entries(formData).forEach(([key, value]) => {
-                if (typeof value === 'object') apiBody.append(key, JSON.stringify(value));
-                else apiBody.append(key, value.toString());
+                if (key === 'subcategory' && Array.isArray(value)) {
+                    value.forEach(item => apiBody.append(key, item));
+                } else if (typeof value === 'object' && value !== null) {
+                    apiBody.append(key, JSON.stringify(value));
+                } else {
+                    apiBody.append(key, value.toString());
+                }
             });
             Object.entries(files).forEach(([key, value]) => {
                 if (value instanceof File) apiBody.append(key, value);
@@ -463,8 +642,10 @@ function RegisterPageContent() {
                 modal: {
                     ondismiss: function() {
                         setLoading(false);
+                        // Data is preserved - user can try payment again
                     }
                 }
+
             };
 
             console.log("Initializing Razorpay with options:", options);
@@ -486,7 +667,7 @@ function RegisterPageContent() {
         switch (currentStep) {
             case 1:
                 return (
-                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
+                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6 pb-10">
                         <div className="flex items-center gap-3 mb-8">
                             <Building2 className="text-primary w-8 h-8" />
                             <h2 className="text-2xl font-bold text-white">Basic Business Identity</h2>
@@ -502,28 +683,231 @@ function RegisterPageContent() {
                             </div>
                             <div className="grid gap-2">
                                 <Label className="text-white/70">Business Category <span className="text-red-500">*</span></Label>
-                                <select 
-                                    name="businessCategory" 
-                                    value={formData.businessCategory} 
-                                    onChange={(e) => setFormData(prev => ({ ...prev, businessCategory: e.target.value }))}
-                                    className="h-10 w-full rounded-md border border-white/10 bg-slate-900/60 px-3 py-2 text-sm text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-                                    required
+                                <Select 
+                                    value={formData.isCustomCategory ? "OTHER" : formData.businessCategory} 
+                                    onValueChange={(val) => {
+                                        if (val === "OTHER") {
+                                            setFormData(prev => ({ ...prev, isCustomCategory: true, businessCategory: "", isCustomSubcategory: false, subcategory: [] }));
+                                        } else {
+                                            setFormData(prev => ({ ...prev, isCustomCategory: false, businessCategory: val, isCustomSubcategory: false, subcategory: [] }));
+                                        }
+                                    }}
                                 >
-                                    <option value="" disabled className="bg-slate-900">Select Category</option>
-                                    {mainCategories.map((cat) => (
-                                        <option key={cat._id} value={cat.name} className="bg-slate-900">
-                                            {cat.name}
-                                        </option>
+                                    <SelectTrigger className="bg-slate-900/60 border-white/10 text-white focus:ring-primary/50">
+                                        <SelectValue placeholder="Select Category" />
+                                    </SelectTrigger>
+                                    <SelectContent side="bottom" avoidCollisions={false} className="bg-slate-900 border-white/10 text-white max-h-[300px]">
+                                        {mainCategories.map((cat) => (
+                                            <SelectItem key={cat._id} value={cat.name} className="hover:bg-white/5 focus:bg-white/10 cursor-pointer">
+                                                {cat.name}
+                                            </SelectItem>
+                                        ))}
+                                        <SelectItem value="OTHER" className="text-primary font-bold hover:bg-primary/5 focus:bg-primary/10 cursor-pointer">
+                                            + Add New Category
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                {formData.isCustomCategory && (
+                                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
+                                        <Input 
+                                            placeholder="Enter your custom category name" 
+                                            value={formData.customCategory} 
+                                            onChange={(e) => {
+                                                setFormData(prev => ({ ...prev, customCategory: e.target.value, businessCategory: e.target.value }));
+                                            }}
+                                            className="mt-2 bg-primary/5 border-primary/20 text-white"
+                                        />
+                                    </motion.div>
+                                )}
+                            </div>
+
+                            <div className="space-y-4">
+                                <Label className="text-white/70 text-xs font-bold uppercase tracking-widest flex items-center gap-2">
+                                    <Building2 className="w-3 h-3 text-primary" />
+                                    Main Specialties (Subcategories) *
+                                </Label>
+                                
+                                {/* Selected Subcategories Tags */}
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                    {formData.subcategory.map((sub, idx) => (
+                                        <motion.div 
+                                            initial={{ scale: 0.8, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            key={idx}
+                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-full text-xs font-bold text-primary group"
+                                        >
+                                            {sub}
+                                            <button 
+                                                type="button"
+                                                onClick={() => removeSubcategory(sub)}
+                                                className="hover:bg-primary/20 rounded-full p-0.5 transition-colors"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </motion.div>
                                     ))}
-                                </select>
+                                </div>
+
+                                <Select 
+                                    value="" 
+                                    onValueChange={(val) => {
+                                        if (val === "add-new") {
+                                            setFormData(prev => ({ ...prev, isCustomSubcategory: true }));
+                                        } else {
+                                            addSubcategory(val);
+                                        }
+                                    }}
+                                >
+                                    <SelectTrigger className="w-full bg-white/5 border-white/10 text-white rounded-xl h-14 focus:ring-primary focus:border-primary transition-all">
+                                        <SelectValue placeholder={formData.subcategory.length > 0 ? "Add more specialties..." : "Select specialty..."} />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-slate-900 border-white/10 text-white !z-[9999] max-h-[300px]" position="popper" sideOffset={5}>
+                                        {mainSubcategories.map((sub) => (
+                                            <SelectItem 
+                                                key={sub._id} 
+                                                value={sub.name}
+                                                disabled={formData.subcategory.includes(sub.name)}
+                                            >
+                                                {sub.name} {formData.subcategory.includes(sub.name) && "(Selected)"}
+                                            </SelectItem>
+                                        ))}
+                                        <SelectItem value="add-new" className="text-primary font-bold border-t border-white/5 mt-2">
+                                            + Add Your Own Specialty
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+
+                                {formData.isCustomSubcategory && (
+                                    <motion.div 
+                                        initial={{ opacity: 0, y: -10 }} 
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="space-y-3 p-4 bg-primary/5 rounded-xl border border-primary/10 relative"
+                                    >
+                                        <button 
+                                            type="button"
+                                            onClick={() => setFormData(prev => ({ ...prev, isCustomSubcategory: false }))}
+                                            className="absolute top-2 right-2 text-white/40 hover:text-white"
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                        <Label className="text-white/60 text-[10px] font-bold uppercase tracking-wider block mb-1">Enter Your Unique Specialty</Label>
+                                        <div className="flex gap-2">
+                                            <Input 
+                                                placeholder="e.g. Vintage Car Restoration"
+                                                value={formData.customSubcategory}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, customSubcategory: e.target.value }))}
+                                                className="bg-white/5 border-white/10 text-white h-12"
+                                            />
+                                            <Button 
+                                                type="button"
+                                                onClick={() => {
+                                                    if (formData.customSubcategory.trim()) {
+                                                        addSubcategory(formData.customSubcategory);
+                                                        setFormData(prev => ({ ...prev, isCustomSubcategory: false, customSubcategory: "" }));
+                                                    }
+                                                }}
+                                                className="h-12 px-4 whitespace-nowrap"
+                                            >
+                                                Add
+                                            </Button>
+                                        </div>
+                                    </motion.div>
+                                )}
                             </div>
                             <div className="grid gap-2">
                                 <Label className="text-white/70">Business Description</Label>
                                 <Textarea name="description" value={formData.description} onChange={handleInputChange} placeholder="Short 'About' section for the community" className="bg-white/5 border-white/10 text-white min-h-[100px]" />
                             </div>
                             <div className="grid gap-2">
-                                <Label className="text-white/70">Keywords</Label>
-                                <Input name="keywords" value={formData.keywords} onChange={handleInputChange} placeholder="e.g., Best Jewelry in Sadar Bazaar" className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50" />
+                                <Label className="text-white/70">Keywords / Tags</Label>
+                                <div className="space-y-3">
+                                    {/* Selected Keyword Tags */}
+                                    <div className="flex flex-wrap gap-2 min-h-[40px] p-2 rounded-lg bg-white/5 border border-white/10">
+                                        {formData.keywords ? (
+                                            formData.keywords.split(',').map((tag, idx) => (
+                                                <Badge 
+                                                    key={idx} 
+                                                    variant="secondary" 
+                                                    className="bg-primary/20 hover:bg-primary/30 text-primary border-primary/20 flex items-center gap-1 py-1 px-3 group"
+                                                >
+                                                    {tag.trim()}
+                                                    <X 
+                                                        className="w-3 h-3 cursor-pointer group-hover:text-red-400 transition-colors" 
+                                                        onClick={() => removeKeyword(tag.trim())}
+                                                    />
+                                                </Badge>
+                                            ))
+                                        ) : (
+                                            <span className="text-white/30 text-xs italic p-1">Add keywords for better reach...</span>
+                                        )}
+                                    </div>
+
+                                    {/* Keyword Input with Autocomplete */}
+                                    <div className="relative" ref={suggestionRef}>
+                                        <Input 
+                                            value={keywordInput}
+                                            onFocus={() => setShowKeywordSuggestions(true)}
+                                            onChange={(e) => {
+                                                setKeywordInput(e.target.value);
+                                                setShowKeywordSuggestions(true);
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    addKeyword(keywordInput);
+                                                }
+                                            }}
+                                            placeholder="Type and press Enter (e.g., jewelry, delivery, wholesale)" 
+                                            className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50" 
+                                        />
+                                        
+                                        <AnimatePresence>
+                                            {showKeywordSuggestions && keywordSuggestions.length > 0 && (
+                                                <motion.div 
+                                                    initial={{ opacity: 0, y: -10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    exit={{ opacity: 0, y: -10 }}
+                                                    onScroll={handleKeywordScroll}
+                                                    className="absolute z-[100] w-full mt-2 bg-slate-900/95 border border-white/10 rounded-lg shadow-2xl backdrop-blur-xl max-h-[300px] overflow-y-auto custom-scrollbar pb-2"
+                                                >
+                                                    {keywordSuggestions.map((suggestion, idx) => (
+                                                        <div 
+                                                            key={`${suggestion.text}-${idx}`}
+                                                            onClick={() => addKeyword(suggestion.text)}
+                                                            className="px-4 py-3 hover:bg-primary/10 transition-colors cursor-pointer flex items-center justify-between border-b border-white/5 last:border-0"
+                                                        >
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                                                                    {suggestion.type === 'recommended' ? (
+                                                                        <CheckCircle className="w-4 h-4 text-primary" />
+                                                                    ) : suggestion.type === 'place' ? (
+                                                                        <MapPin className="w-4 h-4 text-primary" />
+                                                                    ) : (
+                                                                        <Plus className="w-4 h-4 text-primary" />
+                                                                    )}
+                                                                </div>
+                                                                <div>
+                                                                    <span className="text-white font-medium block">{suggestion.text}</span>
+                                                                    {suggestion.type === 'recommended' && (
+                                                                        <span className="text-[10px] text-primary block">Recommended for {formData.businessCategory}</span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <span className="text-[10px] uppercase tracking-wider text-white/40 bg-white/5 px-2 py-0.5 rounded-md">
+                                                                {suggestion.type}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                    {isLoadingMoreKeywords && (
+                                                        <div className="py-4 flex justify-center">
+                                                            <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                                                        </div>
+                                                    )}
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </motion.div>
@@ -547,6 +931,7 @@ function RegisterPageContent() {
                                         onClick={handleLocateMe}
                                         disabled={isLocating}
                                         className="shrink-0 gap-2"
+                                        suppressHydrationWarning
                                     >
                                         {isLocating ? (
                                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -956,7 +1341,8 @@ function RegisterPageContent() {
                 </div>
 
                 {/* Form Container */}
-                <div className="max-w-2xl mx-auto glass-strong border-white/10 rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-8 md:p-12 shadow-2xl relative overflow-hidden">
+                <div ref={formContainerRef} className="max-w-2xl mx-auto glass-strong border-white/10 rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-8 md:p-12 shadow-2xl relative overflow-hidden">
+
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
 
                     {error && (

@@ -8,11 +8,9 @@ import Link from "next/link";
 import { useTheme } from "@/components/ThemeProvider";
 
 const navItems = [
-    { name: "Home", href: "/" },
     { name: "Why DBI", href: "/why-dbi" },
     { name: "Join Community", href: "/join-community" },
     { name: "Mapping Plans", href: "/mapping-plans" },
-    { name: "Contact", href: "/contact" },
 ];
 
 const FEATURE_ICONS = [Building2, Map, ShieldCheck, PieChart, Search, Globe, Zap, Target, Sparkles, Rocket];

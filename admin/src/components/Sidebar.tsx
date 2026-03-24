@@ -30,6 +30,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
     const routes = [
         { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
         { name: 'Main Category', path: '/dashboard/main-categories', icon: Layers },
+        { name: 'Main Subcategories', path: '/dashboard/main-subcategories', icon: Tag },
         { name: 'Categories', path: '/dashboard/categories', icon: Layers },
         { name: 'Subcategories', path: '/dashboard/subcategories', icon: Tag },
         { name: 'Business Approvals', path: '/dashboard/businesses', icon: ShieldCheck },

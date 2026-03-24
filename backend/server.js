@@ -51,9 +51,11 @@ const contact = require('./routes/contactRoutes');
 const upcomingCategories = require('./routes/upcomingCategoryRoutes');
 const testimonials = require('./routes/testimonialRoutes');
 const existingCustomers = require('./routes/existingCustomers');
+const mainSubcategories = require('./routes/mainSubcategoryRoutes');
+
 
 // Re-route into other resource routers
-// Re-route into other resource routers
+mainCategories.use('/:mainCategoryId/main-subcategories', mainSubcategories);
 categories.use('/:categoryId/subcategories', subcategories);
 categories.use('/:categoryId/features', features);
 categories.use('/:categoryId/solutions', solutions);
@@ -62,6 +64,7 @@ categories.use('/:categoryId/solutions', solutions);
 app.use('/api/auth', auth);
 app.use('/api/main-categories', mainCategories);
 app.use('/api/categories', categories);
+app.use('/api/main-subcategories', mainSubcategories);
 app.use('/api/subcategories', subcategories);
 app.use('/api/features', features);
 app.use('/api/solutions', solutions);
