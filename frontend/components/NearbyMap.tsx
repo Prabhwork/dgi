@@ -50,9 +50,10 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
     const [locating, setLocating] = useState(true);
     const [filterOpen, setFilterOpen] = useState(false);
     const [category, setCategory] = useState("All");
-    const [radius, setRadius] = useState(5000);
+    const [radius, setRadius] = useState(5000000); // 5000km default
     const [mapLoaded, setMapLoaded] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
+    const [searchResults, setSearchResults] = useState<Business[]>([]);
     const [routeInfo, setRouteInfo] = useState<{ distance: number, duration: number, businessName: string } | null>(null);
     const [isNavigating, setIsNavigating] = useState(false);
     const watchIdRef = useRef<number | null>(null);
@@ -95,6 +96,45 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
             return;
         }
 
+        // If a specific business ID is provided, center on it
+        if (paramId) {
+            const fetchTargetBusiness = async () => {
+                try {
+                    const res = await fetch(`${API}/business/public/${paramId}`);
+                    const data = await res.json();
+                    if (data.success && data.data.gpsCoordinates?.lat) {
+                        setUserLocation({ 
+                            lat: data.data.gpsCoordinates.lat, 
+                            lng: data.data.gpsCoordinates.lng 
+                        });
+                        setLocating(false);
+                        return;
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch business for map centering:", e);
+                }
+                
+                // Fallback to current location if target fetch fails
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                            setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+                            setLocating(false);
+                        },
+                        () => {
+                            setUserLocation({ lat: 28.6139, lng: 77.2090 });
+                            setLocating(false);
+                        }
+                    );
+                } else {
+                    setUserLocation({ lat: 28.6139, lng: 77.2090 });
+                    setLocating(false);
+                }
+            };
+            fetchTargetBusiness();
+            return;
+        }
+
         if (!navigator.geolocation) { setLocating(false); return; }
         navigator.geolocation.getCurrentPosition(
             (pos) => {
@@ -107,7 +147,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
             },
             { enableHighAccuracy: false, maximumAge: 60000, timeout: 5000 }
         );
-    }, [paramLat, paramLng]);
+    }, [paramLat, paramLng, paramId, API]);
 
     useEffect(() => {
         if (!userLocation || !mapContainer.current || mapRef.current) return;
@@ -354,7 +394,36 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                 .addTo(mapRef.current!);
             markersRef.current.push(marker);
         });
+    }, [businesses, mapLoaded, searchQuery]); // Added searchQuery dependency for local filtering
 
+    // Global search logic
+    useEffect(() => {
+        if (searchQuery.trim().length === 0) {
+            setSearchResults([]);
+            return;
+        }
+
+        const fetchSearchResults = async () => {
+            setLoading(true);
+            try {
+                // Global search regardless of map center
+                const res = await fetch(`${API}/business/search?q=${searchQuery}`);
+                const data = await res.json();
+                if (data.success) {
+                    setSearchResults(data.data);
+                }
+            } catch (e) {
+                console.error("Search failed:", e);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        const timer = setTimeout(fetchSearchResults, 300);
+        return () => clearTimeout(timer);
+    }, [searchQuery, API]);
+
+    useEffect(() => {
         // Handle initial selection from URL ID - DRY: Only once
         if (paramId && businesses.length > 0 && !initialSelectPerformed.current) {
             const biz = businesses.find(b => b._id === paramId);
@@ -370,7 +439,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                 });
             }
         }
-    }, [businesses, mapLoaded, searchQuery, paramId]);
+    }, [businesses, mapLoaded, paramId]); // Removed searchQuery from this dependency array
 
     const formatTime = (t: string) => {
         if (!t) return "";
@@ -461,7 +530,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
 
                     {/* Search Results Dropdown */}
                     <AnimatePresence>
-                        {searchQuery.trim().length > 0 && filteredBusinesses.length > 0 && (
+                        {searchQuery.trim().length > 0 && searchResults.length > 0 && (
                             <motion.div
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -469,12 +538,18 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                 className="absolute top-[60px] md:top-[64px] left-0 right-0 bg-black/80 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] overflow-hidden max-h-[60vh] overflow-y-auto"
                             >
                                 <div className="p-2 flex flex-col gap-1">
-                                    {filteredBusinesses.slice(0, 10).map((biz) => (
+                                    {searchResults.slice(0, 10).map((biz) => (
                                         <button
                                             key={biz._id}
                                             onClick={() => {
                                                 setSelectedBusiness(biz);
                                                 setSearchQuery(''); // Clear search on select to hide dropdown
+                                                
+                                                // If business is not in the current nearby list, add it so it gets a marker
+                                                if (!businesses.find(b => b._id === biz._id)) {
+                                                    setBusinesses(prev => [...prev, biz]);
+                                                }
+
                                                 mapRef.current?.flyTo({
                                                     center: [biz.gpsCoordinates.lng, biz.gpsCoordinates.lat],
                                                     zoom: 17.5,
@@ -519,7 +594,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
 
             {/* No Results Feedback */}
             <AnimatePresence>
-                {searchQuery && filteredBusinesses.length === 0 && !loading && (
+                {searchQuery && searchResults.length === 0 && !loading && (
                     <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="absolute top-20 left-1/2 -translate-x-1/2 z-20 px-6 py-3 bg-red-500/10 border border-red-500/20 backdrop-blur-xl rounded-2xl text-red-400 text-xs font-bold shadow-2xl">
                         No businesses found matching "{searchQuery}"
                     </motion.div>

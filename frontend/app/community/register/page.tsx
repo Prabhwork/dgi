@@ -724,9 +724,9 @@ function RegisterPageContent() {
                             <div className="space-y-4">
                                 <Label className="text-white/70 text-xs font-bold uppercase tracking-widest flex items-center gap-2">
                                     <Building2 className="w-3 h-3 text-primary" />
-                                    Main Specialties (Subcategories) *
+                                    selected (Subcategories) *
                                 </Label>
-                                
+                            
                                 {/* Selected Subcategories Tags */}
                                 <div className="flex flex-wrap gap-2 mb-3">
                                     {formData.subcategory.map((sub, idx) => (
@@ -759,7 +759,7 @@ function RegisterPageContent() {
                                     }}
                                 >
                                     <SelectTrigger className="w-full bg-white/5 border-white/10 text-white rounded-xl h-14 focus:ring-primary focus:border-primary transition-all">
-                                        <SelectValue placeholder={formData.subcategory.length > 0 ? "Add more specialties..." : "Select specialty..."} />
+                                        <SelectValue placeholder={formData.subcategory.length > 0 ? "Add more specialties..." : "Select subcategories"} />
                                     </SelectTrigger>
                                     <SelectContent className="bg-slate-900 border-white/10 text-white !z-[9999] max-h-[300px]" position="popper" sideOffset={5}>
                                         {mainSubcategories.map((sub) => (

@@ -240,9 +240,7 @@ function BusinessDetail() {
                                             <span className="text-[10px] font-black uppercase tracking-[0.05em]">WhatsApp</span>
                                         </a>
                                         <a 
-                                            href={`https://maps.google.com/?q=${business.gpsCoordinates?.lat || ''},${business.gpsCoordinates?.lng || ''}`} 
-                                            target="_blank" 
-                                            rel="noopener noreferrer" 
+                                            href={`/nearby-map?id=${business._id || id}`}
                                             className="flex items-center justify-center gap-2 p-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all hover:-translate-y-1 shadow-md shadow-blue-600/20 group h-14"
                                         >
                                             <MapPin size={20} className="group-hover:scale-110 transition-transform" />

@@ -638,7 +638,7 @@ exports.getMe = async (req, res, next) => {
 // @access  Public
 exports.getNearbyBusinesses = async (req, res, next) => {
     try {
-        const { lat, lng, radius = 5000, category, minRating } = req.query;
+        const { lat, lng, radius = 5000000, category, minRating } = req.query;
         
         if (!lat || !lng) {
             return res.status(400).json({ success: false, error: 'Please provide lat and lng' });
