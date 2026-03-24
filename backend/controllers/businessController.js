@@ -436,7 +436,7 @@ exports.searchBusinesses = async (req, res, next) => {
                 const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
                 const d = R * c;
                 
-                b.distance = d; // Attach distance to object
+                b.distanceKm = d; // Attach distance to object
                 return d <= radius;
             });
 

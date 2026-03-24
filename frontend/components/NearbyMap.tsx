@@ -44,6 +44,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
     const markersRef = useRef<mapboxgl.Marker[]>([]);
     const animationFrameRef = useRef<number | null>(null);
     const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+    const [mapInitialCenter, setMapInitialCenter] = useState<{ lat: number; lng: number } | null>(null);
     const [businesses, setBusinesses] = useState<Business[]>([]);
     const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
     const [loading, setLoading] = useState(true);
@@ -94,73 +95,73 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
     const paramId = searchParams.get("id");
 
     useEffect(() => {
+        // Step 1: Handle initial map view centering
         if (paramLat && paramLng) {
-            setUserLocation({ lat: parseFloat(paramLat), lng: parseFloat(paramLng) });
-            setLocating(false);
-            return;
+            const lat = parseFloat(paramLat);
+            const lng = parseFloat(paramLng);
+            setMapInitialCenter({ lat, lng });
         }
 
-        // If a specific business ID is provided, center on it
+        // Step 2: Always try to get REAL user location for the navigation arrow
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const actualLat = pos.coords.latitude;
+                    const actualLng = pos.coords.longitude;
+                    
+                    setUserLocation({ lat: actualLat, lng: actualLng });
+                    
+                    // If no param coordinates, THIS is our view center too
+                    if (!paramLat || !paramLng) {
+                        setMapInitialCenter({ lat: actualLat, lng: actualLng });
+                    }
+                    setLocating(false);
+                },
+                () => {
+                    // Fallback to Delhi if geolocation fails AND no params provided
+                    if (!paramLat || !paramLng) {
+                        const delhi = { lat: 28.6139, lng: 77.2090 };
+                        setMapInitialCenter(delhi);
+                        setUserLocation(delhi);
+                    }
+                    setLocating(false);
+                }
+            );
+        } else {
+            if (!paramLat || !paramLng) {
+                const delhi = { lat: 28.6139, lng: 77.2090 };
+                setMapInitialCenter(delhi);
+                setUserLocation(delhi);
+            }
+            setLocating(false);
+        }
+
+        // Step 3: Fetch a specific business if ID provided
         if (paramId) {
-            const fetchTargetBusiness = async () => {
+            const fetchTarget = async () => {
                 try {
                     const res = await fetch(`${API}/business/public/${paramId}`);
                     const data = await res.json();
                     if (data.success && data.data.gpsCoordinates?.lat) {
-                        setUserLocation({ 
-                            lat: data.data.gpsCoordinates.lat, 
-                            lng: data.data.gpsCoordinates.lng 
-                        });
-                        setLocating(false);
-                        return;
+                        // Just ensure it's loaded for the business detail card
                     }
                 } catch (e) {
-                    console.error("Failed to fetch business for map centering:", e);
-                }
-                
-                // Fallback to current location if target fetch fails
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(
-                        (pos) => {
-                            setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-                            setLocating(false);
-                        },
-                        () => {
-                            setUserLocation({ lat: 28.6139, lng: 77.2090 });
-                            setLocating(false);
-                        }
-                    );
-                } else {
-                    setUserLocation({ lat: 28.6139, lng: 77.2090 });
-                    setLocating(false);
+                    console.error("Failed target fetch:", e);
                 }
             };
-            fetchTargetBusiness();
-            return;
+            fetchTarget();
         }
-
-        if (!navigator.geolocation) { setLocating(false); return; }
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-                setLocating(false);
-            },
-            () => {
-                setUserLocation({ lat: 28.6139, lng: 77.2090 });
-                setLocating(false);
-            },
-            { enableHighAccuracy: false, maximumAge: 60000, timeout: 5000 }
-        );
     }, [paramLat, paramLng, paramId, API]);
 
     useEffect(() => {
-        if (!userLocation || !mapContainer.current || mapRef.current) return;
+        const initial = mapInitialCenter || userLocation;
+        if (!initial || !mapContainer.current || mapRef.current) return;
 
         mapboxgl.accessToken = MAPBOX_TOKEN;
         const map = new mapboxgl.Map({
             container: mapContainer.current,
             style: "mapbox://styles/mapbox/dark-v11",
-            center: [userLocation.lng, userLocation.lat],
+            center: [initial.lng, initial.lat],
             zoom: 14,
             pitch: 62,
             bearing: -17,
@@ -247,21 +248,23 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
             }
 
             // Glowing User Location Marker — Premium Pulse
-            const userEl = document.createElement("div");
-            userEl.className = "user-location-pulse";
-            userEl.innerHTML = `
-                <div style="position: relative; width: 24px; height: 24px;">
-                    <div style="position: absolute; inset: 0; border-radius: 50%; background: #0ea5e9; opacity: 0.3; animate: dbi-ripple 2s infinite ease-out;"></div>
-                    <div style="position: absolute; inset: 4px; border-radius: 50%; background: white; border: 3px solid #0ea5e9; box-shadow: 0 0 15px #0ea5e9;"></div>
-                </div>
-            `;
-            userMarkerRef.current = new mapboxgl.Marker(userEl).setLngLat([userLocation.lng, userLocation.lat]).addTo(map);
+            if (userLocation) {
+                const userEl = document.createElement("div");
+                userEl.className = "user-location-pulse";
+                userEl.innerHTML = `
+                    <div style="position: relative; width: 24px; height: 24px;">
+                        <div style="position: absolute; inset: 0; border-radius: 50%; background: #0ea5e9; opacity: 0.3; animate: dbi-ripple 2s infinite ease-out;"></div>
+                        <div style="position: absolute; inset: 4px; border-radius: 50%; background: white; border: 3px solid #0ea5e9; box-shadow: 0 0 15px #0ea5e9;"></div>
+                    </div>
+                `;
+                userMarkerRef.current = new mapboxgl.Marker(userEl).setLngLat([userLocation.lng, userLocation.lat]).addTo(map);
+            }
 
-            map.flyTo({ center: [userLocation.lng, userLocation.lat], zoom: 15, pitch: 62, bearing: -17, duration: 2500, essential: true });
+            map.flyTo({ center: [initial.lng, initial.lat], zoom: 15, pitch: 62, bearing: -17, duration: 2500, essential: true });
         });
 
         // Start fetching businesses concurrently while the map style loads
-        fetchNearbyBusinesses(userLocation.lat, userLocation.lng, category, radius);
+        fetchNearbyBusinesses(initial.lat, initial.lng, category, radius);
 
         map.on("moveend", () => {
             const center = map.getCenter();
@@ -269,15 +272,8 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
         });
 
         const handleInteraction = () => {
-            if (isNavigating && !isProgrammaticMove.current && autoCenteringRef.current) {
-                console.log("Interaction detected from map event, pausing auto-centering");
-                setIsAutoCentering(false);
-            }
-        };
-
-        const handleDirectInteraction = () => {
             if (isNavigating && autoCenteringRef.current) {
-                console.log("Direct DOM interaction detected (wheel/click), pausing auto-centering IMMEDIATELY");
+                console.log("Interaction detected, pausing auto-centering");
                 setIsAutoCentering(false);
             }
         };
@@ -286,12 +282,14 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
         map.on("zoomstart", handleInteraction);
         map.on("pitchstart", handleInteraction);
         map.on("rotate", handleInteraction);
+        map.on("touchstart", handleInteraction); // Direct map touch
 
         const container = mapContainer.current;
         if (container) {
-            container.addEventListener('mousedown', handleDirectInteraction, { capture: true, passive: true });
-            container.addEventListener('touchstart', handleDirectInteraction, { capture: true, passive: true });
-            container.addEventListener('wheel', handleDirectInteraction, { capture: true, passive: true });
+            // Using capture: true to ensure we catch events before Mapbox might consume them
+            container.addEventListener('mousedown', handleInteraction, { capture: true, passive: true });
+            container.addEventListener('touchstart', handleInteraction, { capture: true, passive: true });
+            container.addEventListener('wheel', handleInteraction, { capture: true, passive: true });
         }
 
         return () => {
@@ -300,21 +298,33 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
             map.remove();
             mapRef.current = null;
             if (container) {
-                container.removeEventListener('mousedown', handleDirectInteraction, { capture: true });
-                container.removeEventListener('touchstart', handleDirectInteraction, { capture: true });
-                container.removeEventListener('wheel', handleDirectInteraction, { capture: true });
+                container.removeEventListener('mousedown', handleInteraction, { capture: true });
+                container.removeEventListener('touchstart', handleInteraction, { capture: true });
+                container.removeEventListener('wheel', handleInteraction, { capture: true });
             }
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [userLocation !== null]); 
-
-    // Keep user marker and camera updated during navigation
+    }, [mapInitialCenter !== null || userLocation !== null]); 
+    
+    // Create/Update user marker when userLocation becomes available
     useEffect(() => {
-        if (userMarkerRef.current && userLocation) {
+        if (!mapRef.current || !userLocation) return;
+        
+        if (!userMarkerRef.current && mapLoaded) {
+            const userEl = document.createElement("div");
+            userEl.className = "user-location-pulse";
+            userEl.innerHTML = `
+                <div style="position: relative; width: 24px; height: 24px;">
+                    <div style="position: absolute; inset: 0; border-radius: 50%; background: #0ea5e9; opacity: 0.3; animate: dbi-ripple 2s infinite ease-out;"></div>
+                    <div style="position: absolute; inset: 4px; border-radius: 50%; background: white; border: 3px solid #0ea5e9; box-shadow: 0 0 15px #0ea5e9;"></div>
+                </div>
+            `;
+            userMarkerRef.current = new mapboxgl.Marker(userEl).setLngLat([userLocation.lng, userLocation.lat]).addTo(mapRef.current);
+        } else if (userMarkerRef.current) {
             userMarkerRef.current.setLngLat([userLocation.lng, userLocation.lat]);
             userMarkerRef.current.getElement().style.display = isNavigating ? 'none' : 'block';
         }
-    }, [userLocation, isNavigating]);
+    }, [userLocation, mapLoaded, isNavigating]);
 
     const initialSelectPerformed = useRef(false);
 
@@ -746,7 +756,11 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
 
                             <button
                                 onClick={async () => {
-                                    if (!mapRef.current || !userLocation) return;
+                                    if (!mapRef.current) return;
+                                    if (!userLocation) {
+                                        alert("Waiting for your location. Please ensure location access is enabled.");
+                                        return;
+                                    }
                                     try {
                                          const query = await fetch(
                                              `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${userLocation.lng},${userLocation.lat};${selectedBusiness.gpsCoordinates.lng},${selectedBusiness.gpsCoordinates.lat}?steps=true&geometries=geojson&annotations=congestion&access_token=${MAPBOX_TOKEN}`,
