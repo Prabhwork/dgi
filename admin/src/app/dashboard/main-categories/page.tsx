@@ -220,7 +220,7 @@ export default function MainCategoriesPage() {
                                             <div className="w-10 h-10 rounded overflow-hidden bg-slate-100 border border-slate-200">
                                                 {category.image && category.image !== 'no-photo.jpg' ? (
                                                     <Image
-                                                        src={`${ASSET_URL}/${category.image}`}
+                                                        src={`${ASSET_URL}/${category.image.startsWith('uploads') ? category.image : 'uploads/' + category.image}`}
                                                         alt={category.name}
                                                         width={40}
                                                         height={40}
@@ -397,7 +397,7 @@ export default function MainCategoriesPage() {
                                             {(editPreview || (editingCategory.image && editingCategory.image !== 'no-photo.jpg')) && (
                                                 <div className="w-16 h-16 rounded overflow-hidden border border-slate-200 bg-slate-50">
                                                     <Image
-                                                        src={editPreview || `${ASSET_URL}/${editingCategory.image}`}
+                                                        src={editPreview || `${ASSET_URL}/${editingCategory.image.startsWith('uploads') ? editingCategory.image : 'uploads/' + editingCategory.image}`}
                                                         alt="Preview"
                                                         width={64}
                                                         height={64}

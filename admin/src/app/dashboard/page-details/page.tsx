@@ -161,7 +161,9 @@ export default function PageDetailsPage() {
         setFilteredSubcategories(filtered);
 
         if (detail.image) {
-            setImagePreview(`${process.env.NEXT_PUBLIC_API_URL}/uploads/${detail.image}`);
+            const baseUrl = (process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '');
+            const imagePath = detail.image.startsWith('uploads') ? detail.image : 'uploads/' + detail.image;
+            setImagePreview(`${baseUrl}/${imagePath}`);
         }
         setIsModalOpen(true);
     };
