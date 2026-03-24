@@ -417,10 +417,13 @@ function RegisterPageContent() {
 
             const options = {
                 key: orderData.keyId,
+                amount: orderData.amount * 100,
+                currency: orderData.currency,
                 name: "Digital Book Of India",
                 description: "Business Registration Fee",
                 order_id: orderData.orderId,
                 handler: async function (paymentResponse: any) {
+                    console.log("Payment Success Handler Triggered:", paymentResponse);
                     try {
                         setLoading(true);
                         // 3. Register Business with Payment Details after successful payment
@@ -464,8 +467,10 @@ function RegisterPageContent() {
                 }
             };
 
+            console.log("Initializing Razorpay with options:", options);
             const paymentObject = new (window as any).Razorpay(options);
             paymentObject.on("payment.failed", function (response: any) {
+                console.error("Razorpay Payment Failed Object:", response.error);
                 setLoading(false);
                 setError("Payment failed: " + response.error.description);
             });
