@@ -59,8 +59,12 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
     const watchIdRef = useRef<number | null>(null);
     const userMarkerRef = useRef<mapboxgl.Marker | null>(null);
     const startMarkerRef = useRef<mapboxgl.Marker | null>(null);
+    const [isAutoCentering, setIsAutoCentering] = useState(true);
+    const autoCenteringRef = useRef(true);
+    useEffect(() => { autoCenteringRef.current = isAutoCentering; }, [isAutoCentering]);
+    const isProgrammaticMove = useRef(false);
 
-    const API = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api");
+    const API = (process.env.NEXT_PUBLIC_API_URL);
 
     const fetchNearbyBusinesses = useCallback(async (lat: number, lng: number, cat: string, rad: number) => {
         setLoading(true);
@@ -264,11 +268,42 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
             debouncedFetch(center.lat, center.lng, category, radius);
         });
 
+        const handleInteraction = () => {
+            if (isNavigating && !isProgrammaticMove.current && autoCenteringRef.current) {
+                console.log("Interaction detected from map event, pausing auto-centering");
+                setIsAutoCentering(false);
+            }
+        };
+
+        const handleDirectInteraction = () => {
+            if (isNavigating && autoCenteringRef.current) {
+                console.log("Direct DOM interaction detected (wheel/click), pausing auto-centering IMMEDIATELY");
+                setIsAutoCentering(false);
+            }
+        };
+
+        map.on("dragstart", handleInteraction);
+        map.on("zoomstart", handleInteraction);
+        map.on("pitchstart", handleInteraction);
+        map.on("rotate", handleInteraction);
+
+        const container = mapContainer.current;
+        if (container) {
+            container.addEventListener('mousedown', handleDirectInteraction, { capture: true, passive: true });
+            container.addEventListener('touchstart', handleDirectInteraction, { capture: true, passive: true });
+            container.addEventListener('wheel', handleDirectInteraction, { capture: true, passive: true });
+        }
+
         return () => {
             if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
             if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
             map.remove();
             mapRef.current = null;
+            if (container) {
+                container.removeEventListener('mousedown', handleDirectInteraction, { capture: true });
+                container.removeEventListener('touchstart', handleDirectInteraction, { capture: true });
+                container.removeEventListener('wheel', handleDirectInteraction, { capture: true });
+            }
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userLocation !== null]); 
@@ -277,8 +312,9 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
     useEffect(() => {
         if (userMarkerRef.current && userLocation) {
             userMarkerRef.current.setLngLat([userLocation.lng, userLocation.lat]);
+            userMarkerRef.current.getElement().style.display = isNavigating ? 'none' : 'block';
         }
-    }, [userLocation]);
+    }, [userLocation, isNavigating]);
 
     const initialSelectPerformed = useRef(false);
 
@@ -406,8 +442,12 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
         const fetchSearchResults = async () => {
             setLoading(true);
             try {
-                // Global search regardless of map center
-                const res = await fetch(`${API}/business/search?q=${searchQuery}`);
+                // Global search with user location for distance calculation
+                let url = `${API}/business/search?q=${searchQuery}`;
+                if (userLocation) {
+                    url += `&lat=${userLocation.lat}&lng=${userLocation.lng}`;
+                }
+                const res = await fetch(url);
                 const data = await res.json();
                 if (data.success) {
                     setSearchResults(data.data);
@@ -456,8 +496,14 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
         } catch (e) { console.error(e); }
     };
 
-    const zoomIn = () => mapRef.current?.zoomIn();
-    const zoomOut = () => mapRef.current?.zoomOut();
+    const zoomIn = () => {
+        if (isNavigating) setIsAutoCentering(false);
+        mapRef.current?.zoomIn();
+    };
+    const zoomOut = () => {
+        if (isNavigating) setIsAutoCentering(false);
+        mapRef.current?.zoomOut();
+    };
 
     const siteBackground = {
         backgroundImage: `
@@ -495,18 +541,63 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                 <p className="text-primary/60 font-bold text-[10px] uppercase tracking-[0.2em]">Live Traffic Feed Active</p>
                             </div>
                         </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => {
+                                    setIsNavigating(false);
+                                    setIsAutoCentering(true);
+                                    if (watchIdRef.current !== null) {
+                                        navigator.geolocation.clearWatch(watchIdRef.current);
+                                        watchIdRef.current = null;
+                                    }
+                                    // Remove route markers
+                                    if (startMarkerRef.current) {
+                                        startMarkerRef.current.remove();
+                                        startMarkerRef.current = null;
+                                    }
+                                    mapRef.current?.easeTo({ pitch: 45, zoom: 15, duration: 1500 });
+                                }}
+                                className="bg-red-500 text-white font-bold py-2 px-6 rounded-xl shadow-lg border border-red-400 hover:bg-red-600 transition-all flex items-center gap-2"
+                            >
+                                <X size={16} />
+                                STOP
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Google-style Re-center Button */}
+            <AnimatePresence>
+                {isNavigating && !isAutoCentering && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 20 }}
+                        className="absolute bottom-32 md:bottom-40 left-1/2 -translate-x-1/2 z-50 pointer-events-none"
+                    >
                         <button
                             onClick={() => {
-                                setIsNavigating(false);
-                                if (watchIdRef.current !== null) {
-                                    navigator.geolocation.clearWatch(watchIdRef.current);
-                                    watchIdRef.current = null;
+                                setIsAutoCentering(true);
+                                if (userLocation) {
+                                    isProgrammaticMove.current = true;
+                                    mapRef.current?.flyTo({
+                                        center: [userLocation.lng, userLocation.lat],
+                                        zoom: 19,
+                                        pitch: 75,
+                                        duration: 1500,
+                                        essential: true
+                                    });
+                                    setTimeout(() => { isProgrammaticMove.current = false; }, 1600);
                                 }
-                                mapRef.current?.easeTo({ pitch: 45, zoom: 15, duration: 1500 });
                             }}
-                            className="bg-red-500 text-white font-bold py-2 px-4 rounded-xl shadow-lg border border-red-400 hover:bg-red-600 transition-all"
+                            className="pointer-events-auto bg-black/60 backdrop-blur-2xl text-white font-black py-3 px-8 rounded-full border border-primary/50 shadow-[0_0_40px_rgba(14,165,233,0.4)] flex items-center gap-3 hover:bg-black/80 hover:border-primary transition-all group scale-110"
                         >
-                            END
+                            <div className="relative">
+                                <div className="absolute inset-0 bg-primary/40 blur-md rounded-full animate-pulse" />
+                                <NavigationIcon size={20} className="text-primary relative z-10 rotate-45" />
+                            </div>
+                            <span className="tracking-widest uppercase text-xs">RE-CENTER</span>
                         </button>
                     </motion.div>
                 )}
@@ -656,23 +747,31 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                             <button
                                 onClick={async () => {
                                     if (!mapRef.current || !userLocation) return;
-
                                     try {
-                                        const query = await fetch(
-                                            `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${userLocation.lng},${userLocation.lat};${selectedBusiness.gpsCoordinates.lng},${selectedBusiness.gpsCoordinates.lat}?steps=true&geometries=geojson&access_token=${MAPBOX_TOKEN}`,
-                                            { method: 'GET' }
-                                        );
-                                        const json = await query.json();
-                                        const data = json.routes[0];
-                                        const route = data.geometry.coordinates;
-                                        const geojson = {
-                                            type: 'Feature' as const,
-                                            properties: {},
-                                            geometry: {
-                                                type: 'LineString' as const,
-                                                coordinates: route
-                                            }
-                                        };
+                                         const query = await fetch(
+                                             `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${userLocation.lng},${userLocation.lat};${selectedBusiness.gpsCoordinates.lng},${selectedBusiness.gpsCoordinates.lat}?steps=true&geometries=geojson&annotations=congestion&access_token=${MAPBOX_TOKEN}`,
+                                             { method: 'GET' }
+                                         );
+                                         let json = await query.json();
+                                         if (!json || !json.routes || json.routes.length === 0) {
+                                             console.warn("Traffic route failed, trying standard driving...");
+                                             const fallbackQuery = await fetch(
+                                                 `https://api.mapbox.com/directions/v5/mapbox/driving/${userLocation.lng},${userLocation.lat};${selectedBusiness.gpsCoordinates.lng},${selectedBusiness.gpsCoordinates.lat}?steps=true&geometries=geojson&access_token=${MAPBOX_TOKEN}`,
+                                                 { method: 'GET' }
+                                             );
+                                             json = await fallbackQuery.json();
+                                         }
+
+                                         if (!json || !json.routes || json.routes.length === 0) {
+                                             alert("No route found for this destination.");
+                                             console.error("Mapbox Error:", json);
+                                             return;
+                                         }
+                                         const data = json.routes[0];
+                                         const userCoord = [userLocation.lng, userLocation.lat] as [number, number];
+                                         const rawRoute = data.geometry.coordinates;
+                                         // Prepend exact user GPS to the snapped road route
+                                         const route = [userCoord, ...rawRoute];
 
                                         setRouteInfo({
                                             distance: data.distance / 1000,
@@ -693,54 +792,95 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                             startMarkerRef.current.remove();
                                             startMarkerRef.current = null;
                                         }
-
                                         const startCoord = route[0];
-                                        const nextCoord = route[1];
-                                        const bearing = nextCoord ? (Math.atan2(nextCoord[0] - startCoord[0], nextCoord[1] - startCoord[1]) * 180 / Math.PI) : 0;
+                                         const nextCoord = route[1] || route[0];
+                                         // Correct bearing math
+                                         const bearing = nextCoord ? (Math.atan2(nextCoord[0] - startCoord[0], nextCoord[1] - startCoord[1]) * 180 / Math.PI) : 0;
+ 
+                                         const startEl = document.createElement("div");
+                                         startEl.className = "navigation-vehicle-marker";
+                                         startEl.style.zIndex = "1000";
+                                         startEl.innerHTML = `
+                                             <div style="transform: rotate(${bearing}deg); filter: drop-shadow(0 0 15px rgba(14,165,233,0.8)); transition: transform 0.3s ease-out;">
+                                                 <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                     <path d="M12 2L19 21L12 17L5 21L12 2Z" fill="#0ea5e9" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+                                                     <circle cx="12" cy="14" r="2" fill="white" opacity="0.5"/>
+                                                 </svg>
+                                             </div>
+                                         `;
+                                         startMarkerRef.current = new mapboxgl.Marker({ element: startEl, rotationAlignment: 'map' }).setLngLat(startCoord).addTo(map);
 
-                                        const startEl = document.createElement("div");
-                                        startEl.className = "start-location-arrow";
-                                        startEl.innerHTML = `
-                                            <div style="transform: rotate(${bearing}deg); filter: drop-shadow(0 0 8px #0ea5e9);">
-                                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                    <path d="M12 3L20 21L12 17L4 21L12 3Z" fill="#0ea5e9" stroke="white" stroke-width="1" stroke-linejoin="round"/>
-                                                </svg>
-                                            </div>
-                                        `;
-                                        startMarkerRef.current = new mapboxgl.Marker(startEl).setLngLat(startCoord).addTo(map);
+                                         // Prepare traffic-aware geojson
+                                         const rawCongestion = data.legs[0].annotation?.congestion || [];
+                                         // Prepend 'unknown' or 'low' for the segment from home to road
+                                         const congestion = ['low', ...rawCongestion];
+                                         
+                                         const features = [];
+                                         if (congestion && congestion.length > 0) {
+                                             for (let i = 0; i < route.length - 1; i++) {
+                                                 features.push({
+                                                     type: 'Feature',
+                                                     geometry: {
+                                                         type: 'LineString',
+                                                         coordinates: [route[i], route[i+1]]
+                                                     },
+                                                     properties: {
+                                                         congestion: congestion[i] || 'unknown'
+                                                     }
+                                                 });
+                                             }
+                                         }
+ 
+                                         map.addSource('route', {
+                                             type: 'geojson',
+                                             data: {
+                                                 type: 'FeatureCollection',
+                                                 features: features as any
+                                             }
+                                         });
 
-                                        map.addSource('route', {
-                                            type: 'geojson',
-                                            lineMetrics: true,
-                                            data: geojson
-                                        });
-
-                                        // Layer 1: Outer Glow (wide, fuzzy)
+                                        // Layer 1: Outer Glow (Traffic Colored)
                                         map.addLayer({
                                             id: 'route-glow',
                                             type: 'line',
                                             source: 'route',
                                             layout: { 'line-join': 'round', 'line-cap': 'round' },
                                             paint: {
-                                                'line-color': '#0ea5e9',
-                                                'line-width': 12,
-                                                'line-blur': 8,
-                                                'line-opacity': 0.4
+                                                'line-color': [
+                                                    'match',
+                                                    ['get', 'congestion'],
+                                                    'low', '#22c55e',
+                                                    'moderate', '#eab308',
+                                                    'heavy', '#f97316',
+                                                    'severe', '#ef4444',
+                                                    '#0ea5e9' // default
+                                                ],
+                                                'line-width': 16,
+                                                'line-blur': 12,
+                                                'line-opacity': 0.25
                                             }
                                         });
 
-                                        // Layer 2: Core Line (solid)
-                                        map.addLayer({
-                                            id: 'route-line',
-                                            type: 'line',
-                                            source: 'route',
-                                            layout: { 'line-join': 'round', 'line-cap': 'round' },
-                                            paint: {
-                                                'line-color': '#38bdf8',
-                                                'line-width': 4,
-                                                'line-opacity': 0.9
-                                            }
-                                        });
+                                        // Layer 2: Core Line (Traffic Colored)
+                                         map.addLayer({
+                                             id: 'route-line',
+                                             type: 'line',
+                                             source: 'route',
+                                             layout: { 'line-join': 'round', 'line-cap': 'round' },
+                                             paint: {
+                                                 'line-color': [
+                                                     'match',
+                                                     ['get', 'congestion'],
+                                                     'low', '#22c55e',
+                                                     'moderate', '#eab308',
+                                                     'heavy', '#f97316',
+                                                     'severe', '#ef4444',
+                                                     '#38bdf8' // default
+                                                 ],
+                                                 'line-width': 6,
+                                                 'line-opacity': 1
+                                             }
+                                         });
 
                                         // Layer 3: Moving Particles (dashed line on top)
                                         map.addLayer({
@@ -846,16 +986,29 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                         const lng = pos.coords.longitude;
                                                         const heading = pos.coords.heading;
                                                         setUserLocation({ lat, lng });
-                                                        
-                                                        // Animate map smoothly as they move
-                                                        mapRef.current?.easeTo({
-                                                            center: [lng, lat],
-                                                            bearing: heading !== null && !isNaN(heading) ? heading : mapRef.current.getBearing(),
-                                                            pitch: 70,
-                                                            zoom: 18.5,
-                                                            duration: 1000,
-                                                            easing: (t) => t
-                                                        });
+                                                                                          // Animate map smoothly as they move
+                                                         // Animate map smoothly as they move
+                                                         if (autoCenteringRef.current) {
+                                                             isProgrammaticMove.current = true;
+                                                             mapRef.current?.easeTo({
+                                                                 center: [lng, lat],
+                                                                 bearing: heading !== null && !isNaN(heading) ? heading : mapRef.current.getBearing(),
+                                                                 pitch: 75,
+                                                                 zoom: 19,
+                                                                 duration: 1000,
+                                                                 easing: (t) => t
+                                                             });
+                                                             setTimeout(() => { isProgrammaticMove.current = false; }, 1100);
+                                                         }
+                                                         
+                                                         // Always update arrow position and bearing
+                                                         if (startMarkerRef.current) {
+                                                             startMarkerRef.current.setLngLat([lng, lat]);
+                                                             const arrowDiv = startMarkerRef.current.getElement().querySelector('div');
+                                                             if (arrowDiv && heading !== null && !isNaN(heading)) {
+                                                                 arrowDiv.style.transform = `rotate(${heading}deg)`;
+                                                             }
+                                                         }
                                                     },
                                                     (err) => console.log("Watch pos err:", err),
                                                     { enableHighAccuracy: true, maximumAge: 0 }

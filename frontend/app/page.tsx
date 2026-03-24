@@ -30,8 +30,9 @@ export default function Home() {
             <DiscoverSellers />
             <MissionDigitalBharat />
             <UpcomingFeatures />
-            <FAQSection />
+           
             <CommunityLeader />
+             <FAQSection />
             <Testimonial />
             <Footer />
         </div>

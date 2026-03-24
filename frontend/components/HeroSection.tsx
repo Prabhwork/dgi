@@ -227,30 +227,23 @@ export default function HeroSection() {
             }
         }
 
-        // 2. Try to geocode the location part (or the whole query if it might be a location)
-        const geocodeTarget = location || query;
-        try {
-            const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(geocodeTarget)}.json?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}&types=region,postcode,district,place,locality,neighborhood`);
-            const data = await res.json();
-            
-            if (data.features && data.features.length > 0) {
-                const bestMatch = data.features[0];
-                // If the match is very high relevance, we assume it's a location intent
-                if (bestMatch.relevance > 0.85) {
-                    lat = bestMatch.center[1].toString();
-                    lng = bestMatch.center[0].toString();
-                    
-                    // If we didn't have a split query, but the whole query was a location,
-                    // we might want to keep the query empty or keep it as is.
-                    // Let's say: if user types "Ludhiana", query="Ludhiana", location="Ludhiana".
-                    // The search page will find "Ludhiana" businesses NEAR Ludhiana.
-                    if (!location) {
-                        location = query;
+        // 2. Try to geocode the location part ONLY IF provided
+        if (location) {
+            try {
+                const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(location)}.json?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}&types=region,postcode,district,place,locality,neighborhood`);
+                const data = await res.json();
+                
+                if (data.features && data.features.length > 0) {
+                    const bestMatch = data.features[0];
+                    // If the match is very high relevance, we assume it's a valid location
+                    if (bestMatch.relevance > 0.85) {
+                        lat = bestMatch.center[1].toString();
+                        lng = bestMatch.center[0].toString();
                     }
                 }
+            } catch (err) {
+                console.error("Geocoding failed:", err);
             }
-        } catch (err) {
-            console.error("Geocoding failed:", err);
         }
 
         const params = new URLSearchParams();
@@ -279,12 +272,10 @@ export default function HeroSection() {
 
                     try {
                         const response = await fetch(
-                            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`
+                            `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}&types=place,locality`
                         );
                         const data = await response.json();
-                        // Extract city/town/village
-                        const address = data.address;
-                        const locationName = address.city || address.town || address.village || address.state || "Detected Location";
+                        const locationName = data.features && data.features[0] ? data.features[0].text : "Detected Location";
                         setDetectedLocation(locationName);
                     } catch (err) {
                         console.error("Auto-location name fetch failed:", err);

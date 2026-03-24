@@ -177,21 +177,21 @@ function SearchResults() {
             }
         }
 
-        // 2. Try to geocode the location part (or whole query if suspected city)
-        const geocodeTarget = location || query;
-        try {
-            const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(geocodeTarget)}.json?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}&limit=1&types=region,postcode,district,place,locality,neighborhood`);
-            const data = await res.json();
-            if (data.features && data.features.length > 0) {
-                const bestMatch = data.features[0];
-                if (bestMatch.relevance > 0.85) {
-                    latToUse = bestMatch.center[1].toString();
-                    lngToUse = bestMatch.center[0].toString();
-                    if (!location) location = query;
+        // 2. Try to geocode the location part ONLY IF provided
+        if (location) {
+            try {
+                const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(location)}.json?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}&limit=1&types=region,postcode,district,place,locality,neighborhood`);
+                const data = await res.json();
+                if (data.features && data.features.length > 0) {
+                    const bestMatch = data.features[0];
+                    if (bestMatch.relevance > 0.85) {
+                        latToUse = bestMatch.center[1].toString();
+                        lngToUse = bestMatch.center[0].toString();
+                    }
                 }
+            } catch (err) {
+                console.error("Geocoding failed in SearchPage submit:", err);
             }
-        } catch (err) {
-            console.error("Geocoding failed in SearchPage submit:", err);
         }
 
         const params = new URLSearchParams();
