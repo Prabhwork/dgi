@@ -162,7 +162,7 @@ export default function PageDetailsPage() {
 
         if (detail.image) {
             const baseUrl = (process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '');
-            const imagePath = detail.image.startsWith('uploads') ? detail.image : 'uploads/' + detail.image;
+            const imagePath = (detail.image || '').startsWith('uploads') ? detail.image : 'uploads/' + detail.image;
             setImagePreview(`${baseUrl}/${imagePath}`);
         }
         setIsModalOpen(true);

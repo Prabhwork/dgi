@@ -152,7 +152,7 @@ export default function UpcomingCategoriesPage() {
 
         if (item.image && item.image !== 'no-photo.jpg') {
             const baseUrl = (process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '');
-            const imagePath = item.image.startsWith('uploads') ? item.image : 'uploads/' + item.image;
+            const imagePath = (item.image || '').startsWith('uploads') ? item.image : 'uploads/' + item.image;
             setImagePreview(`${baseUrl}/${imagePath}`);
         }
         setIsModalOpen(true);
