@@ -1254,7 +1254,8 @@ function RegisterPageContent() {
 
                 <div className="glass-strong p-8 rounded-3xl border border-white/10 space-y-6">
                     <p className="text-xl text-white/70 leading-relaxed">
-                        Welcome to the DBI Community! Your membership application has been successfully submitted to our verification board.
+                        Welcome to the DBI Community! Your membership application has been successfully submitted. 
+                        <span className="block mt-2 text-primary font-bold">Please Note: Your business listing will be visible to the public only after successful admin approval.</span>
                     </p>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">

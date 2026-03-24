@@ -119,6 +119,11 @@ exports.registerBusiness = async (req, res, next) => {
             }
         }
 
+        // Explicitly set as pending for initial review
+        businessData.approvalStatus = 'pending';
+        businessData.rejectionReason = '';
+        businessData.isVerified = false;
+
         const business = await Business.create(businessData);
         
         // Send registration success email
@@ -400,7 +405,8 @@ exports.searchBusinesses = async (req, res, next) => {
                 { businessName: { $regex: q, $options: 'i' } },
                 { brandName: { $regex: q, $options: 'i' } },
                 { description: { $regex: q, $options: 'i' } },
-                { keywords: { $regex: q, $options: 'i' } }
+                { keywords: { $regex: q, $options: 'i' } },
+                { subcategory: { $regex: q, $options: 'i' } }
             ];
         }
 
@@ -453,6 +459,13 @@ exports.getBusinessById = async (req, res, next) => {
         if (!business) {
             return res.status(404).json({ success: false, error: 'Business not found' });
         }
+
+        // Approval check for public route access (identified by lack of auth/admin context or specific path)
+        // If the request URL contains '/public/', we enforce the check.
+        if (req.originalUrl.includes('/public/') && business.approvalStatus !== 'approved') {
+            return res.status(403).json({ success: false, error: 'Business profile is pending approval and currently not visible.' });
+        }
+
         res.status(200).json({ success: true, data: business });
     } catch (err) {
         res.status(400).json({ success: false, error: err.message });
