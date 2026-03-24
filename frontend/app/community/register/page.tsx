@@ -413,10 +413,10 @@ function RegisterPageContent() {
                 return;
             }
 
+            console.log("Order Data received:", orderData);
+
             const options = {
                 key: orderData.keyId,
-                amount: orderData.amount * 100, // in paise
-                currency: orderData.currency,
                 name: "Digital Book Of India",
                 description: "Business Registration Fee",
                 order_id: orderData.orderId,
