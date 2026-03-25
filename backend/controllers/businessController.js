@@ -415,7 +415,7 @@ exports.searchBusinesses = async (req, res, next) => {
             query.businessCategory = category;
         }
 
-        let businesses = await Business.find(query);
+        let businesses = await Business.find(query).lean();
 
         // Location filtering (Simple mathematical proximity if no 2dsphere index)
         if (lat && lng) {
@@ -436,12 +436,12 @@ exports.searchBusinesses = async (req, res, next) => {
                 const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
                 const d = R * c;
                 
-                b.distanceKm = d; // Attach distance to object
+                b.distanceKm = d; // Return raw straight-line distance for backend
                 return d <= radius;
             });
 
             // Sort by distance
-            businesses.sort((a, b) => a.distance - b.distance);
+            businesses.sort((a, b) => a.distanceKm - b.distanceKm);
         }
 
         res.status(200).json({ success: true, count: businesses.length, data: businesses });

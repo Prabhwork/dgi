@@ -272,9 +272,10 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
         });
 
         const handleInteraction = () => {
-            if (isNavigating && autoCenteringRef.current) {
+            if (autoCenteringRef.current) {
                 console.log("Interaction detected, pausing auto-centering");
                 setIsAutoCentering(false);
+                autoCenteringRef.current = false;
             }
         };
 
@@ -282,13 +283,10 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
         map.on("zoomstart", handleInteraction);
         map.on("pitchstart", handleInteraction);
         map.on("rotate", handleInteraction);
-        map.on("touchstart", handleInteraction); // Direct map touch
 
         const container = mapContainer.current;
         if (container) {
-            // Using capture: true to ensure we catch events before Mapbox might consume them
-            container.addEventListener('mousedown', handleInteraction, { capture: true, passive: true });
-            container.addEventListener('touchstart', handleInteraction, { capture: true, passive: true });
+            // Only wheel is considered a "definite" intentional non-drag interaction for pausing
             container.addEventListener('wheel', handleInteraction, { capture: true, passive: true });
         }
 
@@ -452,7 +450,6 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
         const fetchSearchResults = async () => {
             setLoading(true);
             try {
-                // Global search with user location for distance calculation
                 let url = `${API}/business/search?q=${searchQuery}`;
                 if (userLocation) {
                     url += `&lat=${userLocation.lat}&lng=${userLocation.lng}`;
@@ -460,7 +457,33 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                 const res = await fetch(url);
                 const data = await res.json();
                 if (data.success) {
-                    setSearchResults(data.data);
+                    const results = data.data;
+                    setSearchResults(results);
+
+                    // Matrix API for exact road distances
+                    if (userLocation && results.length > 0) {
+                        const coordinates = [
+                            `${userLocation.lng},${userLocation.lat}`,
+                            ...results.map((b: any) => `${b.gpsCoordinates.lng},${b.gpsCoordinates.lat}`)
+                        ].join(';');
+
+                        // Use mapbox/driving-traffic profile for both to ensure consistency
+                        const matrixUrl = `https://api.mapbox.com/directions-matrix/v1/mapbox/driving-traffic/${coordinates}?sources=0&annotations=distance&access_token=${MAPBOX_TOKEN}`;
+                        
+                        console.log("Matrix API Request:", matrixUrl);
+                        const matrixRes = await fetch(matrixUrl);
+                        const matrixData = await matrixRes.json();
+                        console.log("Matrix API Response:", matrixData);
+                        
+                        if (matrixData.code === 'Ok' && matrixData.distances) {
+                            const updatedResults = results.map((b: any, index: number) => ({
+                                ...b,
+                                distanceKm: (matrixData.distances[0][index + 1] / 1000) // Convert meters to km
+                            }));
+                            console.log("Updated Search Results with Matrix:", updatedResults);
+                            setSearchResults(updatedResults);
+                        }
+                    }
                 }
             } catch (e) {
                 console.error("Search failed:", e);
@@ -471,7 +494,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
 
         const timer = setTimeout(fetchSearchResults, 300);
         return () => clearTimeout(timer);
-    }, [searchQuery, API]);
+    }, [searchQuery, API, userLocation]);
 
     useEffect(() => {
         // Handle initial selection from URL ID - DRY: Only once
@@ -577,40 +600,9 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                 )}
             </AnimatePresence>
 
-            {/* Google-style Re-center Button */}
+
+            {/* Google-style Re-center Button - REMOVED, moving inside card */}
             <AnimatePresence>
-                {isNavigating && !isAutoCentering && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 20 }}
-                        className="absolute bottom-32 md:bottom-40 left-1/2 -translate-x-1/2 z-50 pointer-events-none"
-                    >
-                        <button
-                            onClick={() => {
-                                setIsAutoCentering(true);
-                                if (userLocation) {
-                                    isProgrammaticMove.current = true;
-                                    mapRef.current?.flyTo({
-                                        center: [userLocation.lng, userLocation.lat],
-                                        zoom: 19,
-                                        pitch: 75,
-                                        duration: 1500,
-                                        essential: true
-                                    });
-                                    setTimeout(() => { isProgrammaticMove.current = false; }, 1600);
-                                }
-                            }}
-                            className="pointer-events-auto bg-black/60 backdrop-blur-2xl text-white font-black py-3 px-8 rounded-full border border-primary/50 shadow-[0_0_40px_rgba(14,165,233,0.4)] flex items-center gap-3 hover:bg-black/80 hover:border-primary transition-all group scale-110"
-                        >
-                            <div className="relative">
-                                <div className="absolute inset-0 bg-primary/40 blur-md rounded-full animate-pulse" />
-                                <NavigationIcon size={20} className="text-primary relative z-10 rotate-45" />
-                            </div>
-                            <span className="tracking-widest uppercase text-xs">RE-CENTER</span>
-                        </button>
-                    </motion.div>
-                )}
             </AnimatePresence>
 
             {/* Top Navigation Bar */}
@@ -669,8 +661,8 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                 <p className="text-white/50 text-xs truncate max-w-[90%]">{biz.registeredOfficeAddress}</p>
                                             </div>
                                             {biz.distanceKm && (
-                                                <span className="text-primary/80 text-xs font-semibold whitespace-nowrap bg-primary/10 px-2 py-1 rounded-md">
-                                                    {biz.distanceKm.toFixed(1)} km
+                                                <span className="text-primary font-black whitespace-nowrap bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/30 shadow-[0_0_15px_rgba(14,165,233,0.2)] text-[11px]">
+                                                    {biz.distanceKm.toFixed(1)} KM
                                                 </span>
                                             )}
                                         </button>
@@ -952,89 +944,16 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
             {/* Route Info Card */}
             <AnimatePresence>
                 {routeInfo && !selectedBusiness && (
-                    <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }} className="absolute bottom-6 md:bottom-8 left-0 right-0 z-20 px-4 flex justify-center pointer-events-none">
-                        <div className="relative bg-[#020617]/40 backdrop-blur-3xl border border-primary/40 rounded-[2.5rem] p-6 shadow-[0_20px_80px_rgba(14,165,233,0.3)] w-full max-w-sm pointer-events-auto flex items-center justify-between overflow-hidden">
-                            {/* Animated Scanner Background Effect */}
+                    <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }} className="absolute bottom-6 md:bottom-10 left-0 right-0 z-20 px-4 flex justify-center pointer-events-none">
+                        <div className="relative bg-[#020617]/90 backdrop-blur-3xl border border-primary/40 rounded-[2rem] p-6 shadow-[0_20px_80px_rgba(14,165,233,0.4)] w-full max-w-sm pointer-events-auto overflow-hidden">
+                            {/* Animated Scanner Effect */}
                             <motion.div 
                                 animate={{ y: ['100%', '-100%'] }} 
-                                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                                className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/10 to-transparent h-1/2 pointer-events-none"
+                                transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                                className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent h-1/2 pointer-events-none"
                             />
 
-                            <div className="flex flex-col relative z-10">
-                                <span className="text-primary/80 text-[10px] md:text-xs font-black uppercase tracking-[0.3em] mb-2 flex items-center gap-2">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                                    Scanning Destination
-                                </span>
-                                <h4 className="text-white/60 text-[10px] md:text-xs font-bold uppercase tracking-wider mb-1">Route to {routeInfo.businessName}</h4>
-                                <div className="flex items-baseline gap-2">
-                                    <span className="text-white font-black text-2xl md:text-3xl tracking-tighter">
-                                        {routeInfo.duration > 60 ? `${Math.floor(routeInfo.duration/60)}h ${Math.round(routeInfo.duration%60)}m` : `${Math.round(routeInfo.duration)} MIN`}
-                                    </span>
-                                    <span className="text-primary/60 text-xs font-bold tracking-widest uppercase">({routeInfo.distance.toFixed(1)} KM)</span>
-                                </div>
-                                {!isNavigating && (
-                                    <button
-                                        onClick={() => {
-                                            setIsNavigating(true);
-                                            // Get route bearing again for precise alignment
-                                            const map = mapRef.current!;
-                                            let bearing = 0;
-                                            if (startMarkerRef.current) {
-                                                const transform = startMarkerRef.current.getElement().querySelector('div')?.style.transform;
-                                                const match = transform?.match(/rotate\((.*)deg\)/);
-                                                if (match && match[1]) bearing = parseFloat(match[1]);
-                                            }
-                                            
-                                            map.flyTo({ 
-                                                center: [userLocation!.lng, userLocation!.lat], 
-                                                zoom: 19, 
-                                                pitch: 75, 
-                                                bearing: bearing,
-                                                duration: 2000 
-                                            });
-                                            if (navigator.geolocation) {
-                                                watchIdRef.current = navigator.geolocation.watchPosition(
-                                                    (pos) => {
-                                                        const lat = pos.coords.latitude;
-                                                        const lng = pos.coords.longitude;
-                                                        const heading = pos.coords.heading;
-                                                        setUserLocation({ lat, lng });
-                                                                                          // Animate map smoothly as they move
-                                                         // Animate map smoothly as they move
-                                                         if (autoCenteringRef.current) {
-                                                             isProgrammaticMove.current = true;
-                                                             mapRef.current?.easeTo({
-                                                                 center: [lng, lat],
-                                                                 bearing: heading !== null && !isNaN(heading) ? heading : mapRef.current.getBearing(),
-                                                                 pitch: 75,
-                                                                 zoom: 19,
-                                                                 duration: 1000,
-                                                                 easing: (t) => t
-                                                             });
-                                                             setTimeout(() => { isProgrammaticMove.current = false; }, 1100);
-                                                         }
-                                                         
-                                                         // Always update arrow position and bearing
-                                                         if (startMarkerRef.current) {
-                                                             startMarkerRef.current.setLngLat([lng, lat]);
-                                                             const arrowDiv = startMarkerRef.current.getElement().querySelector('div');
-                                                             if (arrowDiv && heading !== null && !isNaN(heading)) {
-                                                                 arrowDiv.style.transform = `rotate(${heading}deg)`;
-                                                             }
-                                                         }
-                                                    },
-                                                    (err) => console.log("Watch pos err:", err),
-                                                    { enableHighAccuracy: true, maximumAge: 0 }
-                                                );
-                                            }
-                                        }}
-                                        className="mt-4 bg-primary text-white font-bold py-2 px-6 rounded-xl hover:bg-primary/80 transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(59,130,246,0.4)]"
-                                    >
-                                        <NavigationIcon size={16} /> START NAV
-                                    </button>
-                                )}
-                            </div>
+                            {/* Close Button */}
                             <button 
                                 onClick={() => {
                                     setRouteInfo(null);
@@ -1054,10 +973,150 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                         mapRef.current?.flyTo({ center: [userLocation.lng, userLocation.lat], zoom: 15, pitch: 45, duration: 2000 });
                                     }
                                 }}
-                                className="w-10 h-10 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 hover:text-white flex items-center justify-center transition-all flex-shrink-0 z-10"
+                                className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/5 border border-white/10 text-white/40 hover:bg-red-500/20 hover:text-red-400 flex items-center justify-center transition-all z-20"
                             >
                                 <X size={16} />
                             </button>
+
+                            <div className="flex flex-col relative z-10 w-full">
+                                {/* Route Metadata - Fixed height container to prevent jumps */}
+                                <div className="min-h-[85px] mb-4">
+                                    <span className="text-primary text-[10px] font-black uppercase tracking-[0.2em] mb-1.5 flex items-center gap-2">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-primary animate-ping" />
+                                        {isNavigating ? 'LIVE GUIDANCE' : 'ROUTE READY'}
+                                    </span>
+                                    <h4 className="text-white/60 text-xs font-bold uppercase tracking-wider mb-2 truncate pr-10">
+                                        {routeInfo.businessName}
+                                    </h4>
+                                    
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-white font-black text-3xl tracking-tighter">
+                                            {routeInfo.duration > 60 ? `${Math.floor(routeInfo.duration/60)}h ${Math.round(routeInfo.duration%60)}m` : `${Math.round(routeInfo.duration)} MIN`}
+                                        </span>
+                                        <div className="h-6 w-px bg-white/10" />
+                                        <div className="flex flex-col">
+                                            <span className="text-primary/60 text-[10px] font-black tracking-widest uppercase mb-0.5">ROAD ROUTE</span>
+                                            <span className="text-primary font-black text-sm tracking-widest uppercase">
+                                                {routeInfo.distance.toFixed(1)} KM
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Action Buttons Container */}
+                                <div className="space-y-3 pt-4 border-t border-white/5">
+                                    {!isNavigating ? (
+                                        <button
+                                            onClick={() => {
+                                                setIsNavigating(true);
+                                                const map = mapRef.current!;
+                                                let bearing = 0;
+                                                if (startMarkerRef.current) {
+                                                    const transform = startMarkerRef.current.getElement().querySelector('div')?.style.transform;
+                                                    const match = transform?.match(/rotate\((.*)deg\)/);
+                                                    if (match && match[1]) bearing = parseFloat(match[1]);
+                                                }
+                                                
+                                                map.flyTo({ 
+                                                    center: [userLocation!.lng, userLocation!.lat], 
+                                                    zoom: 18, 
+                                                    pitch: 75, 
+                                                    bearing: bearing,
+                                                    duration: 2000 
+                                                });
+                                                if (navigator.geolocation) {
+                                                    watchIdRef.current = navigator.geolocation.watchPosition(
+                                                        (pos) => {
+                                                            const lat = pos.coords.latitude;
+                                                            const lng = pos.coords.longitude;
+                                                            const heading = pos.coords.heading;
+                                                            setUserLocation({ lat, lng });
+
+                                                            if (autoCenteringRef.current) {
+                                                                isProgrammaticMove.current = true;
+                                                                mapRef.current?.easeTo({
+                                                                    center: [lng, lat],
+                                                                    bearing: (heading !== null && !isNaN(heading)) ? heading : mapRef.current.getBearing(),
+                                                                    pitch: 75,
+                                                                    zoom: 18,
+                                                                    duration: 1000,
+                                                                    easing: (t) => t
+                                                                });
+                                                                setTimeout(() => { isProgrammaticMove.current = false; }, 1100);
+                                                            }
+                                                            
+                                                            if (startMarkerRef.current) {
+                                                                startMarkerRef.current.setLngLat([lng, lat]);
+                                                                const arrowDiv = startMarkerRef.current.getElement().querySelector('div');
+                                                                if (arrowDiv && heading !== null && !isNaN(heading)) {
+                                                                    arrowDiv.style.transform = `rotate(${heading}deg)`;
+                                                                }
+                                                            }
+                                                        },
+                                                        (err) => console.log("Watch pos err:", err),
+                                                        { enableHighAccuracy: true, maximumAge: 0 }
+                                                    );
+                                                }
+                                            }}
+                                            className="bg-primary text-white font-black py-4 px-6 rounded-2xl hover:bg-primary/90 transition-all flex items-center justify-center gap-3 shadow-[0_10px_30px_rgba(59,130,246,0.3)] w-full text-xs uppercase tracking-widest"
+                                        >
+                                            <NavigationIcon size={18} fill="currentColor" /> START NAVIGATION
+                                        </button>
+                                    ) : (
+                                        <div className="relative min-h-[52px]">
+                                            <AnimatePresence mode="wait">
+                                                {!isAutoCentering && (
+                                                    <motion.button
+                                                        key="recenter"
+                                                        initial={{ opacity: 0 }}
+                                                        animate={{ opacity: 1 }}
+                                                        exit={{ opacity: 0 }}
+                                                        onClick={() => {
+                                                            setIsAutoCentering(true);
+                                                            if (userLocation) {
+                                                                isProgrammaticMove.current = true;
+                                                                mapRef.current?.flyTo({
+                                                                    center: [userLocation.lng, userLocation.lat],
+                                                                    zoom: 18,
+                                                                    pitch: 75,
+                                                                    duration: 1500,
+                                                                    essential: true
+                                                                });
+                                                                setTimeout(() => { isProgrammaticMove.current = false; }, 1600);
+                                                            }
+                                                        }}
+                                                        className="bg-blue-600 text-white font-black py-4 px-6 rounded-2xl hover:bg-blue-700 transition-all flex items-center justify-center gap-3 w-full shadow-[0_10px_30px_rgba(37,99,235,0.3)] text-xs uppercase tracking-widest"
+                                                    >
+                                                        <NavigationIcon size={18} className="rotate-45" /> RE-CENTER VIEW
+                                                    </motion.button>
+                                                )}
+                                            </AnimatePresence>
+                                        </div>
+                                    )}
+                                    
+                                    {!isNavigating && !isAutoCentering && (
+                                        <button
+                                            onClick={() => {
+                                                setIsAutoCentering(true);
+                                                if (userLocation) {
+                                                    isProgrammaticMove.current = true;
+                                                    mapRef.current?.flyTo({
+                                                        center: [userLocation.lng, userLocation.lat],
+                                                        zoom: 15,
+                                                        pitch: 45,
+                                                        duration: 1500,
+                                                        essential: true
+                                                    });
+                                                    setTimeout(() => { isProgrammaticMove.current = false; }, 1600);
+                                                }
+                                            }}
+                                            className="bg-white/5 border border-white/10 text-white/40 font-bold py-3 px-6 rounded-xl hover:bg-white/10 transition-all flex items-center justify-center gap-2 w-full text-[10px] uppercase tracking-wider"
+                                        >
+                                            <NavigationIcon size={12} className="rotate-45" /> RESET VIEW
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     </motion.div>
                 )}
