@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
     Building2, MapPin, Clock, ShieldCheck, Image as ImageIcon, Users,
     ChevronRight, ChevronLeft, Upload, CheckCircle2, AlertCircle, X, Map,
-    Loader2, CheckCircle, ExternalLink, Fingerprint, Plus
+    Loader2, CheckCircle, ExternalLink, Fingerprint, Plus, Search
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -95,6 +95,13 @@ function RegisterPageContent() {
     const [mainCategories, setMainCategories] = useState<{ _id: string, name: string }[]>([]);
     const [mainSubcategories, setMainSubcategories] = useState<{ _id: string, name: string }[]>([]);
     
+    // Google Categories Search State
+    const [googleCategories, setGoogleCategories] = useState<{ _id: string, name: string }[]>([]);
+    const [catSearchTerm, setCatSearchTerm] = useState("");
+    const [showCatSuggestions, setShowCatSuggestions] = useState(false);
+    const [isCatLoading, setIsCatLoading] = useState(false);
+    const catSuggestionRef = useRef<HTMLDivElement>(null);
+    
     // Keyword Suggestions State
     const [keywordInput, setKeywordInput] = useState("");
     const [keywordSuggestions, setKeywordSuggestions] = useState<{ text: string, type: string }[]>([]);
@@ -142,6 +149,13 @@ function RegisterPageContent() {
         }
     };
 
+    // Initialize search term when businessCategory changes (for update mode/auto-fill)
+    useEffect(() => {
+        if (formData.businessCategory && !catSearchTerm) {
+            setCatSearchTerm(formData.businessCategory);
+        }
+    }, [formData.businessCategory]);
+
     // Keyword debounced fetch (Reset to page 1)
     useEffect(() => {
         const timeoutId = setTimeout(() => {
@@ -156,10 +170,39 @@ function RegisterPageContent() {
             if (suggestionRef.current && !suggestionRef.current.contains(event.target as Node)) {
                 setShowKeywordSuggestions(false);
             }
+            if (catSuggestionRef.current && !catSuggestionRef.current.contains(event.target as Node)) {
+                setShowCatSuggestions(false);
+            }
         };
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
+
+    // Google Categories Debounced Fetch
+    useEffect(() => {
+        const fetchGoogleCats = async () => {
+            if (catSearchTerm.length < 1) { // 1 char instead of 2
+                setGoogleCategories([]);
+                return;
+            }
+            setIsCatLoading(true);
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api'; // 5001 as default
+            try {
+                const res = await fetch(`${API_URL}/google-categories?search=${encodeURIComponent(catSearchTerm)}&limit=15`);
+                const data = await res.json();
+                if (data.success) {
+                    setGoogleCategories(data.data);
+                }
+            } catch (err) {
+                console.error("Failed to fetch google categories:", err);
+            } finally {
+                setIsCatLoading(false);
+            }
+        };
+
+        const timeoutId = setTimeout(fetchGoogleCats, 400);
+        return () => clearTimeout(timeoutId);
+    }, [catSearchTerm]);
 
     // Keyword Logic
     const addKeyword = (keyword: string) => {
@@ -682,42 +725,105 @@ function RegisterPageContent() {
                             </div>
                             <div className="grid gap-2">
                                 <Label className="text-white/70">Business Category <span className="text-red-500">*</span></Label>
-                                <Select 
-                                    value={formData.isCustomCategory ? "OTHER" : formData.businessCategory} 
-                                    onValueChange={(val) => {
-                                        if (val === "OTHER") {
-                                            setFormData(prev => ({ ...prev, isCustomCategory: true, businessCategory: "", isCustomSubcategory: false, subcategory: [] }));
-                                        } else {
-                                            setFormData(prev => ({ ...prev, isCustomCategory: false, businessCategory: val, isCustomSubcategory: false, subcategory: [] }));
-                                        }
-                                    }}
-                                >
-                                    <SelectTrigger className="bg-slate-900/60 border-white/10 text-white focus:ring-primary/50">
-                                        <SelectValue placeholder="Select Category" />
-                                    </SelectTrigger>
-                                    <SelectContent side="bottom" avoidCollisions={false} className="bg-slate-900 border-white/10 text-white max-h-[300px]">
-                                        {mainCategories.map((cat) => (
-                                            <SelectItem key={cat._id} value={cat.name} className="hover:bg-white/5 focus:bg-white/10 cursor-pointer">
-                                                {cat.name}
-                                            </SelectItem>
-                                        ))}
-                                        <SelectItem value="OTHER" className="text-primary font-bold hover:bg-primary/5 focus:bg-primary/10 cursor-pointer">
-                                            + Add New Category
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                {formData.isCustomCategory && (
-                                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
-                                        <Input 
-                                            placeholder="Enter your custom category name" 
-                                            value={formData.customCategory} 
+                                
+                                <div className="relative" ref={catSuggestionRef}>
+                                    <div className="relative">
+                                        <Input
+                                            value={catSearchTerm}
                                             onChange={(e) => {
-                                                setFormData(prev => ({ ...prev, customCategory: e.target.value, businessCategory: e.target.value }));
+                                                setCatSearchTerm(e.target.value);
+                                                setShowCatSuggestions(true);
+                                                // Always sync to businessCategory so validation and custom mode work
+                                                setFormData(prev => ({ ...prev, businessCategory: e.target.value }));
                                             }}
-                                            className="mt-2 bg-primary/5 border-primary/20 text-white"
+                                            onFocus={() => setShowCatSuggestions(true)}
+                                            placeholder="Search from 4000+ Categories (e.g. Restaurants, Legal, Marketing)"
+                                            className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50 pr-10 h-12"
                                         />
-                                    </motion.div>
-                                )}
+                                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                            {isCatLoading ? <Loader2 className="w-4 h-4 animate-spin text-primary" /> : <Search className="w-4 h-4 text-white/30" />}
+                                        </div>
+                                    </div>
+
+                                    <AnimatePresence>
+                                        {showCatSuggestions && (catSearchTerm.length > 0 || mainCategories.length > 0) && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: -10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: -10 }}
+                                                className="absolute z-[100] w-full mt-2 bg-slate-900 border border-white/10 rounded-xl shadow-2xl backdrop-blur-xl max-h-[400px] overflow-y-auto custom-scrollbar overflow-x-hidden"
+                                            >
+                                                {/* Google Categories Section - MOVE TO TOP IF SEARCHING */}
+                                                {(googleCategories.length > 0 || isCatLoading) && (
+                                                    <div className="p-2 border-b border-white/5">
+                                                        <div className="px-3 py-1 text-[10px] font-black uppercase tracking-widest text-primary flex justify-between items-center">
+                                                            <span>Google Categories</span>
+                                                            {isCatLoading && <Loader2 className="w-3 h-3 animate-spin" />}
+                                                        </div>
+                                                        {googleCategories.map((cat) => (
+                                                            <div
+                                                                key={cat._id}
+                                                                onClick={() => {
+                                                                    setFormData(prev => ({ ...prev, isCustomCategory: false, businessCategory: cat.name, subcategory: [] }));
+                                                                    setCatSearchTerm(cat.name);
+                                                                    setShowCatSuggestions(false);
+                                                                }}
+                                                                className={`px-4 py-3 hover:bg-white/5 transition-colors cursor-pointer flex items-center gap-3 rounded-lg ${formData.businessCategory === cat.name ? 'bg-white/10' : ''}`}
+                                                            >
+                                                                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-all">
+                                                                    <Plus className="w-4 h-4" />
+                                                                </div>
+                                                                <span className="text-white font-medium">{cat.name}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+
+                                                {/* Popular / Main Categories Section */}
+                                                {(catSearchTerm === "" || mainCategories.some(c => c.name.toLowerCase().includes(catSearchTerm.toLowerCase()))) && (
+                                                    <div className="p-2">
+                                                        <div className="px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white/40">
+                                                            Popular Categories
+                                                        </div>
+                                                        {mainCategories
+                                                            .filter(c => c.name.toLowerCase().includes(catSearchTerm.toLowerCase()))
+                                                            .map((cat) => (
+                                                                <div
+                                                                    key={cat._id}
+                                                                    onClick={() => {
+                                                                        setFormData(prev => ({ ...prev, isCustomCategory: false, businessCategory: cat.name, subcategory: [] }));
+                                                                        setCatSearchTerm(cat.name);
+                                                                        setShowCatSuggestions(false);
+                                                                    }}
+                                                                    className={`px-4 py-3 hover:bg-white/5 transition-colors cursor-pointer flex items-center gap-3 rounded-lg group ${formData.businessCategory === cat.name ? 'bg-white/5' : ''}`}
+                                                                >
+                                                                    <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/40">
+                                                                        <CheckCircle className="w-4 h-4" />
+                                                                    </div>
+                                                                    <span className="text-white/80">{cat.name}</span>
+                                                                </div>
+                                                            ))}
+                                                    </div>
+                                                )}
+
+                                                {/* No Results Fallback */}
+                                                {!isCatLoading && catSearchTerm.length > 0 && googleCategories.length === 0 && !mainCategories.some(c => c.name.toLowerCase().includes(catSearchTerm.toLowerCase())) && (
+                                                    <div
+                                                        onClick={() => {
+                                                            setFormData(prev => ({ ...prev, isCustomCategory: true, businessCategory: catSearchTerm, subcategory: [] }));
+                                                            setShowCatSuggestions(false);
+                                                        }}
+                                                        className="p-6 text-center cursor-pointer hover:bg-primary/5 transition-colors"
+                                                    >
+                                                        <Plus className="w-8 h-8 text-primary mx-auto mb-2 opacity-40" />
+                                                        <p className="text-white/60 text-sm italic">"{catSearchTerm}" not found.</p>
+                                                        <p className="text-primary text-xs font-bold uppercase tracking-widest mt-1">Click to add as Custom Category</p>
+                                                    </div>
+                                                )}
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
                             </div>
 
                             <div className="space-y-4">
@@ -1326,11 +1432,12 @@ function RegisterPageContent() {
                                 <button
                                     type="button"
                                     onClick={() => (isUpdateMode || step.id < currentStep) && setCurrentStep(step.id)}
+                                    suppressHydrationWarning
                                     className={`relative w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-500 border-2 ${currentStep === step.id ? "bg-primary border-primary text-white scale-110 glow-sm" :
                                         currentStep > step.id ? "bg-primary/10 border-primary/50 text-primary backdrop-blur-md" : "bg-slate-900 border-white/20 text-white/40"
                                         }`}
                                 >
-                                    <step.icon size={16} className="sm:w-[18px] sm:h-[18px]" />
+                                    <step.icon size={16} className="sm:w-[18px] sm:h-[18px]" suppressHydrationWarning />
                                 </button>
                                 <span className={`text-[8px] sm:text-[10px] font-bold uppercase tracking-tighter sm:tracking-widest ${currentStep === step.id ? "text-primary" : "text-white/40"}`}>
                                     {step.title}

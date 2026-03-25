@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { apiFetch } from '@/lib/api';
 import { Edit2, Trash2, X, Check, Search, Filter } from 'lucide-react';
 
-interface MainCategory {
+interface ParentCategory {
     _id: string;
     name: string;
     isActive: boolean;
@@ -13,39 +13,43 @@ interface MainCategory {
 interface Subcategory {
     _id: string;
     name: string;
-    mainCategory: MainCategory | string;
+    category: ParentCategory | string;
     isActive: boolean;
 }
 
 export default function SubcategoriesPage() {
-    const [mainCategories, setMainCategories] = useState<MainCategory[]>([]);
+    const [categories, setCategories] = useState<ParentCategory[]>([]);
     const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
     const [loading, setLoading] = useState(true);
 
     // Search & Filter state
     const [searchTerm, setSearchTerm] = useState('');
-    const [filterMainCategory, setFilterMainCategory] = useState('');
+    const [filterCategory, setFilterCategory] = useState('');
 
     // Create Modal state
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [selectedMainCategoryId, setSelectedMainCategoryId] = useState('');
     const [newSubcategoryName, setNewSubcategoryName] = useState('');
+    const [catSearchQuery, setCatSearchQuery] = useState('');
+    const [showCatResults, setShowCatResults] = useState(false);
     const [error, setError] = useState('');
 
     // Edit Modal state
     const [editingSubcategory, setEditingSubcategory] = useState<Subcategory | null>(null);
     const [editName, setEditName] = useState('');
     const [editMainCategoryId, setEditMainCategoryId] = useState('');
+    const [editCatSearchQuery, setEditCatSearchQuery] = useState('');
+    const [showEditCatResults, setShowEditCatResults] = useState(false);
 
     const fetchInitialData = useCallback(async () => {
         setLoading(true);
         try {
-            const [mainCatsRes, subcatsRes] = await Promise.all([
-                apiFetch('/main-categories?limit=200'),
+            const [catsRes, subcatsRes] = await Promise.all([
+                apiFetch('/categories?limit=200'),
                 apiFetch('/subcategories')
             ]);
 
-            if (mainCatsRes.success) setMainCategories(mainCatsRes.data);
+            if (catsRes.success) setCategories(catsRes.data);
             if (subcatsRes.success) setSubcategories(subcatsRes.data);
         } catch (err) {
             console.error("Failed to fetch data", err);
@@ -72,7 +76,7 @@ export default function SubcategoriesPage() {
         }
 
         try {
-            const data = await apiFetch(`/main-categories/${selectedMainCategoryId}/subcategories`, {
+            const data = await apiFetch(`/categories/${selectedMainCategoryId}/subcategories`, {
                 method: 'POST',
                 body: JSON.stringify({ name: newSubcategoryName, description: newSubcategoryName })
             });
@@ -140,17 +144,19 @@ export default function SubcategoriesPage() {
     const openEditModal = (subcat: Subcategory) => {
         setEditingSubcategory(subcat);
         setEditName(subcat.name);
-        const parentId = typeof subcat.mainCategory === 'string' ? subcat.mainCategory : subcat.mainCategory._id;
+        const parentId = typeof subcat.category === 'string' ? subcat.category : subcat.category._id;
+        const parentName = typeof subcat.category === 'object' ? subcat.category.name : '';
         setEditMainCategoryId(parentId);
+        setEditCatSearchQuery(parentName);
     };
 
     // Filtered subcategories
     const filtered = subcategories.filter(subcat => {
-        const mainCatName = typeof subcat.mainCategory === 'object' ? subcat.mainCategory.name : '';
-        const mainCatId = typeof subcat.mainCategory === 'object' ? subcat.mainCategory._id : subcat.mainCategory;
+        const parentCatName = typeof subcat.category === 'object' ? subcat.category.name : '';
+        const parentCatId = typeof subcat.category === 'object' ? subcat.category._id : subcat.category;
         const matchSearch = subcat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            mainCatName.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchFilter = filterMainCategory ? mainCatId === filterMainCategory : true;
+            parentCatName.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchFilter = filterCategory ? parentCatId === filterCategory : true;
         return matchSearch && matchFilter;
     });
 
@@ -187,11 +193,11 @@ export default function SubcategoriesPage() {
                     </div>
                     <select
                         className="block w-full p-2.5 pl-10 text-sm text-slate-900 border border-slate-300 rounded focus:ring-teal-500 focus:border-teal-500 bg-slate-50 appearance-none"
-                        value={filterMainCategory}
-                        onChange={(e) => setFilterMainCategory(e.target.value)}
+                        value={filterCategory}
+                        onChange={(e) => setFilterCategory(e.target.value)}
                     >
-                        <option value="">All Main Categories</option>
-                        {mainCategories.map((cat) => (
+                        <option value="">All Categories</option>
+                        {categories.map((cat: ParentCategory) => (
                             <option key={cat._id} value={cat._id}>{cat.name}</option>
                         ))}
                     </select>
@@ -204,7 +210,7 @@ export default function SubcategoriesPage() {
                         <thead>
                             <tr className="bg-slate-50 border-b border-slate-200 text-slate-700">
                                 <th className="py-3 px-6 font-semibold w-24">Seq. No</th>
-                                <th className="py-3 px-6 font-semibold">Main Category</th>
+                                <th className="py-3 px-6 font-semibold">Category</th>
                                 <th className="py-3 px-6 font-semibold">Sub Category Name</th>
                                 <th className="py-3 px-6 font-semibold w-48">Action</th>
                             </tr>
@@ -220,11 +226,11 @@ export default function SubcategoriesPage() {
                                 </tr>
                             ) : (
                                 filtered.map((subcat, index) => {
-                                    const mainCatName = typeof subcat.mainCategory === 'object' ? subcat.mainCategory.name : 'Unknown';
+                                    const parentCatName = typeof subcat.category === 'object' ? subcat.category.name : 'Unknown';
                                     return (
                                         <tr key={subcat._id} className={`border-b border-slate-100 hover:bg-slate-50 transition-colors ${!subcat.isActive ? 'opacity-60 bg-slate-50/50' : ''}`}>
                                             <td className="py-3 px-6 text-slate-600">{index + 1}</td>
-                                            <td className="py-3 px-6 text-slate-600">{mainCatName}</td>
+                                            <td className="py-3 px-6 text-slate-600">{parentCatName}</td>
                                             <td className="py-3 px-6 font-medium text-slate-800">{subcat.name}</td>
                                             <td className="py-3 px-6">
                                                 <div className="flex items-center gap-2">
@@ -271,19 +277,50 @@ export default function SubcategoriesPage() {
                         <div className="p-6">
                             {error && <div className="mb-4 p-3 bg-red-50 text-red-700 text-sm rounded border border-red-100">{error}</div>}
                             <form onSubmit={handleCreateSubmit} className="space-y-6">
-                                <div className="flex flex-col md:flex-row md:items-center gap-4">
-                                    <label className="text-slate-600 font-medium md:w-1/3">Main Category</label>
-                                    <select
-                                        value={selectedMainCategoryId}
-                                        onChange={(e) => setSelectedMainCategoryId(e.target.value)}
-                                        className="flex-1 px-4 py-2 border border-slate-300 rounded text-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-500 bg-white"
-                                        required
-                                    >
-                                        <option value="" disabled>Select Main Category</option>
-                                        {mainCategories.map(cat => (
-                                            <option key={cat._id} value={cat._id}>{cat.name}</option>
-                                        ))}
-                                    </select>
+                                <div className="flex flex-col md:flex-row md:items-start gap-4">
+                                    <label className="text-slate-600 font-medium md:w-1/3 mt-2">Category</label>
+                                    <div className="flex-1 relative">
+                                        <input
+                                            type="text"
+                                            value={catSearchQuery}
+                                            onChange={(e) => {
+                                                setCatSearchQuery(e.target.value);
+                                                setShowCatResults(true);
+                                            }}
+                                            onFocus={() => setShowCatResults(true)}
+                                            placeholder="Search category..."
+                                            className="w-full px-4 py-2 border border-slate-300 rounded text-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-500 bg-white"
+                                            required
+                                        />
+                                        {showCatResults && (
+                                            <div className="absolute z-[70] left-0 right-0 mt-1 bg-white border border-slate-200 rounded shadow-xl max-h-48 overflow-y-auto">
+                                                {categories
+                                                    .filter(c => c.name.toLowerCase().includes(catSearchQuery.toLowerCase()))
+                                                    .slice(0, 100) // Limit results for performance
+                                                    .map(cat => (
+                                                        <button
+                                                            key={cat._id}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setSelectedMainCategoryId(cat._id);
+                                                                setCatSearchQuery(cat.name);
+                                                                setShowCatResults(false);
+                                                            }}
+                                                            className={`w-full text-left px-4 py-2 hover:bg-teal-50 text-sm ${selectedMainCategoryId === cat._id ? 'bg-teal-50 text-teal-700 font-bold' : 'text-slate-700'}`}
+                                                        >
+                                                            {cat.name}
+                                                        </button>
+                                                    ))
+                                                }
+                                                {categories.filter(c => c.name.toLowerCase().includes(catSearchQuery.toLowerCase())).length === 0 && (
+                                                    <div className="px-4 py-2 text-sm text-slate-500 italic">No category found</div>
+                                                )}
+                                            </div>
+                                        )}
+                                        {selectedMainCategoryId && (
+                                            <div className="mt-1 text-xs text-teal-600 font-medium">Selected: {categories.find(c => c._id === selectedMainCategoryId)?.name}</div>
+                                        )}
+                                    </div>
                                 </div>
 
                                 <div className="flex flex-col md:flex-row md:items-center gap-4">
@@ -321,19 +358,50 @@ export default function SubcategoriesPage() {
                         </div>
                         <div className="p-6">
                             <form onSubmit={handleEditSubmit} className="space-y-6">
-                                <div className="flex flex-col md:flex-row md:items-center gap-4">
-                                    <label className="text-slate-600 font-medium md:w-1/3">Main Category</label>
-                                    <select
-                                        value={editMainCategoryId}
-                                        onChange={(e) => setEditMainCategoryId(e.target.value)}
-                                        className="flex-1 px-4 py-2 border border-slate-300 rounded text-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-500 bg-white"
-                                        required
-                                    >
-                                        <option value="" disabled>Select Main Category</option>
-                                        {mainCategories.map(cat => (
-                                            <option key={cat._id} value={cat._id}>{cat.name}</option>
-                                        ))}
-                                    </select>
+                                <div className="flex flex-col md:flex-row md:items-start gap-4">
+                                    <label className="text-slate-600 font-medium md:w-1/3 mt-2">Main Category</label>
+                                    <div className="flex-1 relative">
+                                        <input
+                                            type="text"
+                                            value={editCatSearchQuery}
+                                            onChange={(e) => {
+                                                setEditCatSearchQuery(e.target.value);
+                                                setShowEditCatResults(true);
+                                            }}
+                                            onFocus={() => setShowEditCatResults(true)}
+                                            placeholder="Search category..."
+                                            className="w-full px-4 py-2 border border-slate-300 rounded text-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-500 bg-white"
+                                            required
+                                        />
+                                        {showEditCatResults && (
+                                            <div className="absolute z-[70] left-0 right-0 mt-1 bg-white border border-slate-200 rounded shadow-xl max-h-48 overflow-y-auto">
+                                                {categories
+                                                    .filter(c => c.name.toLowerCase().includes(editCatSearchQuery.toLowerCase()))
+                                                    .slice(0, 100)
+                                                    .map(cat => (
+                                                        <button
+                                                            key={cat._id}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setEditMainCategoryId(cat._id);
+                                                                setEditCatSearchQuery(cat.name);
+                                                                setShowEditCatResults(false);
+                                                            }}
+                                                            className={`w-full text-left px-4 py-2 hover:bg-teal-50 text-sm ${editMainCategoryId === cat._id ? 'bg-teal-50 text-teal-700 font-bold' : 'text-slate-700'}`}
+                                                        >
+                                                            {cat.name}
+                                                        </button>
+                                                    ))
+                                                }
+                                                {categories.filter(c => c.name.toLowerCase().includes(editCatSearchQuery.toLowerCase())).length === 0 && (
+                                                    <div className="px-4 py-2 text-sm text-slate-500 italic">No category found</div>
+                                                )}
+                                            </div>
+                                        )}
+                                        {editMainCategoryId && (
+                                            <div className="mt-1 text-xs text-teal-600 font-medium">Selected: {categories.find(c => c._id === editMainCategoryId)?.name}</div>
+                                        )}
+                                    </div>
                                 </div>
 
                                 <div className="flex flex-col md:flex-row md:items-center gap-4">

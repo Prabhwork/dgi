@@ -10,7 +10,12 @@ const subcategorySchema = new mongoose.Schema({
     category: {
         type: mongoose.Schema.ObjectId,
         ref: 'Category',
-        required: true
+        required: false // Changed from true
+    },
+    googleCategory: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'GoogleCategory',
+        required: false
     },
     description: {
         type: String,

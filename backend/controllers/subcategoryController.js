@@ -1,5 +1,6 @@
 const Subcategory = require('../models/Subcategory');
 const Category = require('../models/Category');
+const GoogleCategory = require('../models/GoogleCategory');
 
 // @desc    Get all subcategories
 // @route   GET /api/subcategories
@@ -9,6 +10,9 @@ exports.getSubcategories = async (req, res, next) => {
     try {
         if (req.params.categoryId) {
             const subcategories = await Subcategory.find({ category: req.params.categoryId });
+            return res.status(200).json({ success: true, count: subcategories.length, data: subcategories });
+        } else if (req.params.googleCategoryId) {
+            const subcategories = await Subcategory.find({ googleCategory: req.params.googleCategoryId });
             return res.status(200).json({ success: true, count: subcategories.length, data: subcategories });
         } else {
             res.status(200).json(res.advancedResults);
@@ -26,6 +30,9 @@ exports.getSubcategory = async (req, res, next) => {
         const subcategory = await Subcategory.findById(req.params.id).populate({
             path: 'category',
             select: 'name description'
+        }).populate({
+            path: 'googleCategory',
+            select: 'name'
         });
 
         if (!subcategory) {
@@ -43,12 +50,20 @@ exports.getSubcategory = async (req, res, next) => {
 // @access  Private
 exports.createSubcategory = async (req, res, next) => {
     try {
-        req.body.category = req.params.categoryId;
-
-        const category = await Category.findById(req.params.categoryId);
-
-        if (!category) {
-            return res.status(404).json({ success: false, error: 'Category not found' });
+        if (req.params.categoryId) {
+            req.body.category = req.params.categoryId;
+            const category = await Category.findById(req.params.categoryId);
+            if (!category) {
+                return res.status(404).json({ success: false, error: 'Category not found' });
+            }
+        } else if (req.params.googleCategoryId) {
+            req.body.googleCategory = req.params.googleCategoryId;
+            const googleCat = await GoogleCategory.findById(req.params.googleCategoryId);
+            if (!googleCat) {
+                return res.status(404).json({ success: false, error: 'Google Category not found' });
+            }
+        } else {
+            return res.status(400).json({ success: false, error: 'Parent category ID required' });
         }
 
         const subcategory = await Subcategory.create(req.body);

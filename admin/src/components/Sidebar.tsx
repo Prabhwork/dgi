@@ -42,6 +42,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         { name: 'Upcoming Categories', path: '/dashboard/upcoming-categories', icon: Rocket },
         { name: 'Existing Customers', path: '/dashboard/existing-customers', icon: UserCheck },
         { name: 'Testimonials', path: '/dashboard/testimonials', icon: MessageSquare },
+        { name: 'Google Categories', path: '/dashboard/google-categories', icon: Tag },
         { name: 'Contact Messages', path: '/dashboard/contacts', icon: Mail },
         { name: 'Settings', path: '/dashboard/settings', icon: Settings },
     ];

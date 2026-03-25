@@ -607,39 +607,52 @@ export default function HeroSection() {
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.5, duration: 0.8 }}
-                                    className="text-3xl sm:text-4xl md:text-5xl font-display font-black text-white tracking-[0.2em] leading-tight uppercase"
+                                    className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-display font-black text-white tracking-[0.1em] leading-tight uppercase"
                                     style={{ 
-                                        textShadow: "0 0 40px rgba(0,157,255,0.6), 0 0 80px rgba(0,157,255,0.3)",
-                                        letterSpacing: "0.25em"
+                                        textShadow: "0 0 30px rgba(0,157,255,0.5), 0 0 60px rgba(0,157,255,0.2)",
+                                        letterSpacing: "0.15em"
                                     }}
                                 >
-                                    PRE 
-                                    LAUNCH
+                                    List Your <br/>
+                                    Business Online
                                 </motion.h1>
                                 <motion.p
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     transition={{ delay: 0.8 }}
-                                    className="mt-2 text-xs sm:text-sm font-bold tracking-[0.3em] uppercase opacity-90"
-                                    style={{ color: "#00d4ff", textShadow: "0 0 20px rgba(0,212,255,0.5)" }}
+                                    className="mt-1 text-[8px] sm:text-[10px] md:text-xs font-bold tracking-[0.1em] uppercase opacity-90 max-w-[180px] sm:max-w-[220px] mx-auto leading-tight"
+                                    style={{ color: "#00d4ff", textShadow: "0 0 15px rgba(0,212,255,0.4)" }}
                                 >
-                                    Prepared To Be Amazed!!
+                                    Grow your business with <br/> Digital Book of India
                                 </motion.p>
                                 <motion.div
                                     initial={{ scaleX: 0 }}
                                     animate={{ scaleX: 1 }}
                                     transition={{ delay: 1, duration: 1 }}
-                                    className="h-[1px] w-24 bg-gradient-to-r from-transparent via-[#00d4ff]/50 to-transparent my-3"
+                                    className="h-[1px] w-16 bg-gradient-to-r from-transparent via-[#00d4ff]/40 to-transparent my-2"
                                 />
                                 <motion.p
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 1.2 }}
-                                    className="font-medium max-w-[180px] sm:max-w-[240px] md:max-w-[300px] mx-auto text-[10px] sm:text-xs leading-relaxed opacity-80"
-                                    style={{ color: "#ffffff", textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}
+                                    className="font-black max-w-[180px] sm:max-w-[240px] md:max-w-[300px] mx-auto text-xs sm:text-sm md:text-base leading-relaxed"
+                                    style={{ color: "#ffffff", textShadow: "0 2px 6px rgba(0,0,0,0.8)" }}
                                 >
-                                    Digital Book Of India is on its way to make your way of living more easier..stay tuned.
+                                    ₹365/year <span className="text-[9px] sm:text-xs opacity-80">(₹1/day)</span>
                                 </motion.p>
+                                
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.8 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: 1.4, duration: 0.5 }}
+                                    className="mt-4 pointer-events-auto relative z-20"
+                                >
+                                    <Link href="/community/register" hrefLang="en">
+                                        <Button asChild className="bg-[#00d4ff] hover:bg-white text-[#020631] font-black px-5 py-4 rounded-full text-[10px] sm:text-xs shadow-[0_0_25px_rgba(0,212,255,0.3)] transition-all hover:scale-105 active:scale-95 uppercase tracking-[0.08em] cursor-pointer">
+                                            <span>List Your Business</span>
+                                        </Button>
+                                    </Link>
+                                </motion.div>
                             </div>
 
                         </motion.div>

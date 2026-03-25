@@ -606,84 +606,93 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
             </AnimatePresence>
 
             {/* Top Navigation Bar */}
-            <div className="absolute top-0 left-0 right-0 z-20 p-3 md:p-6 flex flex-col md:flex-row items-stretch md:items-start gap-3 max-w-7xl mx-auto pointer-events-none">
-                <div className="flex-1 flex flex-col gap-2 relative pointer-events-auto order-2 md:order-1">
-                    <div className="h-12 md:h-14 flex items-center gap-3 bg-black/40 backdrop-blur-3xl border border-white/20 rounded-2xl md:rounded-3xl px-4 md:px-6 shadow-[0_8px_32px_rgba(0,0,0,0.5)] transition-all focus-within:bg-black/60 focus-within:border-primary/50">
-                        <Search size={18} className="text-primary animate-pulse shrink-0" />
-                        <input
-                            type="text"
-                            placeholder="Search for businesses..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            suppressHydrationWarning
-                            className="bg-transparent border-none outline-none text-white text-sm md:text-base font-semibold flex-1 placeholder:text-white/50"
-                        />
-                        {loading && <Loader2 size={18} className="text-primary animate-spin shrink-0" />}
-                    </div>
+            <AnimatePresence>
+                {!routeInfo && !isNavigating && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="absolute top-0 left-0 right-0 z-20 p-3 md:p-6 flex flex-col md:flex-row items-stretch md:items-start gap-3 max-w-7xl mx-auto pointer-events-none"
+                    >
+                        <div className="flex-1 flex flex-col gap-2 relative pointer-events-auto order-2 md:order-1">
+                            <div className="h-12 md:h-14 flex items-center gap-3 bg-black/40 backdrop-blur-3xl border border-white/20 rounded-2xl md:rounded-3xl px-4 md:px-6 shadow-[0_8px_32px_rgba(0,0,0,0.5)] transition-all focus-within:bg-black/60 focus-within:border-primary/50">
+                                <Search size={18} className="text-primary animate-pulse shrink-0" />
+                                <input
+                                    type="text"
+                                    placeholder="Search for businesses..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    suppressHydrationWarning
+                                    className="bg-transparent border-none outline-none text-white text-sm md:text-base font-semibold flex-1 placeholder:text-white/50"
+                                />
+                                {loading && <Loader2 size={18} className="text-primary animate-spin shrink-0" />}
+                            </div>
 
-                    {/* Search Results Dropdown */}
-                    <AnimatePresence>
-                        {searchQuery.trim().length > 0 && searchResults.length > 0 && (
-                            <motion.div
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                className="absolute top-[60px] md:top-[64px] left-0 right-0 bg-black/80 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] overflow-hidden max-h-[60vh] overflow-y-auto"
-                            >
-                                <div className="p-2 flex flex-col gap-1">
-                                    {searchResults.slice(0, 10).map((biz) => (
-                                        <button
-                                            key={biz._id}
-                                            onClick={() => {
-                                                setSelectedBusiness(biz);
-                                                setSearchQuery(''); // Clear search on select to hide dropdown
-                                                
-                                                // If business is not in the current nearby list, add it so it gets a marker
-                                                if (!businesses.find(b => b._id === biz._id)) {
-                                                    setBusinesses(prev => [...prev, biz]);
-                                                }
+                            {/* Search Results Dropdown */}
+                            <AnimatePresence>
+                                {searchQuery.trim().length > 0 && searchResults.length > 0 && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -10 }}
+                                        className="absolute top-[60px] md:top-[64px] left-0 right-0 bg-black/80 backdrop-blur-3xl border border-white/10 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] overflow-hidden max-h-[60vh] overflow-y-auto"
+                                    >
+                                        <div className="p-2 flex flex-col gap-1">
+                                            {searchResults.slice(0, 10).map((biz) => (
+                                                <button
+                                                    key={biz._id}
+                                                    onClick={() => {
+                                                        setSelectedBusiness(biz);
+                                                        setSearchQuery(''); // Clear search on select to hide dropdown
+                                                        
+                                                        // If business is not in the current nearby list, add it so it gets a marker
+                                                        if (!businesses.find(b => b._id === biz._id)) {
+                                                            setBusinesses(prev => [...prev, biz]);
+                                                        }
 
-                                                mapRef.current?.flyTo({
-                                                    center: [biz.gpsCoordinates.lng, biz.gpsCoordinates.lat],
-                                                    zoom: 17.5,
-                                                    pitch: 60,
-                                                    duration: 1200,
-                                                    essential: true
-                                                });
-                                            }}
-                                            className="flex items-center gap-3 w-full p-3 md:p-4 hover:bg-white/10 transition-colors rounded-xl text-left border border-transparent hover:border-white/5"
-                                        >
-                                            <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0">
-                                                <MapPin size={16} className="text-primary" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <h4 className="text-white font-bold text-sm md:text-base truncate">{biz.brandName || biz.businessName}</h4>
-                                                <p className="text-white/50 text-xs truncate max-w-[90%]">{biz.registeredOfficeAddress}</p>
-                                            </div>
-                                            {biz.distanceKm && (
-                                                <span className="text-primary font-black whitespace-nowrap bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/30 shadow-[0_0_15px_rgba(14,165,233,0.2)] text-[11px]">
-                                                    {biz.distanceKm.toFixed(1)} KM
-                                                </span>
-                                            )}
-                                        </button>
-                                    ))}
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </div>
+                                                        mapRef.current?.flyTo({
+                                                            center: [biz.gpsCoordinates.lng, biz.gpsCoordinates.lat],
+                                                            zoom: 17.5,
+                                                            pitch: 60,
+                                                            duration: 1200,
+                                                            essential: true
+                                                        });
+                                                    }}
+                                                    className="flex items-center gap-3 w-full p-3 md:p-4 hover:bg-white/10 transition-colors rounded-xl text-left border border-transparent hover:border-white/5"
+                                                >
+                                                    <div className="w-10 h-10 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center shrink-0">
+                                                        <MapPin size={16} className="text-primary" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <h4 className="text-white font-bold text-sm md:text-base truncate">{biz.brandName || biz.businessName}</h4>
+                                                        <p className="text-white/50 text-xs truncate max-w-[90%]">{biz.registeredOfficeAddress}</p>
+                                                    </div>
+                                                    {biz.distanceKm && (
+                                                        <span className="text-primary font-black whitespace-nowrap bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/30 shadow-[0_0_15px_rgba(14,165,233,0.2)] text-[11px]">
+                                                            {biz.distanceKm.toFixed(1)} KM
+                                                        </span>
+                                                    )}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
 
-                <div className="flex items-center justify-between gap-2 pointer-events-auto order-1 md:order-2">
-                    <div className="flex items-center gap-2">
-                        <button onClick={zoomIn} className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-3xl bg-black/40 backdrop-blur-3xl border border-white/20 flex items-center justify-center text-white/90 hover:text-primary hover:bg-black/60 hover:border-primary/50 transition-all shadow-lg font-bold text-xl md:text-2xl shrink-0">+</button>
-                        <button onClick={zoomOut} className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-3xl bg-black/40 backdrop-blur-3xl border border-white/20 flex items-center justify-center text-white/90 hover:text-primary hover:bg-black/60 hover:border-primary/50 transition-all shadow-lg font-bold text-xl md:text-2xl shrink-0">−</button>
-                    </div>
+                        <div className="flex items-center justify-between gap-2 pointer-events-auto order-1 md:order-2">
+                            <div className="flex items-center gap-2">
+                                <button onClick={zoomIn} className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-3xl bg-black/40 backdrop-blur-3xl border border-white/20 flex items-center justify-center text-white/90 hover:text-primary hover:bg-black/60 hover:border-primary/50 transition-all shadow-lg font-bold text-xl md:text-2xl shrink-0">+</button>
+                                <button onClick={zoomOut} className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-3xl bg-black/40 backdrop-blur-3xl border border-white/20 flex items-center justify-center text-white/90 hover:text-primary hover:bg-black/60 hover:border-primary/50 transition-all shadow-lg font-bold text-xl md:text-2xl shrink-0">−</button>
+                            </div>
 
-                    <button onClick={onClose} className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-3xl bg-black/40 backdrop-blur-3xl border border-white/20 flex items-center justify-center text-white/90 hover:text-red-400 hover:bg-black/60 hover:border-red-500/50 transition-all shadow-lg shrink-0">
-                        <X size={18} />
-                    </button>
-                </div>
-            </div>
+                            <button onClick={onClose} className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-3xl bg-black/40 backdrop-blur-3xl border border-white/20 flex items-center justify-center text-white/90 hover:text-red-400 hover:bg-black/60 hover:border-red-500/50 transition-all shadow-lg shrink-0">
+                                <X size={18} />
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* No Results Feedback */}
             <AnimatePresence>
@@ -731,7 +740,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
 
                             <p className="text-white/40 text-[11px] md:text-xs mb-6 leading-relaxed flex items-start gap-2">
                                 <MapPin size={14} className="text-primary shrink-0 mt-0.5" />
-                                {selectedBusiness.registeredOfficeAddress}
+                                {selectedBusiness?.registeredOfficeAddress}
                             </p>
 
                             <div className="grid grid-cols-2 gap-2 mb-3">
@@ -740,10 +749,10 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                             </div>
 
                             <div className="grid grid-cols-2 gap-2">
-                                {selectedBusiness.primaryContactNumber && (
+                                {selectedBusiness?.primaryContactNumber && (
                                     <a href={`tel:${selectedBusiness.primaryContactNumber}`} className="flex items-center justify-center gap-2 bg-blue-600/20 border border-blue-500/20 text-blue-400 font-bold text-xs py-3.5 rounded-2xl hover:bg-blue-600/30 transition-all"><Phone size={14} /> Call</a>
                                 )}
-                                <a href={`https://wa.me/${selectedBusiness.officialWhatsAppNumber || selectedBusiness.primaryContactNumber}`} target="_blank" className="flex items-center justify-center gap-2 bg-[#25D366]/20 border border-[#25D366]/20 text-[#25D366] font-bold text-xs py-3.5 rounded-2xl hover:bg-[#25D366]/30 transition-all"><MessageCircle size={14} /> WhatsApp</a>
+                                <a href={`https://wa.me/${selectedBusiness?.officialWhatsAppNumber || selectedBusiness?.primaryContactNumber}`} target="_blank" className="flex items-center justify-center gap-2 bg-[#25D366]/20 border border-[#25D366]/20 text-[#25D366] font-bold text-xs py-3.5 rounded-2xl hover:bg-[#25D366]/30 transition-all"><MessageCircle size={14} /> WhatsApp</a>
                             </div>
 
                             <button
@@ -779,11 +788,19 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                          // Prepend exact user GPS to the snapped road route
                                          const route = [userCoord, ...rawRoute];
 
-                                        setRouteInfo({
-                                            distance: data.distance / 1000,
-                                            duration: data.duration / 60,
-                                            businessName: selectedBusiness.brandName || selectedBusiness.businessName
-                                        });
+                                         const routeDist = data.distance / 1000;
+                                         setRouteInfo({
+                                             distance: routeDist,
+                                             duration: data.duration / 60,
+                                             businessName: selectedBusiness.brandName || selectedBusiness.businessName
+                                         });
+
+                                         // Sync search result distance for 100% agreement
+                                         setSearchResults(prev => prev.map(result => 
+                                            result._id === selectedBusiness._id 
+                                            ? { ...result, distanceKm: routeDist } 
+                                            : result
+                                         ));
 
                                         const map = mapRef.current;
                                         if (!map) return;
@@ -1063,14 +1080,14 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                             <NavigationIcon size={18} fill="currentColor" /> START NAVIGATION
                                         </button>
                                     ) : (
-                                        <div className="relative min-h-[52px]">
+                                        <div className="flex flex-col gap-2 relative min-h-[52px]">
                                             <AnimatePresence mode="wait">
                                                 {!isAutoCentering && (
                                                     <motion.button
                                                         key="recenter"
-                                                        initial={{ opacity: 0 }}
-                                                        animate={{ opacity: 1 }}
-                                                        exit={{ opacity: 0 }}
+                                                        initial={{ opacity: 0, scale: 0.95 }}
+                                                        animate={{ opacity: 1, scale: 1 }}
+                                                        exit={{ opacity: 0, scale: 0.95 }}
                                                         onClick={() => {
                                                             setIsAutoCentering(true);
                                                             if (userLocation) {
@@ -1085,7 +1102,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                                 setTimeout(() => { isProgrammaticMove.current = false; }, 1600);
                                                             }
                                                         }}
-                                                        className="bg-blue-600 text-white font-black py-4 px-6 rounded-2xl hover:bg-blue-700 transition-all flex items-center justify-center gap-3 w-full shadow-[0_10px_30px_rgba(37,99,235,0.3)] text-xs uppercase tracking-widest"
+                                                        className="bg-primary text-white font-black py-4 px-6 rounded-2xl hover:bg-primary/90 transition-all flex items-center justify-center gap-3 w-full shadow-[0_10px_30px_rgba(14,165,233,0.3)] text-xs uppercase tracking-widest border border-white/20"
                                                     >
                                                         <NavigationIcon size={18} className="rotate-45" /> RE-CENTER VIEW
                                                     </motion.button>

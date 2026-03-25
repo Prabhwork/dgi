@@ -53,6 +53,7 @@ const upcomingCategories = require('./routes/upcomingCategoryRoutes');
 const testimonials = require('./routes/testimonialRoutes');
 const existingCustomers = require('./routes/existingCustomers');
 const mainSubcategories = require('./routes/mainSubcategoryRoutes');
+const googleCategories = require('./routes/googleCategoryRoutes');
 
 
 // Re-route into other resource routers
@@ -76,6 +77,7 @@ app.use('/api/contact', contact);
 app.use('/api/upcoming-categories', upcomingCategories);
 app.use('/api/testimonials', testimonials);
 app.use('/api/existing-customers', existingCustomers);
+app.use('/api/google-categories', googleCategories);
 
 app.get('/', (req, res) => {
     res.send('Digital Book of India Admin API');

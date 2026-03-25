@@ -403,6 +403,7 @@ export default function Navbar() {
                     <button
                         onClick={toggle}
                         aria-label="Toggle theme"
+                        suppressHydrationWarning
                         className={`relative w-14 h-7 rounded-full border border-solid transition-all duration-300 flex items-center px-1 cursor-pointer ${isLight ? 'border-primary/20 bg-blue-50' : 'border-border/50 bg-slate-900'}`}
                         style={{
                             boxShadow: theme === "dark"
@@ -528,6 +529,7 @@ export default function Navbar() {
                     <button
                         onClick={toggle}
                         aria-label="Toggle theme"
+                        suppressHydrationWarning
                         className={`w-8 h-8 rounded-full border border-solid flex items-center justify-center transition-all ${isLight ? 'bg-blue-50 border-primary/20' : 'bg-slate-900 border-border/50'}`}
                     >
                         {theme === "dark"
