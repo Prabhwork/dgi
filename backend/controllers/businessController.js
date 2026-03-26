@@ -246,7 +246,7 @@ exports.sendOTP = async (req, res, next) => {
         await OTP.findOneAndUpdate(
             { email },
             { otp, createdAt: Date.now() },
-            { upsert: true, new: true, setDefaultsOnInsert: true }
+            { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
         );
 
         const message = `Your DBI Community verification code is: ${otp}. It will expire in 10 minutes.`;
@@ -612,7 +612,7 @@ exports.updateBusinessDetails = async (req, res, next) => {
         }
 
         business = await Business.findByIdAndUpdate(req.user.id, updateData, {
-            new: true,
+            returnDocument: 'after',
             runValidators: true
         });
 
@@ -633,9 +633,7 @@ exports.getMe = async (req, res, next) => {
     }
 };
 
-// @desc    Get nearby businesses using gpsCoordinates
-// @route   GET /api/business/nearby?lat=xx&lng=xx&radius=5000
-// @access  Public
+
 exports.getNearbyBusinesses = async (req, res, next) => {
     try {
         const { lat, lng, radius = 5000000, category, minRating } = req.query;
@@ -648,7 +646,7 @@ exports.getNearbyBusinesses = async (req, res, next) => {
         const userLng = parseFloat(lng);
         const radiusKm = parseFloat(radius) / 1000;
 
-        // Rough bounding box (~1 degree = 111km)
+     
         const latDelta = radiusKm / 111;
         const lngDelta = radiusKm / (111 * Math.cos(userLat * Math.PI / 180));
 

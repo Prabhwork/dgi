@@ -1,56 +1,38 @@
 const nodemailer = require('nodemailer');
 
-// Cache transporter instance
-let transporter = null;
+const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp-relay.brevo.com',
+    port: 465,
+    secure: true,
+    auth: {
+        user: process.env.BREVO_SMTP_USER || process.env.BREVO_SENDER_EMAIL,
+        pass: process.env.BREVO_API_KEY,
+    },
+});
 
-const createTransporter = () => {
-    let config = {
-        host: process.env.SMTP_HOST,
-        port: process.env.SMTP_PORT,
-        secure: process.env.SMTP_PORT === '465',
-        auth: {
-            user: process.env.SMTP_EMAIL,
-            pass: process.env.SMTP_PASSWORD,
-        },
+/**
+ * Send email via SMTP (Nodemailer)
+ * @param {Object} options - { email, subject, message, html }
+ */
+const sendEmail = async (options) => {
+    // IMPORTANT: Using the verified sender email confirmed from your Brevo Dashboard
+    const senderEmail = process.env.BREVO_SENDER_EMAIL || 'affinitytechnologies.pro@gmail.com'; 
+    const fromName = process.env.FROM_NAME || 'Digital Book of India';
+    
+    const mailOptions = {
+        from: `"${fromName}" <${senderEmail}>`,
+        to: options.email,
+        subject: options.subject,
+        text: options.message,
+        html: options.html, // Restore HTML templates
     };
 
-    if (process.env.SMTP_HOST && process.env.SMTP_HOST.includes('gmail')) {
-        config = {
-            service: 'gmail',
-            auth: {
-                user: process.env.SMTP_EMAIL,
-                pass: process.env.SMTP_PASSWORD,
-            },
-        };
+    try {
+        const info = await transporter.sendMail(mailOptions);
+        return info;
+    } catch (error) {
+        console.error('SMTP Email error:', error.message);
     }
-    return nodemailer.createTransport(config);
-};
-
-const sendEmail = (options) => {
-    // Run email sending in the background so we don't block API requests
-    return (async () => {
-        if (!transporter) {
-            transporter = createTransporter();
-        }
-
-        const message = {
-            from: `"${process.env.FROM_NAME}" <no-reply@dbi.com>`,
-            replyTo: 'no-reply@dbi.com',
-            to: options.email,
-            subject: options.subject,
-            text: options.message,
-            html: options.html,
-        };
-
-        try {
-            const info = await transporter.sendMail(message);
-            console.log('Message sent: %s', info.messageId);
-        } catch (error) {
-            console.error('Email send error details:', error);
-            // If connection lost, reset transporter for next try
-            transporter = null;
-        }
-    })();
 };
 
 module.exports = sendEmail;

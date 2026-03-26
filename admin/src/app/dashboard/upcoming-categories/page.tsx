@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { apiFetch } from '@/lib/api';
 import { UpcomingCategory, Category } from '@/types';
+import * as LucideIcons from 'lucide-react';
 import { Plus, Edit2, Trash2, X, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
 
@@ -25,6 +26,13 @@ const ICON_OPTIONS = [
     'Gift', 'Coffee', 'Smile', 'ThumbsUp', 'Bell',
     'Layers', 'Package', 'Compass', 'Map', 'Home'
 ];
+
+// Helper to render dynamic icons by name
+const DynamicIcon = ({ name, size = 20, className = "" }: { name: string, size?: number, className?: string }) => {
+    // @ts-expect-error - LucideIcons is a large object and we access it dynamically
+    const IconComponent = LucideIcons[name] || LucideIcons.HelpCircle;
+    return <IconComponent size={size} className={className} />;
+};
 
 export default function UpcomingCategoriesPage() {
     const [upcomingCategories, setUpcomingCategories] = useState<UpcomingCategory[]>([]);
@@ -226,64 +234,88 @@ export default function UpcomingCategoriesPage() {
                 }
             `}</style>
 
-            <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-slate-800">Upcoming Categories</h1>
+            <div className="flex justify-between items-center mb-4">
+                <h1 className="text-2xl font-bold text-slate-100">Upcoming Categories</h1>
                 <button
                     onClick={() => setIsModalOpen(true)}
-                    className="bg-teal-500 hover:bg-teal-600 text-white font-medium py-2 px-4 rounded shadow transition-colors flex items-center gap-2"
+                    className="bg-teal-500 hover:bg-teal-600 text-white font-medium py-2 px-4 rounded-xl shadow-lg transition-all flex items-center gap-2"
                 >
                     <Plus size={18} /> Add New
                 </button>
             </div>
 
-            <div className="bg-white rounded border border-slate-200 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse text-sm min-w-[700px]">
-                        <thead>
-                            <tr className="bg-slate-50 border-b border-slate-200 text-slate-700">
-                                <th className="py-3 px-6 font-semibold w-20">Order</th>
-                                <th className="py-3 px-6 font-semibold">Title</th>
-                                <th className="py-3 px-6 font-semibold">Icon</th>
-                                <th className="py-3 px-6 font-semibold">Category</th>
-                                <th className="py-3 px-6 font-semibold">Preview</th>
-                                <th className="py-3 px-6 font-semibold w-24">Status</th>
-                                <th className="py-3 px-6 font-semibold w-32">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {loading ? (
-                                <tr><td colSpan={7} className="py-8 text-center text-slate-500">Loading...</td></tr>
-                            ) : upcomingCategories.length === 0 ? (
-                                <tr><td colSpan={7} className="py-8 text-center text-slate-500">No upcoming categories found.</td></tr>
-                            ) : (
-                                upcomingCategories.map((item) => (
-                                    <tr key={item._id} className="border-b border-slate-100 hover:bg-slate-50">
-                                        <td className="py-3 px-6 text-slate-600">{item.order}</td>
-                                        <td className="py-3 px-6 text-slate-800 font-medium">{item.title}</td>
-                                        <td className="py-3 px-6 text-slate-600">{item.icon}</td>
-                                        <td className="py-3 px-6 text-slate-600">
-                                            {typeof item.category === 'object' ? item.category?.name : item.category || '—'}
-                                        </td>
-                                        <td className="py-3 px-6 max-w-xs truncate text-slate-500">
-                                            <div dangerouslySetInnerHTML={{ __html: (item.description || '').substring(0, 100) + (item.description && item.description.length > 100 ? '...' : '') }} />
-                                        </td>
-                                        <td className="py-3 px-6">
-                                            <span className={`px-2 py-1 rounded text-xs font-medium ${item.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                                {item.isActive ? 'Active' : 'Inactive'}
-                                            </span>
-                                        </td>
-                                        <td className="py-3 px-6">
-                                            <div className="flex items-center gap-2">
-                                                <button onClick={() => handleEdit(item)} className="p-1.5 bg-teal-400 text-white rounded hover:bg-teal-500"><Edit2 size={14} /></button>
-                                                <button onClick={() => handleDelete(item._id)} className="p-1.5 bg-red-400 text-white rounded hover:bg-red-500"><Trash2 size={14} /></button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {loading ? (
+                    <div className="col-span-full py-20 text-center text-slate-400">Loading your premium categories...</div>
+                ) : upcomingCategories.length === 0 ? (
+                    <div className="col-span-full py-20 text-center text-slate-400">No categories found. Start by adding one!</div>
+                ) : (
+                    <>
+                        {upcomingCategories.map((item) => (
+                            <div 
+                                key={item._id} 
+                                className="group relative bg-[#0a0f1e] border border-slate-800 rounded-2xl p-6 transition-all hover:border-teal-500/50 hover:shadow-[0_0_20px_rgba(20,184,166,0.1)] flex flex-col h-full"
+                            >
+                                {/* Header with Icon */}
+                                <div className="mb-6">
+                                    <div className="w-10 h-10 rounded-lg bg-teal-500/10 flex items-center justify-center text-teal-400">
+                                        <DynamicIcon name={item.icon || 'Rocket'} size={24} />
+                                    </div>
+                                </div>
+
+                                {/* Content */}
+                                <div className="flex-1">
+                                    <h3 className="text-xl font-bold text-white mb-3 group-hover:text-teal-400 transition-colors">
+                                        {item.title}
+                                    </h3>
+                                    <div 
+                                        className="text-slate-400 text-sm leading-relaxed line-clamp-4"
+                                        dangerouslySetInnerHTML={{ __html: item.description || '' }}
+                                    />
+                                </div>
+
+                                {/* Order & Status Badge */}
+                                <div className="mt-6 flex items-center justify-between">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                                        Order: {item.order}
+                                    </span>
+                                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${item.isActive ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                                        {item.isActive ? 'Active' : 'Draft'}
+                                    </span>
+                                </div>
+
+                                {/* Action Buttons - Visible on Hover for Desktop */}
+                                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button 
+                                        onClick={(e) => { e.stopPropagation(); handleEdit(item); }}
+                                        className="p-2 bg-slate-800/80 hover:bg-teal-500 text-white rounded-lg transition-colors"
+                                        title="Edit"
+                                    >
+                                        <Edit2 size={14} />
+                                    </button>
+                                    <button 
+                                        onClick={(e) => { e.stopPropagation(); handleDelete(item._id); }}
+                                        className="p-2 bg-slate-800/80 hover:bg-red-500 text-white rounded-lg transition-colors"
+                                        title="Delete"
+                                    >
+                                        <Trash2 size={14} />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+
+                        {/* Request New Category Card */}
+                        <div 
+                            onClick={() => setIsModalOpen(true)}
+                            className="bg-[#0a0f1e]/50 border-2 border-dashed border-slate-800 rounded-2xl p-6 flex flex-col items-center justify-center gap-4 cursor-pointer hover:border-teal-500/50 hover:bg-[#0a0f1e] transition-all group min-h-[250px]"
+                        >
+                            <div className="w-12 h-12 rounded-full border border-slate-700 flex items-center justify-center text-slate-500 group-hover:text-teal-400 group-hover:border-teal-400 transition-all">
+                                <Plus size={24} />
+                            </div>
+                            <span className="text-slate-400 font-medium group-hover:text-white transition-colors">Request New Category</span>
+                        </div>
+                    </>
+                )}
             </div>
 
             {isModalOpen && (

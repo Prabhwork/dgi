@@ -271,7 +271,7 @@ exports.updateMe = async (req, res, next) => {
         delete fieldsToUpdate.email;
 
         const user = await User.findByIdAndUpdate(req.user.id, fieldsToUpdate, {
-            new: true,
+            returnDocument: 'after',
             runValidators: true
         });
 
@@ -356,7 +356,7 @@ exports.sendUserOTP = async (req, res, next) => {
         await OTP.findOneAndUpdate(
             { email },
             { otp, createdAt: Date.now() },
-            { upsert: true, new: true, setDefaultsOnInsert: true }
+            { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
         );
 
         const html = getOTPTemplate(otp);
@@ -455,7 +455,7 @@ exports.verifyAndEnable2FA = async (req, res, next) => {
         const user = await User.findByIdAndUpdate(req.user.id, {
             isTwoFactorEnabled: true,
             twoFactorSecret: secret
-        }, { new: true });
+        }, { returnDocument: 'after' });
 
         // Send 2FA Enabled Notification
         try {
@@ -744,7 +744,7 @@ exports.forgotPassword = async (req, res, next) => {
         await OTP.findOneAndUpdate(
             { email },
             { otp, createdAt: Date.now() },
-            { upsert: true, new: true, setDefaultsOnInsert: true }
+            { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
         );
 
         // Send Email using premium template

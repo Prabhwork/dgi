@@ -1408,7 +1408,7 @@ function RegisterPageContent() {
                 </div>
 
                 {isUpdateMode && rejectionReason && (
-                    <div className="max-w-2xl mx-auto mb-8 p-6 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400">
+                    <div className="max-w-4xl mx-auto mb-8 p-6 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400">
                         <div className="flex items-center gap-3 mb-2">
                             <AlertCircle size={20} />
                             <h3 className="font-bold uppercase tracking-widest text-xs">Rejection Reason</h3>
@@ -1419,7 +1419,7 @@ function RegisterPageContent() {
                 )}
 
                 {/* Progress Bar */}
-                <div className="max-w-2xl mx-auto mb-12 px-4">
+                <div className="max-w-4xl mx-auto mb-12 px-4">
                     <div className="relative flex justify-between items-start isolate">
                         <div className="absolute top-5 left-0 w-full h-[1px] bg-white/10 -translate-y-1/2 z-0" />
                         <motion.div
@@ -1448,7 +1448,7 @@ function RegisterPageContent() {
                 </div>
 
                 {/* Form Container */}
-                <div ref={formContainerRef} className="max-w-2xl mx-auto glass-strong border-white/10 rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-8 md:p-12 shadow-2xl relative overflow-hidden">
+                <div ref={formContainerRef} className="max-w-4xl mx-auto glass-strong border-white/10 rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-8 md:p-12 shadow-2xl relative overflow-hidden">
 
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
 

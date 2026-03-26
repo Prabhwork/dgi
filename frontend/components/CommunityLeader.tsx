@@ -34,43 +34,70 @@ export default function CommunityLeader() {
                     </h2>
                 </motion.div>
 
-                {/* Mobile Scroll / Desktop Flex Container */}
-                <div className="flex overflow-x-auto sm:grid sm:grid-cols-3 lg:grid-cols-5 gap-6 scrollbar-hide pb-8 sm:pb-0 snap-x snap-mandatory">
+                {/* Desktop Grid Layout (hidden on mobile) */}
+                <div className="hidden sm:grid sm:grid-cols-3 lg:grid-cols-5 gap-6">
                     {communityLevels.map((level, i) => (
-                        <motion.div
-                            key={level.title}
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={inView ? { opacity: 1, scale: 1 } : {}}
-                            transition={{ delay: i * 0.1 }}
-                            className={`flex-shrink-0 w-[240px] sm:w-auto snap-center rounded-2xl p-8 flex flex-col items-center text-center cursor-pointer hover:-translate-y-2 transition-all duration-500 group relative overflow-hidden backdrop-blur-md border border-solid ${theme === 'light'
-                                ? 'bg-white/40 border-blue-600 shadow-none hover:border-blue-700'
-                                : 'bg-white/[0.01] border-white/20 hover:bg-white/[0.05] hover:border-white/40 shadow-[0_4px_24px_rgba(0,0,0,0.2)] hover:shadow-[0_8px_32px_rgba(255,255,255,0.15)]'
-                                }`}
-                        >
-                            <Link href={level.href || "#"} className="flex flex-col items-center w-full h-full">
-                                {/* Inner shiny highlight */}
-                                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-
-                                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-xl transition-colors duration-500 relative z-10 border-[1px] ${theme === 'light' ? 'bg-primary/10 border-primary/20 group-hover:bg-primary/20 group-hover:border-primary/50' : 'bg-foreground/90 border-transparent group-hover:bg-primary group-hover:border-white/20'
-                                    }`}>
-                                    <level.icon size={32} className={`transition-colors duration-500 shadow-sm ${theme === 'light' ? 'text-primary' : 'text-primary group-hover:text-white group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]'
-                                        }`} />
-                                </div>
-                                <h3 className="font-display font-bold text-lg text-foreground mb-2">{level.title}</h3>
-                                <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium">{level.desc}</p>
-
-                                <div className="mt-6 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/30 to-transparent mb-4" />
-                                
-                                {level.href && (
-                                    <span className="text-[10px] font-bold text-primary flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        View Details <ChevronRight size={12} />
-                                    </span>
-                                )}
-                            </Link>
-                        </motion.div>
+                        <CommunityLevelCard key={level.title} level={level} index={i} inView={inView} theme={theme} />
                     ))}
+                </div>
+
+                {/* Mobile Auto-Scroll Marquee (hidden on desktop) */}
+                <div className="sm:hidden -mx-4 overflow-hidden relative">
+                    <motion.div
+                        className="flex gap-4 px-4"
+                        animate={{
+                            x: [0, -1 * (240 + 16) * communityLevels.length]
+                        }}
+                        transition={{
+                            duration: communityLevels.length * 5,
+                            ease: "linear",
+                            repeat: Infinity
+                        }}
+                    >
+                        {[...communityLevels, ...communityLevels].map((level, i) => (
+                            <div key={`${level.title}-${i}`} className="flex-shrink-0 w-[240px]">
+                                <CommunityLevelCard level={level} index={i} inView={true} theme={theme} isMobile={true} />
+                            </div>
+                        ))}
+                    </motion.div>
                 </div>
             </div>
         </section>
+    );
+}
+
+// Sub-component for individual card to avoid duplication
+function CommunityLevelCard({ level, index, inView, theme, isMobile = false }: { level: any, index: number, inView: boolean, theme: string, isMobile?: boolean }) {
+    return (
+        <motion.div
+            initial={isMobile ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }}
+            animate={inView ? { opacity: 1, scale: 1 } : {}}
+            transition={{ delay: index * 0.1 }}
+            className={`flex-shrink-0 w-full h-full rounded-2xl p-8 flex flex-col items-center text-center cursor-pointer hover:-translate-y-2 transition-all duration-500 group relative overflow-hidden backdrop-blur-md border border-solid ${theme === 'light'
+                ? 'bg-white/40 border-blue-600 shadow-none hover:border-blue-700'
+                : 'bg-white/[0.01] border-white/20 hover:bg-white/[0.05] hover:border-white/40 shadow-[0_4px_24px_rgba(0,0,0,0.2)] hover:shadow-[0_8px_32px_rgba(255,255,255,0.15)]'
+                }`}
+        >
+            <Link href={level.href || "#"} className="flex flex-col items-center w-full h-full">
+                {/* Inner shiny highlight */}
+                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-xl transition-colors duration-500 relative z-10 border-[1px] ${theme === 'light' ? 'bg-primary/10 border-primary/20 group-hover:bg-primary/20 group-hover:border-primary/50' : 'bg-foreground/90 border-transparent group-hover:bg-primary group-hover:border-white/20'
+                    }`}>
+                    <level.icon size={32} className={`transition-colors duration-500 shadow-sm ${theme === 'light' ? 'text-primary' : 'text-primary group-hover:text-white group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]'
+                        }`} />
+                </div>
+                <h3 className="font-display font-bold text-lg text-foreground mb-2">{level.title}</h3>
+                <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium">{level.desc}</p>
+
+                <div className="mt-6 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/30 to-transparent mb-4" />
+
+                {level.href && (
+                    <span className="text-[10px] font-bold text-primary flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        View Details <ChevronRight size={12} />
+                    </span>
+                )}
+            </Link>
+        </motion.div>
     );
 }

@@ -95,18 +95,18 @@ const NavDropdown = ({
                                                     }
                                                 }
                                             }}
-                                            className={`flex items-center gap-4 p-3 rounded-xl transition-all duration-200 cursor-pointer ${isActive
+                                            className={`flex items-center gap-2 p-1.5 rounded-xl transition-all duration-200 cursor-pointer ${isActive
                                                 ? isLight ? 'bg-primary/10' : 'bg-white/10'
                                                 : 'hover:bg-transparent'
                                                 }`}
                                         >
-                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 ${isActive
+                                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300 ${isActive
                                                 ? 'bg-primary text-white scale-110 shadow-lg shadow-primary/20'
                                                 : isLight ? 'bg-slate-100/50 text-slate-500' : 'bg-slate-800/50 text-slate-400'
                                                 }`}>
-                                                <item.icon size={18} />
+                                                <item.icon size={15} />
                                             </div>
-                                            <div className={`flex-1 text-[14px] font-semibold tracking-tight transition-colors ${isActive ? (isLight ? 'text-primary' : 'text-white') : (isLight ? 'text-slate-600' : 'text-slate-300')}`}>
+                                            <div className={`flex-1 text-[12px] font-semibold tracking-tight transition-colors ${isActive ? (isLight ? 'text-primary' : 'text-white') : (isLight ? 'text-slate-600' : 'text-slate-300')}`}>
                                                 {item.name}
                                             </div>
                                             {hasSubs && (
@@ -144,16 +144,16 @@ const NavDropdown = ({
                                                 <Link
                                                     key={sub.id}
                                                     href={`/details/${sub.id}`}
-                                                    className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-200 ${isLight
+                                                    className={`flex items-center gap-2 p-1 rounded-xl transition-all duration-200 ${isLight
                                                         ? 'text-slate-600 hover:text-primary hover:bg-primary/5'
                                                         : 'text-slate-300 hover:text-white hover:bg-white/5'
                                                         }`}
                                                 >
-                                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isLight ? 'bg-slate-100/50 text-slate-400' : 'bg-slate-800/50 text-slate-500'
+                                                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${isLight ? 'bg-slate-100/50 text-slate-400' : 'bg-slate-800/50 text-slate-500'
                                                         }`}>
-                                                        <Circle size={8} fill="currentColor" />
+                                                        <Circle size={5} fill="currentColor" />
                                                     </div>
-                                                    <div className="flex-1 text-[13px] font-medium transition-colors">
+                                                    <div className="flex-1 text-[11px] font-medium transition-colors">
                                                         {sub.name}
                                                     </div>
                                                 </Link>
@@ -251,6 +251,7 @@ export default function Navbar() {
                 if (featRes.success && featRes.data?.length > 0) {
                     setFeatures(featRes.data
                         .filter((f: any) => f.isActive && f.category)
+                        .reverse() // Reverse to put Business Core listings at the top
                         .map((f: any, i: number) => ({
                             name: f.category.name,
                             categoryId: f.category._id,
@@ -596,19 +597,19 @@ export default function Navbar() {
                                                                                 setMobileOpen(false);
                                                                             }
                                                                         }}
-                                                                        className={`w-full flex items-center justify-between p-3 rounded-2xl transition-all duration-300 ${isExpanded
+                                                                        className={`w-full flex items-center justify-between p-2 rounded-2xl transition-all duration-300 ${isExpanded
                                                                             ? isLight ? 'bg-primary/5' : 'bg-white/5'
                                                                             : 'hover:bg-transparent'
                                                                             }`}
                                                                     >
-                                                                        <div className="flex items-center gap-4">
-                                                                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 ${isExpanded
+                                                                        <div className="flex items-center gap-2">
+                                                                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300 ${isExpanded
                                                                                 ? 'bg-primary text-white shadow-lg shadow-primary/20'
                                                                                 : isLight ? 'bg-slate-100/50 text-slate-500' : 'bg-slate-800/50 text-slate-400'
                                                                                 }`}>
-                                                                                <item.icon size={16} />
+                                                                                <item.icon size={14} />
                                                                             </div>
-                                                                            <span className={`text-[14px] font-bold tracking-tight ${isExpanded ? isLight ? 'text-primary' : 'text-white' : isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+                                                                            <span className={`text-[12px] font-bold tracking-tight ${isExpanded ? isLight ? 'text-primary' : 'text-white' : isLight ? 'text-slate-700' : 'text-slate-300'}`}>
                                                                                 {item.name}
                                                                             </span>
                                                                         </div>
@@ -644,7 +645,7 @@ export default function Navbar() {
                                                                                                 }`}>
                                                                                                 <Circle size={6} fill="currentColor" />
                                                                                             </div>
-                                                                                            <span className="text-[13px] font-medium">{sub.name}</span>
+                                                                                            <span className="text-[11px] font-medium">{sub.name}</span>
                                                                                         </Link>
                                                                                     ))}
                                                                                 </div>
