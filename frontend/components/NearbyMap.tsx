@@ -3,7 +3,7 @@
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useEffect, useRef, useState, useCallback } from "react";
 import mapboxgl from "mapbox-gl";
-import { Search, X, MapPin, Phone, Star, Filter, Loader2, Navigation as NavigationIcon, SlidersHorizontal, Circle, ChevronDown, Globe, MessageCircle, Share2, ExternalLink } from "lucide-react";
+import { Search, X, MapPin, Phone, Star, Filter, Loader2, Navigation as NavigationIcon, SlidersHorizontal, Circle, ChevronDown, Globe, MessageCircle, Share2, ExternalLink, Octagon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -583,17 +583,16 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                         navigator.geolocation.clearWatch(watchIdRef.current);
                                         watchIdRef.current = null;
                                     }
-                                    // Remove route markers
                                     if (startMarkerRef.current) {
                                         startMarkerRef.current.remove();
                                         startMarkerRef.current = null;
                                     }
                                     mapRef.current?.easeTo({ pitch: 45, zoom: 15, duration: 1500 });
                                 }}
-                                className="bg-red-500 text-white font-bold py-2 px-6 rounded-xl shadow-lg border border-red-400 hover:bg-red-600 transition-all flex items-center gap-2"
+                                className="bg-red-500 text-white font-black py-2 px-5 rounded-xl shadow-[0_0_20px_rgba(239,68,68,0.4)] border border-red-400 hover:bg-red-600 transition-all flex items-center gap-2 group"
                             >
-                                <X size={16} />
-                                STOP
+                                <Octagon size={14} className="fill-white/20 group-hover:scale-110 transition-transform" />
+                                <span className="text-xs tracking-widest">STOP</span>
                             </button>
                         </div>
                     </motion.div>
@@ -958,11 +957,24 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                 )}
             </AnimatePresence>
 
-            {/* Route Info Card */}
             <AnimatePresence>
                 {routeInfo && !selectedBusiness && (
-                    <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }} className="absolute bottom-6 md:bottom-10 left-0 right-0 z-20 px-4 flex justify-center pointer-events-none">
-                        <div className="relative bg-[#020617]/90 backdrop-blur-3xl border border-primary/40 rounded-[2rem] p-6 shadow-[0_20px_80px_rgba(14,165,233,0.4)] w-full max-w-sm pointer-events-auto overflow-hidden">
+                    <motion.div 
+                        initial={{ opacity: 0, y: 40 }} 
+                        animate={{ 
+                            opacity: 1, 
+                            y: 0,
+                            bottom: isNavigating ? (window.innerWidth < 640 ? 12 : 20) : 24
+                        }} 
+                        exit={{ opacity: 0, y: 40 }} 
+                        className={`absolute z-20 px-2 sm:px-4 flex ${isNavigating ? 'justify-center sm:justify-end' : 'justify-center'} pointer-events-none transition-all duration-700 w-full left-0 right-0`}
+                    >
+                        <div className={`relative bg-[#020617]/95 backdrop-blur-3xl border ${isNavigating ? 'border-red-500/40' : 'border-primary/40'} shadow-[0_20px_80px_rgba(0,0,0,0.8)] pointer-events-auto overflow-hidden transition-all duration-500
+                            ${isNavigating 
+                                ? 'rounded-2xl sm:rounded-[2rem] p-2 sm:p-4 !sm:pt-10 w-[min(calc(100%-1rem),400px)] sm:max-w-[200px]' 
+                                : 'rounded-[1.2rem] sm:rounded-[2rem] p-4 sm:p-6 w-[calc(100%-1.5rem)] sm:w-full max-w-[280px] sm:max-w-sm'
+                            }
+                        `}>
                             {/* Animated Scanner Effect */}
                             <motion.div 
                                 animate={{ y: ['100%', '-100%'] }} 
@@ -970,58 +982,70 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                 className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent h-1/2 pointer-events-none"
                             />
 
-                            {/* Close Button */}
-                            <button 
-                                onClick={() => {
-                                    setRouteInfo(null);
-                                    if (mapRef.current) {
-                                        const map = mapRef.current;
-                                        ['route-glow', 'route-line', 'route-particles'].forEach(id => {
-                                            if (map.getLayer(id)) map.removeLayer(id);
-                                        });
-                                        if (map.getSource('route')) map.removeSource('route');
-                                        if (startMarkerRef.current) {
-                                            startMarkerRef.current.remove();
-                                            startMarkerRef.current = null;
+                            {/* Close Button - Only show when NOT navigating */}
+                            {!isNavigating && (
+                                <button 
+                                    onClick={() => {
+                                        setRouteInfo(null);
+                                        if (mapRef.current) {
+                                            const map = mapRef.current;
+                                            ['route-glow', 'route-line', 'route-particles'].forEach(id => {
+                                                if (map.getLayer(id)) map.removeLayer(id);
+                                            });
+                                            if (map.getSource('route')) map.removeSource('route');
+                                            if (startMarkerRef.current) {
+                                                startMarkerRef.current.remove();
+                                                startMarkerRef.current = null;
+                                            }
+                                            if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
                                         }
-                                        if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-                                    }
-                                    if (userLocation) {
-                                        mapRef.current?.flyTo({ center: [userLocation.lng, userLocation.lat], zoom: 15, pitch: 45, duration: 2000 });
-                                    }
-                                }}
-                                className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/5 border border-white/10 text-white/40 hover:bg-red-500/20 hover:text-red-400 flex items-center justify-center transition-all z-20"
-                            >
-                                <X size={16} />
-                            </button>
+                                        if (userLocation) {
+                                            mapRef.current?.flyTo({ center: [userLocation.lng, userLocation.lat], zoom: 15, pitch: 45, duration: 2000 });
+                                        }
+                                    }}
+                                    className="absolute top-2 right-2 sm:top-3 sm:right-3 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/5 border border-white/10 text-white flex items-center justify-center transition-all z-20 shadow-lg hover:bg-white/10"
+                                >
+                                    <X size={14} className="sm:size-4" />
+                                </button>
+                            )}
 
-                            <div className="flex flex-col relative z-10 w-full">
-                                {/* Route Metadata - Fixed height container to prevent jumps */}
-                                <div className="min-h-[85px] mb-4">
-                                    <span className="text-primary text-[10px] font-black uppercase tracking-[0.2em] mb-1.5 flex items-center gap-2">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-primary animate-ping" />
-                                        {isNavigating ? 'LIVE GUIDANCE' : 'ROUTE READY'}
-                                    </span>
-                                    <h4 className="text-white/60 text-xs font-bold uppercase tracking-wider mb-2 truncate pr-10">
-                                        {routeInfo.businessName}
-                                    </h4>
-                                    
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-white font-black text-3xl tracking-tighter">
-                                            {routeInfo.duration > 60 ? `${Math.floor(routeInfo.duration/60)}h ${Math.round(routeInfo.duration%60)}m` : `${Math.round(routeInfo.duration)} MIN`}
+                            <div className={`flex relative z-10 w-full ${isNavigating ? 'flex-row items-center justify-between sm:flex-col sm:items-stretch sm:justify-start sm:gap-0' : 'flex-col'}`}>
+                                {/* Route Metadata */}
+                                <div className={`${isNavigating ? 'min-h-0 sm:min-h-[50px] mb-0 sm:mb-4 flex flex-row items-center gap-3 sm:flex-col sm:items-start sm:gap-0' : 'min-h-[60px] sm:min-h-[85px] mb-2 sm:mb-4'}`}>
+                                    <div className={`${isNavigating ? 'hidden sm:flex' : 'flex'} items-center gap-1.5 mb-1 sm:mb-1.5`}>
+                                        <div className={`w-1 h-1 rounded-full bg-primary ${isNavigating ? 'animate-pulse' : 'animate-ping'}`} />
+                                        <span className={`text-primary ${isNavigating ? 'text-[7px]' : 'text-[10px]'} font-black uppercase tracking-[0.2em]`}>
+                                            {isNavigating ? 'LIVE' : 'ROUTE READY'}
                                         </span>
-                                        <div className="h-6 w-px bg-white/10" />
-                                        <div className="flex flex-col">
-                                            <span className="text-primary/60 text-[10px] font-black tracking-widest uppercase mb-0.5">ROAD ROUTE</span>
-                                            <span className="text-primary font-black text-sm tracking-widest uppercase">
-                                                {routeInfo.distance.toFixed(1)} KM
+                                    </div>
+                                    
+                                    <div className={`flex flex-col ${isNavigating ? 'sm:gap-0.5' : 'gap-1.5 sm:gap-3'}`}>
+                                        <div className="flex flex-col sm:mb-1">
+                                            <span className={`text-white font-black ${isNavigating ? 'text-lg sm:text-4xl' : 'text-2xl sm:text-4xl'} tracking-tighter leading-none`}>
+                                                {routeInfo.duration > 60 ? `${Math.floor(routeInfo.duration/60)}h ${Math.round(routeInfo.duration%60)}m` : `${Math.round(routeInfo.duration)}`}
+                                                <span className={`${isNavigating ? 'text-[10px] ml-0.5' : 'text-xs ml-0.5 sm:text-lg sm:ml-1'}`}>MIN</span>
+                                            </span>
+                                        </div>
+                                        
+                                        <div className={`flex flex-col ${isNavigating ? 'gap-0 sm:gap-0.5' : 'gap-0.5'}`}>
+                                            <div className="flex items-center gap-1 sm:gap-1.5">
+                                                <div className={`h-1 w-1 rounded-full ${isNavigating ? 'bg-primary' : 'bg-primary/50'}`} />
+                                                <span className={`text-primary font-black ${isNavigating ? 'text-xs sm:text-lg' : 'text-base sm:text-lg'} tracking-widest uppercase`}>
+                                                    {routeInfo.distance.toFixed(1)} <span className="text-[10px]">KM</span>
+                                                </span>
+                                            </div>
+                                            <span className={`hidden sm:block text-white/40 ${isNavigating ? 'text-[7px] sm:text-[8px]' : 'text-[10px]'} font-bold tracking-[0.1em] sm:tracking-[0.2em] uppercase`}>
+                                                {isNavigating ? 'ROAD ROUTE' : 'ESTIMATED ROAD ROUTE'}
                                             </span>
                                         </div>
                                     </div>
                                 </div>
 
+                                {/* Divider - Hidden on mobile during navigation */}
+                                <div className={`w-full h-px bg-white/5 ${isNavigating ? 'hidden sm:block sm:my-1.5' : 'my-2 sm:my-6'}`} />
+
                                 {/* Action Buttons Container */}
-                                <div className="space-y-3 pt-4 border-t border-white/5">
+                                <div className={`${isNavigating ? 'sm:pt-4 sm:border-t sm:border-white/5 ml-auto sm:ml-0' : 'space-y-2 sm:space-y-3 pt-2 sm:pt-4 border-t border-white/5'}`}>
                                     {!isNavigating ? (
                                         <button
                                             onClick={() => {
@@ -1075,12 +1099,12 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                     );
                                                 }
                                             }}
-                                            className="bg-primary text-white font-black py-4 px-6 rounded-2xl hover:bg-primary/90 transition-all flex items-center justify-center gap-3 shadow-[0_10px_30px_rgba(59,130,246,0.3)] w-full text-xs uppercase tracking-widest"
+                                            className="bg-primary text-white font-black py-2.5 sm:py-4 px-4 sm:px-6 rounded-xl sm:rounded-2xl hover:bg-primary/90 transition-all flex items-center justify-center gap-2 sm:gap-3 shadow-[0_10px_30px_rgba(59,130,246,0.3)] w-full text-[10px] sm:text-xs uppercase tracking-widest"
                                         >
-                                            <NavigationIcon size={18} fill="currentColor" /> START NAVIGATION
+                                            <NavigationIcon size={14} fill="currentColor" className="sm:size-[18px]" /> START NAVIGATION
                                         </button>
                                     ) : (
-                                        <div className="flex flex-col gap-2 relative min-h-[52px]">
+                                        <div className="flex flex-col gap-2 relative min-h-0">
                                             <AnimatePresence mode="wait">
                                                 {!isAutoCentering && (
                                                     <motion.button
@@ -1102,9 +1126,9 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                                 setTimeout(() => { isProgrammaticMove.current = false; }, 1600);
                                                             }
                                                         }}
-                                                        className="bg-primary text-white font-black py-4 px-6 rounded-2xl hover:bg-primary/90 transition-all flex items-center justify-center gap-3 w-full shadow-[0_10px_30px_rgba(14,165,233,0.3)] text-xs uppercase tracking-widest border border-white/20"
+                                                        className={`bg-primary text-white font-black ${isNavigating ? 'py-1.5 px-3 rounded-xl sm:py-2' : 'py-4 px-6 rounded-2xl'} hover:bg-primary/90 transition-all flex items-center justify-center gap-1.5 w-full shadow-[0_10px_30px_rgba(14,165,233,0.3)] ${isNavigating ? 'text-[8px] sm:text-[9px]' : 'text-xs'} uppercase tracking-widest border border-white/20`}
                                                     >
-                                                        <NavigationIcon size={18} className="rotate-45" /> RE-CENTER VIEW
+                                                        <NavigationIcon size={isNavigating ? 10 : 18} className="rotate-45" /> RE-CENTER
                                                     </motion.button>
                                                 )}
                                             </AnimatePresence>
@@ -1127,9 +1151,9 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                     setTimeout(() => { isProgrammaticMove.current = false; }, 1600);
                                                 }
                                             }}
-                                            className="bg-white/5 border border-white/10 text-white/40 font-bold py-3 px-6 rounded-xl hover:bg-white/10 transition-all flex items-center justify-center gap-2 w-full text-[10px] uppercase tracking-wider"
+                                            className="bg-white/5 border border-white/10 text-white/40 font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-xl hover:bg-white/10 transition-all flex items-center justify-center gap-2 w-full text-[9px] sm:text-[10px] uppercase tracking-wider"
                                         >
-                                            <NavigationIcon size={12} className="rotate-45" /> RESET VIEW
+                                            <NavigationIcon size={10} className="sm:size-3 rotate-45" /> RESET VIEW
                                         </button>
                                     )}
                                 </div>

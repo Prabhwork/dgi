@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, MapPin, Store, CheckCircle2, Compass, ChevronDown, Loader2, Trophy, TrendingUp, Zap, ChevronRight, Navigation as NavigationIcon, Tag } from "lucide-react";
+import { Search, MapPin, Store, CheckCircle2, Compass, ChevronDown, Loader2, Trophy, TrendingUp, Zap, ChevronRight, Navigation as NavigationIcon, Tag, Mic } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 import { useRouter } from "next/navigation";
 import {
@@ -39,6 +39,8 @@ export default function HeroSection() {
     const [isSearchingSuggestions, setIsSearchingSuggestions] = useState(false);
     const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
     const suggestionRef = useRef<HTMLDivElement>(null);
+    const [isListening, setIsListening] = useState(false);
+    const recognitionRef = useRef<any>(null);
 
     useEffect(() => {
         const fetchCategories = async () => {
@@ -214,6 +216,32 @@ export default function HeroSection() {
         setShowSuggestions(false);
 
         let query = queryToSearch.trim();
+        
+        // Voice Navigation Logic
+        const navMap: { [key: string]: string } = {
+            'home': '/',
+            'community': '/community',
+            'register': '/community/register',
+            'map': '/nearby-map',
+            'nearby': '/nearby-map',
+            'benefits': '/listing-benefits',
+            'plans': '/mapping-plans',
+            'success': '/success-stories',
+            'why choose dbi': '/why-dbi',
+            // Hindi equivalents
+            'ghar': '/',
+            'registration': '/community/register',
+            'naksha': '/nearby-map'
+        };
+
+        const lowerQuery = query.toLowerCase();
+        for (const [key, path] of Object.entries(navMap)) {
+            if (lowerQuery.includes(key)) {
+                router.push(path);
+                return;
+            }
+        }
+
         let location = "";
         let lat = "";
         let lng = "";
@@ -235,7 +263,6 @@ export default function HeroSection() {
                 
                 if (data.features && data.features.length > 0) {
                     const bestMatch = data.features[0];
-                    // If the match is very high relevance, we assume it's a valid location
                     if (bestMatch.relevance > 0.85) {
                         lat = bestMatch.center[1].toString();
                         lng = bestMatch.center[0].toString();
@@ -258,6 +285,48 @@ export default function HeroSection() {
         }
 
         router.push(`/search?${params.toString()}`);
+    };
+
+    const toggleVoiceInput = () => {
+        if (isListening) {
+            if (recognitionRef.current) {
+                recognitionRef.current.stop();
+            }
+            setIsListening(false);
+            return;
+        }
+
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert("Your browser does not support Speech Recognition. Please try Chrome.");
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'en-US'; // Default to English, but can detect Hindi too if needed
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        recognition.onstart = () => setIsListening(true);
+        recognition.onend = () => setIsListening(false);
+        recognition.onerror = (event: any) => {
+            if (event.error === 'no-speech') {
+                console.warn("Speech recognition: No speech detected.");
+            } else {
+                console.error("Speech recognition error", event.error);
+            }
+            setIsListening(false);
+        };
+
+        recognition.onresult = (event: any) => {
+            const transcript = event.results[0][0].transcript;
+            setSearchInput(transcript);
+            // Wait a bit for the state to update, then search
+            setTimeout(() => handleSearch(transcript), 500);
+        };
+
+        recognitionRef.current = recognition;
+        recognition.start();
     };
 
     useEffect(() => {
@@ -319,7 +388,7 @@ export default function HeroSection() {
                             <div className="relative flex-1 flex items-center">
                                 <motion.input
                                     type="text"
-                                    placeholder={isLocating ? "Detecting location..." : (detectedLocation ? `Near ${detectedLocation}` : "Search restaurants, services, or cities...")}
+                                    placeholder={isListening ? "Listening..." : (isLocating ? "Detecting location..." : (detectedLocation ? `Near ${detectedLocation}` : "Search restaurants, services, or cities..."))}
                                     value={searchInput}
                                     onChange={(e) => {
                                         setSearchInput(e.target.value);
@@ -330,7 +399,7 @@ export default function HeroSection() {
                                     }}
                                     onKeyDown={handleKeyDown}
                                     suppressHydrationWarning
-                                    className={`bg-transparent text-sm font-medium outline-none w-full pr-8 ${theme === 'light'
+                                    className={`bg-transparent text-sm font-medium outline-none w-full pr-16 ${theme === 'light'
                                         ? 'text-slate-900 placeholder:text-slate-400'
                                         : 'text-white placeholder:text-white/40'
                                         }`}
@@ -378,6 +447,17 @@ export default function HeroSection() {
                                     )}
                                 </AnimatePresence>
                                 
+                                {/* Voice Search Button */}
+                                <button
+                                    onClick={toggleVoiceInput}
+                                    className={`absolute right-8 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all ${
+                                        isListening ? 'animate-pulse text-red-500 bg-red-500/10 scale-110' : 'text-muted-foreground hover:text-primary hover:bg-primary/10'
+                                    }`}
+                                    title="Voice Search"
+                                >
+                                    <Mic size={18} />
+                                </button>
+
                                 {/* Inner Location Button */}
                                 <button
                                     onClick={() => {
