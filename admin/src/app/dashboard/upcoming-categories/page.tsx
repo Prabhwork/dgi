@@ -29,8 +29,7 @@ const ICON_OPTIONS = [
 
 // Helper to render dynamic icons by name
 const DynamicIcon = ({ name, size = 20, className = "" }: { name: string, size?: number, className?: string }) => {
-    // @ts-expect-error - LucideIcons is a large object and we access it dynamically
-    const IconComponent = LucideIcons[name] || LucideIcons.HelpCircle;
+    const IconComponent = (LucideIcons as any)[name] || LucideIcons.HelpCircle;
     return <IconComponent size={size} className={className} />;
 };
 

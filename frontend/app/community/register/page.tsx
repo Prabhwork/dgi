@@ -1174,7 +1174,7 @@ function RegisterPageContent() {
                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6 pb-10">
                         <div className="flex items-center gap-3 mb-8">
                             <Building2 className="text-primary w-8 h-8" />
-                            <h2 className="text-2xl font-bold text-white">{t('stepTitles.identity')}</h2>
+                            <h2 className="text-2xl font-bold text-white pr-24 sm:pr-0">{t('stepTitles.identity')}</h2>
                         </div>
                         <div className="space-y-4">
                             <div className="grid gap-2">
@@ -1549,7 +1549,7 @@ function RegisterPageContent() {
                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
                         <div className="flex items-center gap-3 mb-8">
                             <MapPin className="text-primary w-8 h-8" />
-                            <h2 className="text-2xl font-bold text-white">{t('stepTitles.contact')}</h2>
+                            <h2 className="text-2xl font-bold text-white pr-24 sm:pr-0">{t('stepTitles.contact')}</h2>
                         </div>
                         <div className="space-y-4">
                             <div className="grid gap-2">
@@ -1703,7 +1703,7 @@ function RegisterPageContent() {
                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
                         <div className="flex items-center gap-3 mb-8">
                             <Clock className="text-primary w-8 h-8" />
-                            <h2 className="text-2xl font-bold text-white">Operations & Status</h2>
+                            <h2 className="text-2xl font-bold text-white pr-24 sm:pr-0">Operations & Status</h2>
                         </div>
                         <div className="space-y-4">
                             {timings.map((timing, index) => (
@@ -1778,7 +1778,7 @@ function RegisterPageContent() {
                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
                         <div className="flex items-center gap-3 mb-8">
                             <ShieldCheck className="text-primary w-8 h-8" />
-                            <h2 className="text-2xl font-bold text-white">{t('stepTitles.verification')}</h2>
+                            <h2 className="text-2xl font-bold text-white pr-24 sm:pr-0">{t('stepTitles.verification')}</h2>
                         </div>
                         <div className="space-y-6">
                             <div className="grid gap-4">
@@ -1828,7 +1828,7 @@ function RegisterPageContent() {
                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
                         <div className="flex items-center gap-3 mb-8">
                             <ImageIcon className="text-primary w-8 h-8" />
-                            <h2 className="text-2xl font-bold text-white">{t('stepTitles.gallery')}</h2>
+                            <h2 className="text-2xl font-bold text-white pr-24 sm:pr-0">{t('stepTitles.gallery')}</h2>
                         </div>
                         <div className="space-y-6">
                             <div className="grid gap-2">
@@ -1851,7 +1851,7 @@ function RegisterPageContent() {
                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
                         <div className="flex items-center gap-3 mb-8">
                             <Users className="text-primary w-8 h-8" />
-                            <h2 className="text-2xl font-bold text-white">{t('stepTitles.community')}</h2>
+                            <h2 className="text-2xl font-bold text-white pr-24 sm:pr-0">{t('stepTitles.community')}</h2>
                         </div>
                         <div className="space-y-8 py-4">
                             <div className="flex items-center space-x-3 p-4 glass rounded-xl border border-white/10">
@@ -2007,19 +2007,19 @@ function RegisterPageContent() {
 
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
 
-                    <div className="absolute top-4 right-4 sm:top-6 sm:right-8 z-[20]">
+                    <div className="absolute top-4 right-4 sm:top-6 sm:right-8 z-[20] scale-90 sm:scale-100 origin-top-right">
                         <div className="flex bg-white/5 border border-white/10 rounded-full p-1 backdrop-blur-md">
                             <button
                                 type="button"
                                 onClick={() => setLanguage('en')}
-                                className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${language === 'en' ? 'bg-primary text-white shadow-lg' : 'text-white/40 hover:text-white/70'}`}
+                                className={`px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-widest transition-all ${language === 'en' ? 'bg-primary text-white shadow-lg' : 'text-white/40 hover:text-white/70'}`}
                             >
                                 English
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setLanguage('hi')}
-                                className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${language === 'hi' ? 'bg-primary text-white shadow-lg' : 'text-white/40 hover:text-white/70'}`}
+                                className={`px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-widest transition-all ${language === 'hi' ? 'bg-primary text-white shadow-lg' : 'text-white/40 hover:text-white/70'}`}
                             >
                                 हिंदी
                             </button>
