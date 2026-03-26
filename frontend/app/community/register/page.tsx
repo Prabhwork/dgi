@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
     Building2, MapPin, Clock, ShieldCheck, Image as ImageIcon, Users,
     ChevronRight, ChevronLeft, Upload, CheckCircle2, AlertCircle, X, Map,
-    Loader2, CheckCircle, ExternalLink, Fingerprint, Plus, Search
+    Loader2, CheckCircle, ExternalLink, Fingerprint, Plus, Search, Mic
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -38,13 +38,239 @@ const loadRazorpayScript = () => {
     });
 };
 
+const TRANSLATIONS = {
+    en: {
+        registrationTitle: "DBI Community Registration",
+        joinNetwork: "Join the trusted network of businesses",
+        rejectionReason: "Rejection Reason",
+        correctFields: "Please correct the highlighted fields and resubmit.",
+        prev: "Prev",
+        next: "Next",
+        submit: "Submit",
+        registering: "Registering...",
+        locateMe: "Locate Me",
+        locating: "Locating...",
+        sendOtp: "Send OTP",
+        sending: "Sending...",
+        verified: "Verified",
+        verifyCode: "Verify Code",
+        verifying: "Verifying...",
+        enterOtp: "Enter 6-Digit Verification Code",
+        steps: {
+            identity: "Identity",
+            contact: "Contact",
+            operations: "Operations",
+            verification: "Verification",
+            gallery: "Gallery",
+            community: "Community"
+        },
+        stepTitles: {
+            identity: "Basic Business Identity",
+            contact: "Location & Contact",
+            operations: "Operations & Status",
+            verification: "Verification & Trust",
+            gallery: "Gallery & Catalog",
+            community: "Community & Tenders"
+        },
+        labels: {
+            businessName: "Business Name",
+            brandName: "Brand Name",
+            businessCategory: "Business Category",
+            selectedSubcategories: "Selected (Subcategories)",
+            businessDescription: "Business Description",
+            keywords: "Keywords / Tags",
+            gpsCoordinates: "Exact GPS Coordinates",
+            officeAddress: "Registered Office Address",
+            primaryContact: "Primary Contact Number",
+            whatsappNumber: "Official WhatsApp Number",
+            emailAddress: "Official Email Address",
+            password: "Password",
+            openingTime: "Opening Time",
+            closingTime: "Closing Time",
+            weeklyOff: "Weekly Off",
+            aadhaarNumber: "Aadhaar Number",
+            uploadAadhaar: "Upload Aadhaar Card",
+            website: "Website Name / URL",
+            panCard: "Owner's PAN Card",
+            establishmentProof: "Shop/Establishment Proof",
+            coverImage: "Cover Image",
+            galleryUploads: "Gallery Uploads (Max 10)",
+            catalog: "Pricing/Menu/Catalog",
+            bulkBuying: "I would like to join for Bulk Buying.",
+            fraudAlerts: "I would like to receive Fraud Alerts."
+        },
+        placeholders: {
+            legalName: "Legal name (GST/License)",
+            tradingName: "Trading name (if different)",
+            categorySearch: "Search from 4000+ Categories (e.g. Restaurants, Legal, Marketing)",
+            selectSubcategories: "Select subcategories",
+            addSubcategories: "Add more specialties...",
+            uniqueSpecialty: "e.g. Vintage Car Restoration",
+            aboutSection: "Short 'About' section for the community",
+            keywordType: "Type and press Enter (e.g., jewelry, delivery, wholesale)",
+            locateHelp: "Click 'Locate Me' for accuracy",
+            emailHelp: "name@business.com",
+            aadhaarHelp: "12-digit Aadhaar Number",
+            websiteHelp: "e.g. www.mybusiness.com"
+        },
+        messages: {
+            aadhaarNote: "Note: Our team will check your Aadhaar card manually.",
+            establishmentNote: "(Partnership deed, Company form, or GST)",
+            agreeNote: "By submitting, you agree to join the trusted network of businesses.",
+            emailVerifyError: "Please verify your email address to continue",
+            aadhaarError: "Please enter a valid 12-digit Aadhaar number",
+            aadhaarUploadError: "Please upload your Aadhaar card copy",
+            agreementError: "You must agree to join Bulk Buying and receive Fraud Alerts to proceed with registration.",
+            successTitle: "Registration Received",
+            successMessage: "Welcome to the DBI Community! Your membership application has been successfully submitted.",
+            notificationNote: "Please Note: Your business listing will be visible to the public only after successful admin approval.",
+            approvalWindow: "Approval Window",
+            approvalText: "Our team manually verifies all documents. This typically takes 24 to 48 hours.",
+            verificationTitle: "Verification",
+            verificationText: "Both manual and automated checks are performed on your legal and identity documents.",
+            emailConfirm: "You will receive an email confirmation once your account is activated.",
+            goToLogin: "Go to Login Portal",
+            backHome: "Back to Home"
+        }
+    },
+    hi: {
+        registrationTitle: "DBI समुदाय पंजीकरण",
+        joinNetwork: "व्यवसायों के विश्वसनीय नेटवर्क में शामिल हों",
+        rejectionReason: "अस्वीकृति का कारण",
+        correctFields: "कृपया हाइलाइट किए गए फ़ील्ड को ठीक करें और पुनः सबमिट करें।",
+        prev: "पिछला",
+        next: "अगला",
+        submit: "सबमिट करें",
+        registering: "पंजीकरण हो रहा है...",
+        locateMe: "मेरी स्थिति जानें",
+        locating: "ढूंढ रहे हैं...",
+        sendOtp: "OTP भेजें",
+        sending: "भेज रहे हैं...",
+        verified: "सत्यापित",
+        verifyCode: "कोड सत्यापित करें",
+        verifying: "सत्यापित कर रहे हैं...",
+        enterOtp: "6-अंकों का सत्यापन कोड दर्ज करें",
+        typeHint: "हिंदी में बदलने के लिए अंग्रेजी में टाइप करें और स्पेस दबाएं",
+        steps: {
+            identity: "पहचान",
+            contact: "संपर्क",
+            operations: "संचालन",
+            verification: "सत्यापन",
+            gallery: "गैलरी",
+            community: "समुदाय"
+        },
+        stepTitles: {
+            identity: "मूल व्यावसायिक पहचान",
+            contact: "स्थान और संपर्क",
+            operations: "संचालन और स्थिति",
+            verification: "सत्यापन और विश्वास",
+            gallery: "गैलरी और कैटलॉग",
+            community: "समुदाय और निविदाएं"
+        },
+        labels: {
+            businessName: "व्यवसाय का नाम",
+            brandName: "ब्रांड का नाम",
+            businessCategory: "व्यवसाय की श्रेणी",
+            selectedSubcategories: "चयनित (उपश्रेणियाँ)",
+            businessDescription: "व्यवसाय विवरण",
+            keywords: "कीवर्ड / टैग",
+            gpsCoordinates: "सटीक GPS निर्देशांक",
+            officeAddress: "पंजीकृत कार्यालय का पता",
+            primaryContact: "प्राथमिक संपर्क नंबर",
+            whatsappNumber: "आधिकारिक व्हाट्सएप नंबर",
+            emailAddress: "आधिकारिक ईमेल पता",
+            password: "पासवर्ड",
+            openingTime: "खुलने का समय",
+            closingTime: "बंद होने का समय",
+            weeklyOff: "साप्ताहिक अवकाश",
+            aadhaarNumber: "आधार नंबर",
+            uploadAadhaar: "आधार कार्ड अपलोड करें",
+            website: "वेबसाइट का नाम / URL",
+            panCard: "मालिक का पैन कार्ड",
+            establishmentProof: "दुकान/प्रतिष्ठान का प्रमाण",
+            coverImage: "कवर इमेज",
+            galleryUploads: "गैलरी अपलोड (अधिकतम 10)",
+            catalog: "मूल्य निर्धारण/मेन्यू/कैटलॉग",
+            bulkBuying: "मैं थोक खरीदारी (Bulk Buying) के लिए शामिल होना चाहता हूँ।",
+            fraudAlerts: "मैं धोखाधड़ी अलर्ट (Fraud Alerts) प्राप्त करना चाहता हूँ।"
+        },
+        placeholders: {
+            legalName: "कानूनी नाम (GST/लाइसेंस)",
+            tradingName: "व्यापारिक नाम (यदि अलग हो)",
+            categorySearch: "4000+ श्रेणियों में से खोजें (जैसे रेस्टोरेंट, कानूनी, मार्केटिंग)",
+            selectSubcategories: "उपश्रेणियाँ चुनें",
+            addSubcategories: "अधिक विशेषताएं जोड़ें...",
+            uniqueSpecialty: "जैसे विंटेज कार बहाली",
+            aboutSection: "समुदाय के लिए संक्षिप्त 'अबाउट' खंड",
+            keywordType: "टाइप करें और एंटर दबाएं (जैसे गहने, डिलीवरी, थोक)",
+            locateHelp: "सटीकता के लिए 'मेरी स्थिति जानें' पर क्लिक करें",
+            emailHelp: "name@business.com",
+            aadhaarHelp: "12-अंकों का आधार नंबर",
+            websiteHelp: "जैसे www.mybusiness.com"
+        },
+        messages: {
+            aadhaarNote: "नोट: हमारी टीम आपके आधार कार्ड की मैन्युअल रूप से जाँच करेगी।",
+            establishmentNote: "(साझेदारी विलेख, कंपनी फॉर्म, या GST)",
+            agreeNote: "सबमिट करके, आप व्यवसायों के विश्वसनीय नेटवर्क में शामिल होने के लिए सहमत हैं।",
+            emailVerifyError: "जारी रखने के लिए कृपया अपना ईमेल पता सत्यापित करें",
+            aadhaarError: "कृपया एक वैध 12-अंकों का आधार नंबर दर्ज करें",
+            aadhaarUploadError: "कृपया अपने आधार कार्ड की प्रति अपलोड करें",
+            agreementError: "पंजीकरण के साथ आगे बढ़ने के लिए आपको थोक खरीदारी में शामिल होने और धोखाधड़ी अलर्ट प्राप्त करने के लिए सहमत होना होगा।",
+            successTitle: "पंजीकरण प्राप्त हुआ",
+            successMessage: "DBI समुदाय में आपका स्वागत है! आपकी सदस्यता का आवेदन सफलतापूर्वक सबमिट कर दिया गया है।",
+            notificationNote: "कृपया ध्यान दें: आपकी व्यावसायिक सूची सफल एडमिन अनुमोदन के बाद ही जनता को दिखाई देगी।",
+            approvalWindow: "अनुमोदन विंडो",
+            approvalText: "हमारी टीम मैन्युअल रूप से सभी दस्तावेजों की पुष्टि करती है। इसमें आमतौर पर 24 से 48 घंटे लगते हैं।",
+            verificationTitle: "सत्यापन",
+            verificationText: "आपके कानूनी और पहचान दस्तावेजों पर मैन्युअल और स्वचालित दोनों जांच की जाती है।",
+            emailConfirm: "आपका खाता सक्रिय होने के बाद आपको एक पुष्टिकरण ईमेल प्राप्त होगा।",
+            goToLogin: "लॉगिन पोर्टल पर जाएं",
+            backHome: "होम पर वापस जाएं"
+        },
+        categoryNames: {
+            "All Nightlife": "सभी नाइटलाइफ़",
+            "Arts & Entertainment": "कला और मनोरंजन",
+            "Automotive": "ऑटोमोटिव",
+            "Beauty & Spas": "सौंदर्य और स्पा",
+            "Education": "शिक्षा",
+            "Event Planning & Services": "इवेंट प्लानिंग और सेवाएं",
+            "Financial Services": "वित्तीय सेवाएं",
+            "Food": "भोजन",
+            "Health & Medical": "स्वास्थ्य और चिकित्सा",
+            "Home Services": "होम सर्विसेज",
+            "Hotels & Travel": "होटल और यात्रा",
+            "Local Services Mix": "स्थानीय सेवाएं मिक्स",
+            "Mass Media": "मास मीडिया",
+            "Nightlife": "नाइटलाइफ़",
+            "Pets": "पालतू जानवर",
+            "Professional Services": "पेशेवर सेवाएं",
+            "Public Services & Government": "सार्वजनिक सेवाएं और सरकार",
+            "Real Estate": "रियल एस्टेट",
+            "Religious Organizations": "धार्मिक संगठन",
+            "Restaurants": "रेस्टोरेंट",
+            "Shopping": "शॉपिंग",
+            "Local Flavor": "स्थानीय स्वाद",
+            "Reservations": "आरक्षण",
+            "Services": "सेवाएं",
+            "Legal": "कानूनी",
+            "Marketing": "मार्केटिंग",
+            "Jewelry": "गहने",
+            "Delivery": "डिलीवरी",
+            "Wholesale": "थोक",
+            "Construction": "निर्माण",
+            "Manufacturing": "विनिर्माण",
+            "Retail": "रिटेल"
+        }
+    }
+};
+
 const steps = [
-    { id: 1, title: "Identity", icon: Building2 },
-    { id: 2, title: "Contact", icon: MapPin },
-    { id: 3, title: "Operations", icon: Clock },
-    { id: 4, title: "Verification", icon: ShieldCheck },
-    { id: 5, title: "Gallery", icon: ImageIcon },
-    { id: 6, title: "Community", icon: Users },
+    { id: 1, title: "identity", icon: Building2 },
+    { id: 2, title: "contact", icon: MapPin },
+    { id: 3, title: "operations", icon: Clock },
+    { id: 4, title: "verification", icon: ShieldCheck },
+    { id: 5, title: "gallery", icon: ImageIcon },
+    { id: 6, title: "community", icon: Users },
 ];
 
 function RegisterPageContent() {
@@ -54,11 +280,150 @@ function RegisterPageContent() {
     const formContainerRef = useRef<HTMLDivElement>(null);
 
     const [currentStep, setCurrentStep] = useState(1);
+    const [language, setLanguage] = useState<'en' | 'hi'>('en');
+    const t = (path: string) => {
+        const keys = path.split('.');
+        let result: any = TRANSLATIONS[language];
+        for (const key of keys) {
+            if (result[key] === undefined) return path;
+            result = result[key];
+        }
+        return result;
+    };
+
+    const tc = (name: string) => {
+        if (language === 'en') return name;
+        // Check static dictionary first, then dynamic cache
+        return (TRANSLATIONS.hi as any).categoryNames[name] || categoryTranslationCache[name] || name;
+    };
+
+    const [isListening, setIsListening] = useState(false);
+    const [listeningField, setListeningField] = useState<string | null>(null);
+    const recognitionRef = useRef<any>(null);
+
+    const toggleVoiceInput = (fieldName: string) => {
+        // If already listening to THIS field, stop it.
+        if (isListening && listeningField === fieldName) {
+            if (recognitionRef.current) {
+                recognitionRef.current.stop();
+            }
+            setIsListening(false);
+            setListeningField(null);
+            return;
+        }
+
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert(language === 'hi' ? "इस ब्राउज़र में वॉयस इनपुट समर्थित नहीं है। कृपया गूगल क्रोम का उपयोग करें।" : "Voice input is not supported in this browser. Please use Chrome.");
+            return;
+        }
+
+        // Stop any existing session
+        if (recognitionRef.current) {
+            try {
+                recognitionRef.current.abort();
+            } catch (e) {}
+        }
+
+        // SET IMMEDIATELY FOR UI FEEDBACK (Pulse)
+        setIsListening(true);
+        setListeningField(fieldName);
+
+        // Small delay to ensure previous session is cleared and UI updates
+        setTimeout(() => {
+            try {
+                const recognition = new SpeechRecognition();
+                recognitionRef.current = recognition;
+                
+                recognition.lang = language === 'hi' ? 'hi-IN' : 'en-US';
+                recognition.interimResults = true;
+                recognition.continuous = false;
+                recognition.maxAlternatives = 1;
+
+                recognition.onstart = () => {
+                    console.log("Voice Input: Started for", fieldName);
+                };
+
+                recognition.onresult = (event: any) => {
+                    let currentTranscript = '';
+                    for (let i = event.resultIndex; i < event.results.length; i++) {
+                        currentTranscript += event.results[i][0].transcript;
+                    }
+                    
+                    if (fieldName === 'keywordInput') {
+                        setKeywordInput(currentTranscript);
+                    } else if (fieldName === 'catSearchTerm') {
+                        setCatSearchTerm(currentTranscript);
+                        setFormData(prev => ({ ...prev, businessCategory: currentTranscript }));
+                    } else {
+                        setFormData(prev => ({ ...prev, [fieldName]: currentTranscript }));
+                    }
+                };
+
+                recognition.onerror = (event: any) => {
+                    console.error("Voice Input Error:", event.error);
+                    if (event.error === 'not-allowed') {
+                        alert(language === 'hi' ? "कृपया माइक्रोफ़ोन एक्सेस की अनुमति दें!" : "Please allow microphone access!");
+                    } else if (event.error === 'network') {
+                        alert(language === 'hi' ? "नेटवर्क समस्या - कृपया इंटरनेट चेक करें।" : "Network error - please check internet connection.");
+                    } else if (event.error === 'no-speech') {
+                        alert(language === 'hi' ? "कोई आवाज़ नहीं सुनी गई। कृपया जोर से बोलें या पुनः प्रयास करें।" : "No speech detected. Please speak louder or try again.");
+                    } else if (event.error === 'audio-capture') {
+                        alert(language === 'hi' ? "माइक्रोफ़ोन नहीं मिला। कृपया अपना माइक्रोफ़ोन जांचें।" : "No microphone found. Please check your microphone.");
+                    }
+                    setIsListening(false);
+                    setListeningField(null);
+                };
+
+                recognition.onend = () => {
+                    console.log("Voice Input: Ended.");
+                    setIsListening(false);
+                    setListeningField(null);
+                };
+
+                recognition.start();
+            } catch (err) {
+                console.error("Critical Speech Recognition Error:", err);
+                setIsListening(false);
+                setListeningField(null);
+            }
+        }, 150);
+    };
+
+    const autoTranslateCategories = async (names: string[]) => {
+        if (language !== 'hi') return;
+        
+        const toTranslate = names.filter(name => 
+            !(TRANSLATIONS.hi as any).categoryNames[name] && !categoryTranslationCache[name]
+        );
+
+        if (toTranslate.length === 0) return;
+
+        // Fetch translations in batches or individually if needed
+        // For efficiency, we can batch them if the API allows, or fetch sequentially
+        for (const name of toTranslate) {
+            try {
+                // Using the same Input Tools API for translation/transliteration
+                const url = `https://inputtools.google.com/request?text=${encodeURIComponent(name)}&itc=hi-t-i0-und&num=1&cp=0&cs=1&ie=utf-8&oe=utf-8&app=test`;
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data[0] === 'SUCCESS' && data[1] && data[1][0] && data[1][0][1]) {
+                    const translated = data[1][0][1][0];
+                    setCategoryTranslationCache(prev => ({ ...prev, [name]: translated }));
+                }
+            } catch (err) {
+                console.error("Auto-translation failed for:", name, err);
+            }
+        }
+    };
     const [loading, setLoading] = useState(false);
     const [otpLoading, setOtpLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
     const [rejectionReason, setRejectionReason] = useState<string | null>(null);
+
+    // Dynamic Translation Cache
+    const [categoryTranslationCache, setCategoryTranslationCache] = useState<{[key: string]: string}>({});
 
     // Form State
     const [formData, setFormData] = useState({
@@ -192,6 +557,10 @@ function RegisterPageContent() {
                 const data = await res.json();
                 if (data.success) {
                     setGoogleCategories(data.data);
+                    // Trigger auto-translation for google categories if Hindi
+                    if (language === 'hi') {
+                        autoTranslateCategories(data.data.map((c: any) => c.name));
+                    }
                 }
             } catch (err) {
                 console.error("Failed to fetch google categories:", err);
@@ -305,6 +674,94 @@ function RegisterPageContent() {
         catalog: null
     });
 
+    const transliterateWord = async (word: string) => {
+        if (!word || word.trim() === "" || language !== 'hi') return word;
+        // Skip if already contains Devanagari or is a number/special char
+        if (!/[a-zA-Z]/.test(word)) return word;
+        
+        try {
+            const url = `https://inputtools.google.com/request?text=${encodeURIComponent(word)}&itc=hi-t-i0-und&num=1&cp=0&cs=1&ie=utf-8&oe=utf-8&app=test`;
+            const res = await fetch(url);
+            const data = await res.json();
+            if (data[0] === 'SUCCESS' && data[1] && data[1][0] && data[1][0][1]) {
+                return data[1][0][1][0];
+            }
+        } catch (err) {
+            console.error("Transliteration failed:", err);
+        }
+        return word;
+    };
+
+    const handleKeyUp = async (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        if (language !== 'hi') return;
+        
+        const target = e.target as HTMLInputElement;
+        const name = target.name;
+        const value = target.value;
+        
+        const transliterateFields = ['businessName', 'brandName', 'registeredOfficeAddress', 'description', 'customCategory', 'customSubcategory', 'keywordInput', 'catSearchTerm', 'weeklyOff'];
+        
+        if (e.key === ' ' && transliterateFields.includes(name)) {
+            const words = value.split(' ');
+            if (words.length < 2) return;
+            
+            const lastWord = words[words.length - 2]; 
+            if (!lastWord) return;
+
+            const transliterated = await transliterateWord(lastWord);
+            if (transliterated !== lastWord) {
+                words[words.length - 2] = transliterated;
+                const newValue = words.join(' ');
+                
+                if (name === 'keywordInput') {
+                    setKeywordInput(newValue);
+                } else if (name === 'catSearchTerm') {
+                    setCatSearchTerm(newValue);
+                    setFormData(prev => ({ ...prev, businessCategory: newValue }));
+                } else {
+                    setFormData(prev => ({ ...prev, [name]: newValue }));
+                }
+            }
+        }
+    };
+
+    const handleBlur = async (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        if (language !== 'hi') return;
+        
+        const target = e.target as HTMLInputElement;
+        const name = target.name;
+        const value = target.value;
+        
+        const transliterateFields = ['businessName', 'brandName', 'registeredOfficeAddress', 'description', 'customCategory', 'customSubcategory', 'keywordInput', 'catSearchTerm', 'weeklyOff'];
+        
+        if (transliterateFields.includes(name)) {
+            const words = value.split(' ');
+            let hasChanged = false;
+            const newWords = await Promise.all(words.map(async (word) => {
+                if (/[a-zA-Z]/.test(word)) {
+                    const translated = await transliterateWord(word);
+                    if (translated !== word) {
+                        hasChanged = true;
+                        return translated;
+                    }
+                }
+                return word;
+            }));
+
+            if (hasChanged) {
+                const newValue = newWords.join(' ');
+                if (name === 'keywordInput') {
+                    setKeywordInput(newValue);
+                } else if (name === 'catSearchTerm') {
+                    setCatSearchTerm(newValue);
+                    setFormData(prev => ({ ...prev, businessCategory: newValue }));
+                } else {
+                    setFormData(prev => ({ ...prev, [name]: newValue }));
+                }
+            }
+        }
+    };
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
@@ -385,7 +842,12 @@ function RegisterPageContent() {
                 const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/main-categories?limit=100`);
                 const data = await res.json();
                 if (data.success && data.data) {
-                    setMainCategories(data.data.filter((c: any) => c.isActive));
+                    const activeCats = data.data.filter((c: any) => c.isActive);
+                    setMainCategories(activeCats);
+                    // Trigger auto-translation for main categories if Hindi
+                    if (language === 'hi') {
+                        autoTranslateCategories(activeCats.map((c: any) => c.name));
+                    }
                 }
             } catch (err) {
                 console.error("Failed to fetch main categories", err);
@@ -712,22 +1174,43 @@ function RegisterPageContent() {
                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6 pb-10">
                         <div className="flex items-center gap-3 mb-8">
                             <Building2 className="text-primary w-8 h-8" />
-                            <h2 className="text-2xl font-bold text-white">Basic Business Identity</h2>
+                            <h2 className="text-2xl font-bold text-white">{t('stepTitles.identity')}</h2>
                         </div>
                         <div className="space-y-4">
                             <div className="grid gap-2">
-                                <Label className="text-white/70">Business Name <span className="text-red-500">*</span></Label>
-                                <Input name="businessName" value={formData.businessName} onChange={handleInputChange} placeholder="Legal name (GST/License)" className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50" required />
+                                <Label className="text-white/70">{t('labels.businessName')} <span className="text-red-500">*</span></Label>
+                                <div className="relative group/mic">
+                                    <Input name="businessName" value={formData.businessName} onChange={handleInputChange} onKeyUp={handleKeyUp} onBlur={handleBlur} placeholder={t('placeholders.legalName')} className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50 pr-10 h-14" required />
+                                    <button 
+                                        type="button" 
+                                        onClick={() => toggleVoiceInput('businessName')}
+                                        className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${isListening && listeningField === 'businessName' ? 'text-primary animate-pulse scale-110' : 'text-white/20 hover:text-primary'}`}
+                                    >
+                                        <Mic size={18} />
+                                    </button>
+                                </div>
+                                {language === 'hi' && (
+                                    <p className="text-[10px] text-primary/70 font-bold uppercase tracking-widest">{t('typeHint')}</p>
+                                )}
                             </div>
                             <div className="grid gap-2">
-                                <Label className="text-white/70">Brand Name</Label>
-                                <Input name="brandName" value={formData.brandName} onChange={handleInputChange} placeholder="Trading name (if different)" className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50" />
+                                <Label className="text-white/70">{t('labels.brandName')}</Label>
+                                <div className="relative group/mic">
+                                    <Input name="brandName" value={formData.brandName} onChange={handleInputChange} onKeyUp={handleKeyUp} onBlur={handleBlur} placeholder={t('placeholders.tradingName')} className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50 pr-10 h-14" />
+                                    <button 
+                                        type="button" 
+                                        onClick={() => toggleVoiceInput('brandName')}
+                                        className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${isListening && listeningField === 'brandName' ? 'text-primary animate-pulse scale-110' : 'text-white/20 hover:text-primary'}`}
+                                    >
+                                        <Mic size={18} />
+                                    </button>
+                                </div>
                             </div>
                             <div className="grid gap-2">
-                                <Label className="text-white/70">Business Category <span className="text-red-500">*</span></Label>
+                                <Label className="text-white/70">{t('labels.businessCategory')} <span className="text-red-500">*</span></Label>
                                 
                                 <div className="relative" ref={catSuggestionRef}>
-                                    <div className="relative">
+                                    <div className="relative group/mic">
                                         <Input
                                             value={catSearchTerm}
                                             onChange={(e) => {
@@ -736,11 +1219,22 @@ function RegisterPageContent() {
                                                 // Always sync to businessCategory so validation and custom mode work
                                                 setFormData(prev => ({ ...prev, businessCategory: e.target.value }));
                                             }}
+                                            onKeyUp={handleKeyUp}
+                                            onBlur={handleBlur}
+                                            name="catSearchTerm"
                                             onFocus={() => setShowCatSuggestions(true)}
-                                            placeholder="Search from 4000+ Categories (e.g. Restaurants, Legal, Marketing)"
-                                            className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50 pr-10 h-12"
+                                            placeholder={t('placeholders.categorySearch')}
+                                            className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50 pr-20 h-12"
                                         />
-                                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 gap-2">
+                                            <button 
+                                                type="button" 
+                                                onClick={() => toggleVoiceInput('catSearchTerm')}
+                                                className={`transition-colors ${isListening && listeningField === 'catSearchTerm' ? 'text-primary animate-pulse' : 'text-white/20 hover:text-primary'}`}
+                                            >
+                                                <Mic className="w-4 h-4" />
+                                            </button>
+                                            <div className="w-[1px] h-4 bg-white/10" />
                                             {isCatLoading ? <Loader2 className="w-4 h-4 animate-spin text-primary" /> : <Search className="w-4 h-4 text-white/30" />}
                                         </div>
                                     </div>
@@ -757,7 +1251,7 @@ function RegisterPageContent() {
                                                 {(googleCategories.length > 0 || isCatLoading) && (
                                                     <div className="p-2 border-b border-white/5">
                                                         <div className="px-3 py-1 text-[10px] font-black uppercase tracking-widest text-primary flex justify-between items-center">
-                                                            <span>Google Categories</span>
+                                                            <span>{language === 'hi' ? 'गूगल श्रेणियां' : 'Google Categories'}</span>
                                                             {isCatLoading && <Loader2 className="w-3 h-3 animate-spin" />}
                                                         </div>
                                                         {googleCategories.map((cat) => (
@@ -773,7 +1267,7 @@ function RegisterPageContent() {
                                                                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-all">
                                                                     <Plus className="w-4 h-4" />
                                                                 </div>
-                                                                <span className="text-white font-medium">{cat.name}</span>
+                                                                <span className="text-white font-medium">{tc(cat.name)}</span>
                                                             </div>
                                                         ))}
                                                     </div>
@@ -783,7 +1277,7 @@ function RegisterPageContent() {
                                                 {(catSearchTerm === "" || mainCategories.some(c => c.name.toLowerCase().includes(catSearchTerm.toLowerCase()))) && (
                                                     <div className="p-2">
                                                         <div className="px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white/40">
-                                                            Popular Categories
+                                                            {language === 'hi' ? 'लोकप्रिय श्रेणियां' : 'Popular Categories'}
                                                         </div>
                                                         {mainCategories
                                                             .filter(c => c.name.toLowerCase().includes(catSearchTerm.toLowerCase()))
@@ -800,7 +1294,7 @@ function RegisterPageContent() {
                                                                     <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/40">
                                                                         <CheckCircle className="w-4 h-4" />
                                                                     </div>
-                                                                    <span className="text-white/80">{cat.name}</span>
+                                                                    <span className="text-white/80">{tc(cat.name)}</span>
                                                                 </div>
                                                             ))}
                                                     </div>
@@ -816,8 +1310,8 @@ function RegisterPageContent() {
                                                         className="p-6 text-center cursor-pointer hover:bg-primary/5 transition-colors"
                                                     >
                                                         <Plus className="w-8 h-8 text-primary mx-auto mb-2 opacity-40" />
-                                                        <p className="text-white/60 text-sm italic">"{catSearchTerm}" not found.</p>
-                                                        <p className="text-primary text-xs font-bold uppercase tracking-widest mt-1">Click to add as Custom Category</p>
+                                                        <p className="text-white/60 text-sm italic">"{catSearchTerm}" {language === 'hi' ? 'नहीं मिला' : 'not found'}.</p>
+                                                        <p className="text-primary text-xs font-bold uppercase tracking-widest mt-1">{language === 'hi' ? 'कस्टम श्रेणी के रूप में जोड़ने के लिए क्लिक करें' : 'Click to add as Custom Category'}</p>
                                                     </div>
                                                 )}
                                             </motion.div>
@@ -829,7 +1323,7 @@ function RegisterPageContent() {
                             <div className="space-y-4">
                                 <Label className="text-white/70 text-xs font-bold uppercase tracking-widest flex items-center gap-2">
                                     <Building2 className="w-3 h-3 text-primary" />
-                                    selected (Subcategories) *
+                                    {t('labels.selectedSubcategories')} *
                                 </Label>
                             
                                 {/* Selected Subcategories Tags */}
@@ -841,7 +1335,7 @@ function RegisterPageContent() {
                                             key={idx}
                                             className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-full text-xs font-bold text-primary group"
                                         >
-                                            {sub}
+                                            {tc(sub)}
                                             <button 
                                                 type="button"
                                                 onClick={() => removeSubcategory(sub)}
@@ -864,7 +1358,7 @@ function RegisterPageContent() {
                                     }}
                                 >
                                     <SelectTrigger className="w-full bg-white/5 border-white/10 text-white rounded-xl h-14 focus:ring-primary focus:border-primary transition-all">
-                                        <SelectValue placeholder={formData.subcategory.length > 0 ? "Add more specialties..." : "Select subcategories"} />
+                                        <SelectValue placeholder={formData.subcategory.length > 0 ? t('placeholders.addSubcategories') : t('placeholders.selectSubcategories')} />
                                     </SelectTrigger>
                                     <SelectContent className="bg-slate-900 border-white/10 text-white !z-[9999] max-h-[300px]" position="popper" sideOffset={5}>
                                         {mainSubcategories.map((sub) => (
@@ -873,11 +1367,11 @@ function RegisterPageContent() {
                                                 value={sub.name}
                                                 disabled={formData.subcategory.includes(sub.name)}
                                             >
-                                                {sub.name} {formData.subcategory.includes(sub.name) && "(Selected)"}
+                                                {tc(sub.name)} {formData.subcategory.includes(sub.name) && `(${language === 'hi' ? 'चयनित' : 'Selected'})`}
                                             </SelectItem>
                                         ))}
                                         <SelectItem value="add-new" className="text-primary font-bold border-t border-white/5 mt-2">
-                                            + Add Your Own Specialty
+                                            + {language === 'hi' ? 'अपनी विशेषज्ञता जोड़ें' : 'Add Your Own Specialty'}
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
@@ -895,14 +1389,26 @@ function RegisterPageContent() {
                                         >
                                             <X size={14} />
                                         </button>
-                                        <Label className="text-white/60 text-[10px] font-bold uppercase tracking-wider block mb-1">Enter Your Unique Specialty</Label>
+                                        <Label className="text-white/60 text-[10px] font-bold uppercase tracking-wider block mb-1">{language === 'hi' ? 'अपनी अनूठी विशेषज्ञता दर्ज करें' : 'Enter Your Unique Specialty'}</Label>
                                         <div className="flex gap-2">
-                                            <Input 
-                                                placeholder="e.g. Vintage Car Restoration"
-                                                value={formData.customSubcategory}
-                                                onChange={(e) => setFormData(prev => ({ ...prev, customSubcategory: e.target.value }))}
-                                                className="bg-white/5 border-white/10 text-white h-12"
-                                            />
+                                            <div className="relative flex-1 group/mic">
+                                                <Input 
+                                                    placeholder={t('placeholders.uniqueSpecialty')}
+                                                    value={formData.customSubcategory}
+                                                    name="customSubcategory"
+                                                    onChange={(e) => setFormData(prev => ({ ...prev, customSubcategory: e.target.value }))}
+                                                    onKeyUp={handleKeyUp}
+                                                    onBlur={handleBlur}
+                                                    className="bg-white/5 border-white/10 text-white h-12 pr-10"
+                                                />
+                                                <button 
+                                                    type="button" 
+                                                    onClick={() => toggleVoiceInput('customSubcategory')}
+                                                    className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${isListening && listeningField === 'customSubcategory' ? 'text-primary animate-pulse' : 'text-white/20 hover:text-primary'}`}
+                                                >
+                                                    <Mic size={16} />
+                                                </button>
+                                            </div>
                                             <Button 
                                                 type="button"
                                                 onClick={() => {
@@ -913,18 +1419,27 @@ function RegisterPageContent() {
                                                 }}
                                                 className="h-12 px-4 whitespace-nowrap"
                                             >
-                                                Add
+                                                {language === 'hi' ? 'जोड़ें' : 'Add'}
                                             </Button>
                                         </div>
                                     </motion.div>
                                 )}
                             </div>
                             <div className="grid gap-2">
-                                <Label className="text-white/70">Business Description</Label>
-                                <Textarea name="description" value={formData.description} onChange={handleInputChange} placeholder="Short 'About' section for the community" className="bg-white/5 border-white/10 text-white min-h-[100px]" />
+                                <Label className="text-white/70">{t('labels.businessDescription')}</Label>
+                                <div className="relative group/mic">
+                                    <Textarea name="description" value={formData.description} onChange={handleInputChange} onKeyUp={handleKeyUp} onBlur={handleBlur} placeholder={t('placeholders.aboutSection')} className="bg-white/5 border-white/10 text-white min-h-[100px] pr-10" />
+                                    <button 
+                                        type="button" 
+                                        onClick={() => toggleVoiceInput('description')}
+                                        className={`absolute right-3 top-4 transition-colors ${isListening && listeningField === 'description' ? 'text-primary animate-pulse' : 'text-white/20 hover:text-primary'}`}
+                                    >
+                                        <Mic size={18} />
+                                    </button>
+                                </div>
                             </div>
                             <div className="grid gap-2">
-                                <Label className="text-white/70">Keywords / Tags</Label>
+                                <Label className="text-white/70">{t('labels.keywords')}</Label>
                                 <div className="space-y-3">
                                     {/* Selected Keyword Tags */}
                                     <div className="flex flex-wrap gap-2 min-h-[40px] p-2 rounded-lg bg-white/5 border border-white/10">
@@ -943,28 +1458,40 @@ function RegisterPageContent() {
                                                 </Badge>
                                             ))
                                         ) : (
-                                            <span className="text-white/30 text-xs italic p-1">Add keywords for better reach...</span>
+                                            <span className="text-white/30 text-xs italic p-1">{language === 'hi' ? 'बेहतर पहुंच के लिए कीवर्ड जोड़ें...' : 'Add keywords for better reach...'}</span>
                                         )}
                                     </div>
 
                                     {/* Keyword Input with Autocomplete */}
                                     <div className="relative" ref={suggestionRef}>
-                                        <Input 
-                                            value={keywordInput}
-                                            onFocus={() => setShowKeywordSuggestions(true)}
-                                            onChange={(e) => {
-                                                setKeywordInput(e.target.value);
-                                                setShowKeywordSuggestions(true);
-                                            }}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter') {
-                                                    e.preventDefault();
-                                                    addKeyword(keywordInput);
-                                                }
-                                            }}
-                                            placeholder="Type and press Enter (e.g., jewelry, delivery, wholesale)" 
-                                            className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50" 
-                                        />
+                                        <div className="relative group/mic">
+                                            <Input 
+                                                value={keywordInput}
+                                                name="keywordInput"
+                                                onFocus={() => setShowKeywordSuggestions(true)}
+                                                onChange={(e) => {
+                                                    setKeywordInput(e.target.value);
+                                                    setShowKeywordSuggestions(true);
+                                                }}
+                                                onKeyUp={handleKeyUp}
+                                                onBlur={handleBlur}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        addKeyword(keywordInput);
+                                                    }
+                                                }}
+                                                placeholder={t('placeholders.keywordType')} 
+                                                className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50 pr-10" 
+                                            />
+                                            <button 
+                                                type="button" 
+                                                onClick={() => toggleVoiceInput('keywordInput')}
+                                                className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${isListening && listeningField === 'keywordInput' ? 'text-primary animate-pulse' : 'text-white/20 hover:text-primary'}`}
+                                            >
+                                                <Mic size={16} />
+                                            </button>
+                                        </div>
                                         
                                         <AnimatePresence>
                                             {showKeywordSuggestions && keywordSuggestions.length > 0 && (
@@ -994,7 +1521,7 @@ function RegisterPageContent() {
                                                                 <div>
                                                                     <span className="text-white font-medium block">{suggestion.text}</span>
                                                                     {suggestion.type === 'recommended' && (
-                                                                        <span className="text-[10px] text-primary block">Recommended for {formData.businessCategory}</span>
+                                                                        <span className="text-[10px] text-primary block">{language === 'hi' ? `${formData.businessCategory} के लिए अनुशंसित` : `Recommended for ${formData.businessCategory}`}</span>
                                                                     )}
                                                                 </div>
                                                             </div>
@@ -1022,13 +1549,13 @@ function RegisterPageContent() {
                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
                         <div className="flex items-center gap-3 mb-8">
                             <MapPin className="text-primary w-8 h-8" />
-                            <h2 className="text-2xl font-bold text-white">Location & Contact</h2>
+                            <h2 className="text-2xl font-bold text-white">{t('stepTitles.contact')}</h2>
                         </div>
                         <div className="space-y-4">
                             <div className="grid gap-2">
-                                <Label className="text-white/70">Exact GPS Coordinates <span className="text-red-500">*</span></Label>
+                                <Label className="text-white/70">{t('labels.gpsCoordinates')} <span className="text-red-500">*</span></Label>
                                 <div className="flex gap-2">
-                                    <Input value={formData.gpsCoordinates.address} readOnly placeholder="Click 'Locate Me' for accuracy" className="bg-white/5 border-white/10 text-white flex-1" />
+                                    <Input value={formData.gpsCoordinates.address} readOnly placeholder={t('placeholders.locateHelp')} className="bg-white/5 border-white/10 text-white flex-1" />
                                     <Button 
                                         type="button" 
                                         variant="glow" 
@@ -1043,33 +1570,42 @@ function RegisterPageContent() {
                                         ) : (
                                             <Map className="w-4 h-4" />
                                         )}
-                                        {isLocating ? "Locating..." : "Locate Me"}
+                                        {isLocating ? t('locating') : t('locateMe')}
                                     </Button>
                                 </div>
                             </div>
-                            <div className="grid gap-2">
-                                <Label className="text-white/70">Registered Office Address <span className="text-red-500">*</span></Label>
-                                <Textarea name="registeredOfficeAddress" value={formData.registeredOfficeAddress} onChange={handleInputChange} className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50" required />
+                             <div className="grid gap-2">
+                                <Label className="text-white/70">{t('labels.officeAddress')} <span className="text-red-500">*</span></Label>
+                                <div className="relative group/mic">
+                                    <Textarea name="registeredOfficeAddress" value={formData.registeredOfficeAddress} onChange={handleInputChange} onKeyUp={handleKeyUp} onBlur={handleBlur} className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50 min-h-[100px] pr-10" required />
+                                    <button 
+                                        type="button" 
+                                        onClick={() => toggleVoiceInput('registeredOfficeAddress')}
+                                        className={`absolute right-3 top-4 transition-colors ${isListening && listeningField === 'registeredOfficeAddress' ? 'text-primary animate-pulse' : 'text-white/20 hover:text-primary'}`}
+                                    >
+                                        <Mic size={18} />
+                                    </button>
+                                </div>
                             </div>
                             <div className="grid md:grid-cols-2 gap-4">
                                 <div className="grid gap-2">
-                                    <Label className="text-white/70">Primary Contact Number <span className="text-red-500">*</span></Label>
+                                    <Label className="text-white/70">{t('labels.primaryContact')} <span className="text-red-500">*</span></Label>
                                     <Input name="primaryContactNumber" value={formData.primaryContactNumber} onChange={handleInputChange} className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50" required />
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label className="text-white/70">Official WhatsApp Number</Label>
+                                    <Label className="text-white/70">{t('labels.whatsappNumber')}</Label>
                                     <Input name="officialWhatsAppNumber" value={formData.officialWhatsAppNumber} onChange={handleInputChange} className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50" />
                                 </div>
                             </div>
                             <div className="grid gap-2">
-                                <Label className="text-white/70">Official Email Address <span className="text-red-500">*</span></Label>
+                                <Label className="text-white/70">{t('labels.emailAddress')} <span className="text-red-500">*</span></Label>
                                 <div className="flex gap-2">
                                     <Input
                                         name="officialEmailAddress"
                                         value={formData.officialEmailAddress}
                                         onChange={handleInputChange}
                                         className="bg-white/5 border-white/10 text-white flex-1"
-                                        placeholder="name@business.com"
+                                        placeholder={t('placeholders.emailHelp')}
                                         required
                                         disabled={isEmailVerified}
                                     />
@@ -1085,16 +1621,16 @@ function RegisterPageContent() {
                                             {otpLoading ? (
                                                 <>
                                                     <Loader2 className="w-4 h-4 animate-spin" />
-                                                    Sending...
+                                                    {t('sending')}
                                                 </>
                                             ) : (
-                                                "Send OTP"
+                                                t('sendOtp')
                                             )}
                                         </Button>
                                     )}
                                     {isEmailVerified && (
                                         <div className="flex items-center gap-2 text-green-400 bg-green-400/10 px-3 rounded-xl border border-green-400/20 text-xs font-bold uppercase tracking-widest">
-                                            <CheckCircle2 size={14} /> Verified
+                                            <CheckCircle2 size={14} /> {t('verified')}
                                         </div>
                                     )}
                                 </div>
@@ -1223,7 +1759,16 @@ function RegisterPageContent() {
 
                             <div className="grid gap-2 pt-2">
                                 <Label className="text-white/70">Weekly Off</Label>
-                                <Input name="weeklyOff" value={formData.weeklyOff} onChange={handleInputChange} className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50" />
+                                <div className="relative group/mic">
+                                    <Input name="weeklyOff" value={formData.weeklyOff} onChange={handleInputChange} onKeyUp={handleKeyUp} onBlur={handleBlur} className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50 pr-10" />
+                                    <button 
+                                        type="button" 
+                                        onClick={() => toggleVoiceInput('weeklyOff')}
+                                        className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${isListening && listeningField === 'weeklyOff' ? 'text-primary animate-pulse' : 'text-white/20 hover:text-primary'}`}
+                                    >
+                                        <Mic size={16} />
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </motion.div>
@@ -1233,43 +1778,45 @@ function RegisterPageContent() {
                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
                         <div className="flex items-center gap-3 mb-8">
                             <ShieldCheck className="text-primary w-8 h-8" />
-                            <h2 className="text-2xl font-bold text-white">Verification & Trust</h2>
+                            <h2 className="text-2xl font-bold text-white">{t('stepTitles.verification')}</h2>
                         </div>
                         <div className="space-y-6">
                             <div className="grid gap-4">
-                                <Label className="text-white/70">Aadhaar Number <span className="text-red-500">*</span></Label>
+                                <Label className="text-white/70">{t('labels.aadhaarNumber')} <span className="text-red-500">*</span></Label>
                                 <Input 
                                     name="aadhaarNumber" 
                                     maxLength={12}
-                                    placeholder="12-digit Aadhaar Number"
+                                    placeholder={t('placeholders.aadhaarHelp')}
                                     value={formData.aadhaarNumber} 
                                     onChange={handleInputChange} 
+                                    onKeyUp={handleKeyUp}
+                                    onBlur={handleBlur}
                                     className="bg-white/5 border-white/10 text-white h-12" 
                                     required
                                 />
                             </div>
 
                             <div className="grid gap-2">
-                                <Label className="text-white/70">Upload Aadhaar Card <span className="text-red-500">*</span></Label>
+                                <Label className="text-white/70">{t('labels.uploadAadhaar')} <span className="text-red-500">*</span></Label>
                                 <Input type="file" onChange={(e) => handleFileChange(e, 'aadhaarCard')} className="bg-white/5 border-white/10 text-white file:bg-primary/20 file:text-primary file:border-0" required />
                                 <p className="text-[10px] text-primary/70 uppercase tracking-widest font-bold mt-1 italic">
-                                    Note: Our team will check your Aadhaar card manually.
+                                    {t('messages.aadhaarNote')}
                                 </p>
                             </div>
 
                             <div className="grid gap-2">
-                                <Label className="text-white/70">Website Name / URL</Label>
-                                <Input name="website" placeholder="e.g. www.mybusiness.com" value={formData.website} onChange={handleInputChange} className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50" />
+                                <Label className="text-white/70">{t('labels.website')}</Label>
+                                <Input name="website" placeholder={t('placeholders.websiteHelp')} value={formData.website} onChange={handleInputChange} className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50" />
                             </div>
 
                             <div className="grid md:grid-cols-2 gap-4">
                                 <div className="grid gap-2">
-                                    <Label className="text-white/70">Owner's PAN Card <span className="text-red-500">*</span></Label>
+                                    <Label className="text-white/70">{t('labels.panCard')} <span className="text-red-500">*</span></Label>
                                     <Input type="file" onChange={(e) => handleFileChange(e, 'ownerIdentityProof')} className="bg-white/5 border-white/10 text-white file:bg-primary/20 file:text-primary file:border-0" required />
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label className="text-white/70">Shop/Establishment Proof <span className="text-red-500">*</span></Label>
-                                    <p className="text-[10px] text-white/40 uppercase tracking-tight mb-1">(Partnership deed, Company form, or GST)</p>
+                                    <Label className="text-white/70">{t('labels.establishmentProof')} <span className="text-red-500">*</span></Label>
+                                    <p className="text-[10px] text-white/40 uppercase tracking-tight mb-1">{t('messages.establishmentNote')}</p>
                                     <Input type="file" onChange={(e) => handleFileChange(e, 'establishmentProof')} className="bg-white/5 border-white/10 text-white file:bg-primary/20 file:text-primary file:border-0" required />
                                 </div>
                             </div>
@@ -1281,19 +1828,19 @@ function RegisterPageContent() {
                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
                         <div className="flex items-center gap-3 mb-8">
                             <ImageIcon className="text-primary w-8 h-8" />
-                            <h2 className="text-2xl font-bold text-white">Gallery & Catalog</h2>
+                            <h2 className="text-2xl font-bold text-white">{t('stepTitles.gallery')}</h2>
                         </div>
                         <div className="space-y-6">
                             <div className="grid gap-2">
-                                <Label className="text-white/70">Cover Image</Label>
+                                <Label className="text-white/70">{t('labels.coverImage')}</Label>
                                 <Input type="file" onChange={(e) => handleFileChange(e, 'coverImage')} className="bg-white/5 border-white/10 text-white file:bg-primary/20 file:text-primary file:border-0" />
                             </div>
                             <div className="grid gap-2">
-                                <Label className="text-white/70">Gallery Uploads (Max 10)</Label>
+                                <Label className="text-white/70">{t('labels.galleryUploads')}</Label>
                                 <Input type="file" multiple onChange={(e) => handleFileChange(e, 'gallery')} className="bg-white/5 border-white/10 text-white file:bg-primary/20 file:text-primary file:border-0" />
                             </div>
                             <div className="grid gap-2">
-                                <Label className="text-white/70">Pricing/Menu/Catalog</Label>
+                                <Label className="text-white/70">{t('labels.catalog')}</Label>
                                 <Input type="file" onChange={(e) => handleFileChange(e, 'catalog')} className="bg-white/5 border-white/10 text-white file:bg-primary/20 file:text-primary file:border-0" />
                             </div>
                         </div>
@@ -1304,7 +1851,7 @@ function RegisterPageContent() {
                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
                         <div className="flex items-center gap-3 mb-8">
                             <Users className="text-primary w-8 h-8" />
-                            <h2 className="text-2xl font-bold text-white">Community & Tenders</h2>
+                            <h2 className="text-2xl font-bold text-white">{t('stepTitles.community')}</h2>
                         </div>
                         <div className="space-y-8 py-4">
                             <div className="flex items-center space-x-3 p-4 glass rounded-xl border border-white/10">
@@ -1315,7 +1862,7 @@ function RegisterPageContent() {
                                     onChange={(e) => setFormData(prev => ({ ...prev, joinBulkBuying: e.target.checked }))}
                                     className="w-5 h-5 rounded border-primary bg-transparent text-primary focus:ring-primary"
                                 />
-                                <Label htmlFor="bulkBuying" className="text-white cursor-pointer">I would like to join for Bulk Buying.</Label>
+                                <Label htmlFor="bulkBuying" className="text-white cursor-pointer">{t('labels.bulkBuying')}</Label>
                             </div>
                             <div className="flex items-center space-x-3 p-4 glass rounded-xl border border-white/10">
                                 <input
@@ -1325,10 +1872,10 @@ function RegisterPageContent() {
                                     onChange={(e) => setFormData(prev => ({ ...prev, joinFraudAlerts: e.target.checked }))}
                                     className="w-5 h-5 rounded border-primary bg-transparent text-primary focus:ring-primary"
                                 />
-                                <Label htmlFor="fraudAlerts" className="text-white cursor-pointer">I would like to receive Fraud Alerts.</Label>
+                                <Label htmlFor="fraudAlerts" className="text-white cursor-pointer">{t('labels.fraudAlerts')}</Label>
                             </div>
                         </div>
-                        <p className="text-sm text-white/50 italic text-center">By submitting, you agree to join the trusted network of businesses.</p>
+                        <p className="text-sm text-white/50 italic text-center">{t('messages.agreeNote')}</p>
                     </motion.div>
                 );
             default:
@@ -1353,44 +1900,48 @@ function RegisterPageContent() {
                         />
                     </div>
                     <h1 className="text-4xl md:text-5xl font-display font-bold uppercase tracking-widest">
-                        Registration <span className="text-primary italic">Received</span>
+                        {language === 'hi' ? (
+                            <>पंजीकरण <span className="text-primary italic">प्राप्त हुआ</span></>
+                        ) : (
+                            <>Registration <span className="text-primary italic">Received</span></>
+                        )}
                     </h1>
                 </motion.div>
 
                 <div className="glass-strong p-8 rounded-3xl border border-white/10 space-y-6">
                     <p className="text-xl text-white/70 leading-relaxed">
-                        Welcome to the DBI Community! Your membership application has been successfully submitted. 
-                        <span className="block mt-2 text-primary font-bold">Please Note: Your business listing will be visible to the public only after successful admin approval.</span>
+                        {t('messages.successMessage')}
+                        <span className="block mt-2 text-primary font-bold">{t('messages.notificationNote')}</span>
                     </p>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
                         <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
                             <h3 className="text-primary font-bold uppercase text-xs tracking-widest mb-2 flex items-center gap-2">
-                                <Clock size={14} /> Approval Window
+                                <Clock size={14} /> {t('messages.approvalWindow')}
                             </h3>
-                            <p className="text-sm text-white/50">Our team manually verifies all documents. This typically takes <strong>24 to 48 hours</strong>.</p>
+                            <p className="text-sm text-white/50">{t('messages.approvalText')}</p>
                         </div>
                         <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
                             <h3 className="text-primary font-bold uppercase text-xs tracking-widest mb-2 flex items-center gap-2">
-                                <ShieldCheck size={14} /> Verification
+                                <ShieldCheck size={14} /> {t('messages.verificationTitle')}
                             </h3>
-                            <p className="text-sm text-white/50">Both manual and automated checks are performed on your legal and identity documents.</p>
+                            <p className="text-sm text-white/50">{t('messages.verificationText')}</p>
                         </div>
                     </div>
 
                     <div className="p-4 bg-blue-500/10 rounded-2xl border border-blue-500/20 text-center">
                         <p className="text-sm text-blue-300">
-                            You will receive an email confirmation once your account is activated.
+                            {t('messages.emailConfirm')}
                         </p>
                     </div>
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                     <Button variant="glow" size="lg" asChild className="rounded-2xl px-12">
-                        <a href="/community/login">Go to Login Portal</a>
+                        <a href="/community/login">{t('messages.goToLogin')}</a>
                     </Button>
                     <Button variant="outline" size="lg" asChild className="rounded-2xl px-12 border-white/10 text-white/50">
-                        <a href="/">Back to Home</a>
+                        <a href="/">{t('messages.backHome')}</a>
                     </Button>
                 </div>
             </main>
@@ -1402,19 +1953,23 @@ function RegisterPageContent() {
             <div className="max-w-4xl mx-auto">
                 <div className="text-center mb-8 md:mb-12">
                     <h1 className="text-2xl sm:text-3xl md:text-5xl font-display font-bold uppercase tracking-widest mb-3 md:mb-4 px-2">
-                        DBI <span className="text-primary italic">Community</span> Registration
+                        {language === 'en' ? (
+                            <>DBI <span className="text-primary italic">Community</span> Registration</>
+                        ) : (
+                            <>DBI <span className="text-primary italic">समुदाय</span> पंजीकरण</>
+                        )}
                     </h1>
-                    <p className="text-muted-foreground uppercase text-[10px] sm:text-xs md:text-sm tracking-[0.15em] sm:tracking-[0.2em]">Join the trusted network of businesses</p>
+                    <p className="text-muted-foreground uppercase text-[10px] sm:text-xs md:text-sm tracking-[0.15em] sm:tracking-[0.2em]">{t('joinNetwork')}</p>
                 </div>
 
                 {isUpdateMode && rejectionReason && (
                     <div className="max-w-4xl mx-auto mb-8 p-6 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400">
                         <div className="flex items-center gap-3 mb-2">
                             <AlertCircle size={20} />
-                            <h3 className="font-bold uppercase tracking-widest text-xs">Rejection Reason</h3>
+                            <h3 className="font-bold uppercase tracking-widest text-xs">{t('rejectionReason')}</h3>
                         </div>
                         <p className="text-sm font-medium">{rejectionReason}</p>
-                        <p className="text-[10px] uppercase tracking-wider mt-4 opacity-50">Please correct the highlighted fields and resubmit.</p>
+                        <p className="text-[10px] uppercase tracking-wider mt-4 opacity-50">{t('correctFields')}</p>
                     </div>
                 )}
 
@@ -1452,6 +2007,25 @@ function RegisterPageContent() {
 
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
 
+                    <div className="absolute top-4 right-4 sm:top-6 sm:right-8 z-[20]">
+                        <div className="flex bg-white/5 border border-white/10 rounded-full p-1 backdrop-blur-md">
+                            <button
+                                type="button"
+                                onClick={() => setLanguage('en')}
+                                className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${language === 'en' ? 'bg-primary text-white shadow-lg' : 'text-white/40 hover:text-white/70'}`}
+                            >
+                                English
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setLanguage('hi')}
+                                className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${language === 'hi' ? 'bg-primary text-white shadow-lg' : 'text-white/40 hover:text-white/70'}`}
+                            >
+                                हिंदी
+                            </button>
+                        </div>
+                    </div>
+
                     {error && (
                         <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center gap-3">
                             <AlertCircle size={20} />
@@ -1472,7 +2046,7 @@ function RegisterPageContent() {
                                 disabled={currentStep === 1 || loading}
                                 className="rounded-xl px-4 sm:px-8 border-white/10 text-white/70 hover:bg-white/5 hover:text-white disabled:opacity-30 transition-all font-display uppercase tracking-widest text-[10px] sm:text-xs h-10 sm:h-12"
                             >
-                                <ChevronLeft className="mr-1 sm:mr-2 w-3 h-3 sm:w-4 h-4" /> Prev
+                                 <ChevronLeft className="mr-1 sm:mr-2 w-3 h-3 sm:w-4 h-4" /> {t('prev')}
                             </Button>
 
                             {currentStep < 6 ? (
@@ -1482,7 +2056,7 @@ function RegisterPageContent() {
                                     onClick={nextStep}
                                     className="rounded-xl px-8 sm:px-12 font-display uppercase tracking-widest text-[10px] sm:text-xs h-10 sm:h-12"
                                 >
-                                    Next <ChevronRight className="ml-1 sm:ml-2 w-3 h-3 sm:w-4 h-4" />
+                                    {t('next')} <ChevronRight className="ml-1 sm:ml-2 w-3 h-3 sm:w-4 h-4" />
                                 </Button>
                             ) : (
                                 <Button
@@ -1491,7 +2065,7 @@ function RegisterPageContent() {
                                     disabled={loading}
                                     className="rounded-xl px-8 sm:px-12 font-display uppercase tracking-widest text-[10px] sm:text-xs h-10 sm:h-12 bg-primary text-white"
                                 >
-                                    {loading ? "Registering..." : "Submit"}
+                                    {loading ? t('registering') : t('submit')}
                                 </Button>
                             )}
                         </div>
