@@ -42,62 +42,70 @@
   }
 
   /* ── Light / Ivory theme ───────────────────────────── */
-  .light {
-    --background: 60 100% 97%;
-    --foreground: 220 70% 10%;
-    --card: 60 50% 100%;
-    --card-foreground: 220 70% 10%;
-    --popover: 60 50% 100%;
-    --popover-foreground: 220 70% 10%;
-    --primary: 210 100% 45%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 60 40% 98%;
-    --secondary-foreground: 220 70% 12%;
-    --muted: 60 20% 98%;
-    --muted-foreground: 220 20% 40%;
-    --accent: 210 100% 45%;
-    --accent-foreground: 0 0% 100%;
-    --border: 60 20% 90%;
-    --input: 60 20% 95%;
-    --ring: 210 100% 45%;
-    --glow-purple: 255 60% 60%;
-    --glow-cyan: 190 100% 45%;
-    --glow-blue: 210 100% 45%;
-  }
+ .light {
+  --background: 48 60% 96%;        /* lighter golden ivory */
+  --foreground: 220 60% 12%;
+
+  --card: 43 35% 94%;              /* warm card surface */
+  --card-foreground: 220 60% 12%;
+
+  --popover: 43 35% 94%;
+  --popover-foreground: 220 60% 12%;
+
+  --primary: 210 100% 48%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 43 30% 90%;
+  --secondary-foreground: 220 60% 15%;
+
+  --muted: 43 25% 89%;
+  --muted-foreground: 220 15% 38%;
+
+  --accent: 195 100% 45%;
+  --accent-foreground: 0 0% 100%;
+
+  --border: 43 25% 82%;
+  --input: 43 25% 87%;
+  --ring: 210 100% 48%;
+
+  --glow-purple: 255 65% 65%;
+  --glow-cyan: 190 100% 50%;
+  --glow-blue: 210 100% 50%;
+}
 }
 
 /* ── Light mode component overrides ─────────────────────── */
 .light html,
 .light body {
-  background: hsl(var(--background)) !important;
+  background: rgb(252, 248, 235) !important;
   min-height: 100vh;
 }
 
 .light .glass {
-  background: rgba(255, 255, 240, 0.8) !important;
-  border-color: rgba(0, 0, 0, 0.05) !important;
+  background: rgba(235, 210, 155, 0.7) !important;
+  border-color: rgba(190, 155, 80, 0.15) !important;
   backdrop-filter: blur(12px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
 }
 
 .light nav {
-  background: rgba(255, 255, 240, 0.95) !important;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+  background: rgba(252, 248, 235, 0.95) !important;
+  border-bottom: 1px solid rgba(200, 165, 90, 0.1) !important;
   backdrop-filter: blur(20px) !important;
 }
 
 .light .glass-strong {
-  background: rgb(255, 255, 240) !important;
-  border-color: rgba(0, 0, 0, 0.08) !important;
+  background: rgba(245, 225, 175, 0.25) !important;
+  border-color: rgba(190, 155, 80, 0.12) !important;
   backdrop-filter: blur(20px) !important;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04) !important;
 }
 
 /* Category card specific light mode overrides */
 .light .glass.cursor-pointer {
-  background: rgba(255, 255, 240, 0.85) !important;
-  border-color: rgba(0, 149, 255, 0.3) !important;
-  box-shadow: 0 4px 15px rgba(0, 100, 255, 0.08) !important;
+  background: rgba(245, 225, 175, 0.2) !important;
+  border-color: rgba(0, 149, 255, 0.2) !important;
+  box-shadow: 0 4px 15px rgba(0, 100, 255, 0.05) !important;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
   position: relative;
 }

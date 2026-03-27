@@ -8,7 +8,7 @@ exports.createRegistrationOrder = async (req, res, next) => {
         });
 
         const options = {
-            amount: 36500, // 365 INR in paise
+            amount: 100, // 1 INR in paise (Experimental / Trial)
             currency: "INR",
             receipt: `rcpt_${Date.now()}`
         };
@@ -18,7 +18,7 @@ exports.createRegistrationOrder = async (req, res, next) => {
         res.status(201).json({
             success: true,
             orderId: order.id,
-            amount: 365,
+            amount: 1,
             currency: "INR",
             keyId: process.env.RAZORPAY_KEY_ID
         });

@@ -55,7 +55,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
     const [mapLoaded, setMapLoaded] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResults, setSearchResults] = useState<Business[]>([]);
-    const [routeInfo, setRouteInfo] = useState<{ distance: number, duration: number, businessName: string } | null>(null);
+    const [routeInfo, setRouteInfo] = useState<{ distance: number, duration: number, businessName: string, trafficCondition: string } | null>(null);
     const [isNavigating, setIsNavigating] = useState(false);
     const watchIdRef = useRef<number | null>(null);
     const userMarkerRef = useRef<mapboxgl.Marker | null>(null);
@@ -64,8 +64,32 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
     const autoCenteringRef = useRef(true);
     useEffect(() => { autoCenteringRef.current = isAutoCentering; }, [isAutoCentering]);
     const isProgrammaticMove = useRef(false);
+    const rerouteTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const lastLocationRef = useRef<{ lat: number; lng: number } | null>(null);
+    const activeDestRef = useRef<{ lat: number; lng: number } | null>(null);
 
     const API = (process.env.NEXT_PUBLIC_API_URL);
+
+    // Classify congestion array → LOW / MODERATE / HEAVY
+    const getTrafficLevel = (congestion: string[]): string => {
+        const counts: Record<string, number> = {};
+        congestion.forEach(c => { counts[c] = (counts[c] || 0) + 1; });
+        const total = congestion.length || 1;
+        const severePct = ((counts['severe'] || 0) + (counts['heavy'] || 0)) / total;
+        if (severePct > 0.25) return 'HEAVY';
+        if ((counts['moderate'] || 0) / total + severePct > 0.35) return 'MODERATE';
+        return 'LOW';
+    };
+
+    // GPS drift guard: true only if moved > thresholdM metres
+    const hasMoved = (a: { lat: number; lng: number }, b: { lat: number; lng: number }, thresholdM = 15): boolean => {
+        const R = 6371000;
+        const dLat = (b.lat - a.lat) * Math.PI / 180;
+        const dLng = (b.lng - a.lng) * Math.PI / 180;
+        const aa = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+        return R * 2 * Math.atan2(Math.sqrt(aa), Math.sqrt(1 - aa)) > thresholdM;
+    };
+
 
     const fetchNearbyBusinesses = useCallback(async (lat: number, lng: number, cat: string, rad: number) => {
         setLoading(true);
@@ -571,7 +595,24 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                     NAVIGATING
                                     <span className="w-2 h-2 rounded-full bg-primary animate-ping" />
                                 </h2>
-                                <p className="text-primary/60 font-bold text-[10px] uppercase tracking-[0.2em]">Live Traffic Feed Active</p>
+                                {routeInfo ? (
+                                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                        <span className="text-primary font-black text-[11px] uppercase tracking-widest">
+                                            {routeInfo.distance.toFixed(1)} KM &middot; {Math.round(routeInfo.duration)} MIN
+                                        </span>
+                                        {routeInfo.trafficCondition && (
+                                            <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${
+                                                routeInfo.trafficCondition === 'LOW' ? 'border-green-500/40 text-green-400 bg-green-500/10' :
+                                                routeInfo.trafficCondition === 'MODERATE' ? 'border-yellow-500/40 text-yellow-400 bg-yellow-500/10' :
+                                                'border-red-500/40 text-red-400 bg-red-500/10'
+                                            }`}>
+                                                {routeInfo.trafficCondition === 'LOW' ? '🟢 LOW' : routeInfo.trafficCondition === 'MODERATE' ? '🟡 MODERATE' : '🔴 HEAVY'}
+                                            </span>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <p className="text-primary/60 font-bold text-[10px] uppercase tracking-[0.2em]">Live Traffic Feed Active</p>
+                                )}
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -761,6 +802,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                         alert("Waiting for your location. Please ensure location access is enabled.");
                                         return;
                                     }
+                                    activeDestRef.current = selectedBusiness.gpsCoordinates;
                                     try {
                                          const query = await fetch(
                                              `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${userLocation.lng},${userLocation.lat};${selectedBusiness.gpsCoordinates.lng},${selectedBusiness.gpsCoordinates.lat}?steps=true&geometries=geojson&annotations=congestion&access_token=${MAPBOX_TOKEN}`,
@@ -787,11 +829,13 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                          // Prepend exact user GPS to the snapped road route
                                          const route = [userCoord, ...rawRoute];
 
+                                         const rawCongestion = data.legs[0].annotation?.congestion || [];
                                          const routeDist = data.distance / 1000;
                                          setRouteInfo({
                                              distance: routeDist,
                                              duration: data.duration / 60,
-                                             businessName: selectedBusiness.brandName || selectedBusiness.businessName
+                                             businessName: selectedBusiness.brandName || selectedBusiness.businessName,
+                                             trafficCondition: getTrafficLevel(rawCongestion)
                                          });
 
                                          // Sync search result distance for 100% agreement
@@ -833,9 +877,9 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                          startMarkerRef.current = new mapboxgl.Marker({ element: startEl, rotationAlignment: 'map' }).setLngLat(startCoord).addTo(map);
 
                                          // Prepare traffic-aware geojson
-                                         const rawCongestion = data.legs[0].annotation?.congestion || [];
-                                         // Prepend 'unknown' or 'low' for the segment from home to road
+                                         // rawCongestion already declared above; reuse it
                                          const congestion = ['low', ...rawCongestion];
+
                                          
                                          const features = [];
                                          if (congestion && congestion.length > 0) {
@@ -971,8 +1015,8 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                     >
                         <div className={`relative bg-[#020617]/95 backdrop-blur-3xl border ${isNavigating ? 'border-red-500/40' : 'border-primary/40'} shadow-[0_20px_80px_rgba(0,0,0,0.8)] pointer-events-auto overflow-hidden transition-all duration-500
                             ${isNavigating 
-                                ? 'rounded-2xl sm:rounded-[2rem] p-2 sm:p-4 !sm:pt-10 w-[min(calc(100%-1rem),400px)] sm:max-w-[200px]' 
-                                : 'rounded-[1.2rem] sm:rounded-[2rem] p-4 sm:p-6 w-[calc(100%-1.5rem)] sm:w-full max-w-[280px] sm:max-w-sm'
+                                ? 'rounded-2xl sm:rounded-[2rem] p-2 sm:p-3 w-[min(calc(100%-1rem),400px)] sm:max-w-[180px]' 
+                                : 'rounded-[1.2rem] sm:rounded-2xl p-4 sm:p-4 w-[calc(100%-1.5rem)] sm:w-full max-w-[280px] sm:max-w-[240px]'
                             }
                         `}>
                             {/* Animated Scanner Effect */}
@@ -1011,7 +1055,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
 
                             <div className={`flex relative z-10 w-full ${isNavigating ? 'flex-row items-center justify-between sm:flex-col sm:items-stretch sm:justify-start sm:gap-0' : 'flex-col'}`}>
                                 {/* Route Metadata */}
-                                <div className={`${isNavigating ? 'min-h-0 sm:min-h-[50px] mb-0 sm:mb-4 flex flex-row items-center gap-3 sm:flex-col sm:items-start sm:gap-0' : 'min-h-[60px] sm:min-h-[85px] mb-2 sm:mb-4'}`}>
+                                <div className={`${isNavigating ? 'mb-0 sm:mb-2 flex flex-row items-center gap-3 sm:flex-col sm:items-start sm:gap-0' : 'mb-1 sm:mb-2'}`}>
                                     <div className={`${isNavigating ? 'hidden sm:flex' : 'flex'} items-center gap-1.5 mb-1 sm:mb-1.5`}>
                                         <div className={`w-1 h-1 rounded-full bg-primary ${isNavigating ? 'animate-pulse' : 'animate-ping'}`} />
                                         <span className={`text-primary ${isNavigating ? 'text-[7px]' : 'text-[10px]'} font-black uppercase tracking-[0.2em]`}>
@@ -1019,8 +1063,8 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                         </span>
                                     </div>
                                     
-                                    <div className={`flex flex-col ${isNavigating ? 'sm:gap-0.5' : 'gap-1.5 sm:gap-3'}`}>
-                                        <div className="flex flex-col sm:mb-1">
+                                    <div className={`flex flex-col ${isNavigating ? 'sm:gap-0.5' : 'gap-1 sm:gap-1.5'}`}>
+                                        <div className="flex flex-col sm:mb-0.5">
                                             <span className={`text-white font-black ${isNavigating ? 'text-lg sm:text-4xl' : 'text-2xl sm:text-4xl'} tracking-tighter leading-none`}>
                                                 {routeInfo.duration > 60 ? `${Math.floor(routeInfo.duration/60)}h ${Math.round(routeInfo.duration%60)}m` : `${Math.round(routeInfo.duration)}`}
                                                 <span className={`${isNavigating ? 'text-[10px] ml-0.5' : 'text-xs ml-0.5 sm:text-lg sm:ml-1'}`}>MIN</span>
@@ -1037,19 +1081,29 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                             <span className={`hidden sm:block text-white/40 ${isNavigating ? 'text-[7px] sm:text-[8px]' : 'text-[10px]'} font-bold tracking-[0.1em] sm:tracking-[0.2em] uppercase`}>
                                                 {isNavigating ? 'ROAD ROUTE' : 'ESTIMATED ROAD ROUTE'}
                                             </span>
+                                            {routeInfo.trafficCondition && (
+                                                <span className={`mt-1 self-start text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${
+                                                    routeInfo.trafficCondition === 'LOW' ? 'border-green-500/40 text-green-400 bg-green-500/10' :
+                                                    routeInfo.trafficCondition === 'MODERATE' ? 'border-yellow-500/40 text-yellow-400 bg-yellow-500/10' :
+                                                    'border-red-500/40 text-red-400 bg-red-500/10'
+                                                }`}>
+                                                    {routeInfo.trafficCondition === 'LOW' ? '🟢 LOW TRAFFIC' : routeInfo.trafficCondition === 'MODERATE' ? '🟡 MODERATE' : '🔴 HEAVY'}
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Divider - Hidden on mobile during navigation */}
-                                <div className={`w-full h-px bg-white/5 ${isNavigating ? 'hidden sm:block sm:my-1.5' : 'my-2 sm:my-6'}`} />
+                                <div className={`w-full h-px bg-white/5 ${isNavigating ? 'hidden sm:block sm:my-1' : 'my-1.5 sm:my-3'}`} />
 
                                 {/* Action Buttons Container */}
-                                <div className={`${isNavigating ? 'sm:pt-4 sm:border-t sm:border-white/5 ml-auto sm:ml-0' : 'space-y-2 sm:space-y-3 pt-2 sm:pt-4 border-t border-white/5'}`}>
+                                <div className={`${isNavigating ? 'sm:pt-2 sm:border-t sm:border-white/5 ml-auto sm:ml-0' : 'space-y-1.5 sm:space-y-2 pt-1.5 sm:pt-2 border-t border-white/5'}`}>
                                     {!isNavigating ? (
                                         <button
                                             onClick={() => {
                                                 setIsNavigating(true);
+                                                setIsAutoCentering(true);
                                                 const map = mapRef.current!;
                                                 let bearing = 0;
                                                 if (startMarkerRef.current) {
@@ -1065,19 +1119,51 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                     bearing: bearing,
                                                     duration: 2000 
                                                 });
+
+                                                // 45-second rerouting interval
+                                                if (rerouteTimerRef.current) clearInterval(rerouteTimerRef.current);
+                                                rerouteTimerRef.current = setInterval(async () => {
+                                                    const loc = lastLocationRef.current;
+                                                    const dest = activeDestRef.current;
+                                                    if (!loc || !dest || !mapRef.current) return;
+                                                    const bName = routeInfo?.businessName || '';
+                                                    // Compute straight-line km to pick profile
+                                                    const R = 6371;
+                                                    const dLat = (dest.lat - loc.lat) * Math.PI / 180;
+                                                    const dLng = (dest.lng - loc.lng) * Math.PI / 180;
+                                                    const slKm = R * 2 * Math.atan2(
+                                                        Math.sqrt(Math.sin(dLat/2)**2 + Math.cos(loc.lat*Math.PI/180)*Math.cos(dest.lat*Math.PI/180)*Math.sin(dLng/2)**2),
+                                                        Math.sqrt(1 - Math.sin(dLat/2)**2 - Math.cos(loc.lat*Math.PI/180)*Math.cos(dest.lat*Math.PI/180)*Math.sin(dLng/2)**2)
+                                                    );
+                                                    const profile = slKm < 1.5 ? 'walking' : 'driving-traffic';
+                                                    try {
+                                                        const res = await fetch(`https://api.mapbox.com/directions/v5/mapbox/${profile}/${loc.lng},${loc.lat};${dest.lng},${dest.lat}?steps=true&geometries=geojson&annotations=congestion&access_token=${MAPBOX_TOKEN}`);
+                                                        const js = await res.json();
+                                                        if (!js?.routes?.length) return;
+                                                        const d = js.routes[0];
+                                                        const raw = d.legs[0]?.annotation?.congestion || [];
+                                                        setRouteInfo({ distance: d.distance/1000, duration: d.duration/60, businessName: bName, trafficCondition: profile === 'walking' ? 'WALKING' : getTrafficLevel(raw) });
+                                                    } catch(e) { console.warn('Reroute error:', e); }
+                                                }, 45000);
+
                                                 if (navigator.geolocation) {
                                                     watchIdRef.current = navigator.geolocation.watchPosition(
                                                         (pos) => {
                                                             const lat = pos.coords.latitude;
                                                             const lng = pos.coords.longitude;
                                                             const heading = pos.coords.heading;
-                                                            setUserLocation({ lat, lng });
+                                                            const newLoc = { lat, lng };
+
+                                                            // GPS drift guard: skip tiny jitter
+                                                            if (lastLocationRef.current && !hasMoved(lastLocationRef.current, newLoc, 15)) return;
+                                                            lastLocationRef.current = newLoc;
+                                                            setUserLocation(newLoc);
 
                                                             if (autoCenteringRef.current) {
                                                                 isProgrammaticMove.current = true;
                                                                 mapRef.current?.easeTo({
                                                                     center: [lng, lat],
-                                                                    bearing: (heading !== null && !isNaN(heading)) ? heading : mapRef.current.getBearing(),
+                                                                    bearing: (heading !== null && !isNaN(heading!)) ? heading! : mapRef.current.getBearing(),
                                                                     pitch: 75,
                                                                     zoom: 18,
                                                                     duration: 1000,
@@ -1089,17 +1175,17 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                             if (startMarkerRef.current) {
                                                                 startMarkerRef.current.setLngLat([lng, lat]);
                                                                 const arrowDiv = startMarkerRef.current.getElement().querySelector('div');
-                                                                if (arrowDiv && heading !== null && !isNaN(heading)) {
+                                                                if (arrowDiv && heading !== null && !isNaN(heading!)) {
                                                                     arrowDiv.style.transform = `rotate(${heading}deg)`;
                                                                 }
                                                             }
                                                         },
-                                                        (err) => console.log("Watch pos err:", err),
-                                                        { enableHighAccuracy: true, maximumAge: 0 }
+                                                        (err) => console.warn("Watch pos err:", err),
+                                                        { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
                                                     );
                                                 }
                                             }}
-                                            className="bg-primary text-white font-black py-2.5 sm:py-4 px-4 sm:px-6 rounded-xl sm:rounded-2xl hover:bg-primary/90 transition-all flex items-center justify-center gap-2 sm:gap-3 shadow-[0_10px_30px_rgba(59,130,246,0.3)] w-full text-[10px] sm:text-xs uppercase tracking-widest"
+                                            className="bg-primary text-white font-black py-2 sm:py-2.5 px-4 sm:px-5 rounded-xl hover:bg-primary/90 transition-all flex items-center justify-center gap-2 shadow-[0_6px_20px_rgba(59,130,246,0.3)] w-full text-[10px] sm:text-xs uppercase tracking-widest"
                                         >
                                             <NavigationIcon size={14} fill="currentColor" className="sm:size-[18px]" /> START NAVIGATION
                                         </button>
@@ -1151,7 +1237,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                     setTimeout(() => { isProgrammaticMove.current = false; }, 1600);
                                                 }
                                             }}
-                                            className="bg-white/5 border border-white/10 text-white/40 font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-xl hover:bg-white/10 transition-all flex items-center justify-center gap-2 w-full text-[9px] sm:text-[10px] uppercase tracking-wider"
+                                            className="bg-white/5 border border-white/10 text-white/40 font-bold py-1.5 sm:py-2 px-4 sm:px-5 rounded-xl hover:bg-white/10 transition-all flex items-center justify-center gap-2 w-full text-[9px] sm:text-[10px] uppercase tracking-wider"
                                         >
                                             <NavigationIcon size={10} className="sm:size-3 rotate-45" /> RESET VIEW
                                         </button>

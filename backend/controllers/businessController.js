@@ -90,10 +90,20 @@ exports.registerBusiness = async (req, res, next) => {
             try {
                 businessData.subcategory = JSON.parse(businessData.subcategory);
             } catch (e) {
+                // Try splitting by comma if JSON parse fails
                 businessData.subcategory = businessData.subcategory.split(',').map(s => s.trim()).filter(s => s);
             }
         } else if (!Array.isArray(businessData.subcategory)) {
             businessData.subcategory = businessData.subcategory ? [businessData.subcategory] : [];
+        }
+
+        // Parse businessHours if it is a string
+        if (typeof businessData.businessHours === 'string') {
+            try {
+                businessData.businessHours = JSON.parse(businessData.businessHours);
+            } catch (e) {
+                console.error("Failed to parse businessHours in register", e);
+            }
         }
 
         if (isCustomCategory === 'true' || isCustomCategory === true) {
@@ -406,7 +416,8 @@ exports.searchBusinesses = async (req, res, next) => {
                 { brandName: { $regex: q, $options: 'i' } },
                 { description: { $regex: q, $options: 'i' } },
                 { keywords: { $regex: q, $options: 'i' } },
-                { subcategory: { $regex: q, $options: 'i' } }
+                { subcategory: { $regex: q, $options: 'i' } },
+                { businessCategory: { $regex: q, $options: 'i' } }
             ];
         }
 
@@ -564,6 +575,23 @@ exports.updateBusinessDetails = async (req, res, next) => {
 
         // Use helper for files
         const updateData = handleBusinessFiles(req, req.body);
+
+        // Parse JSON strings in updateData
+        const fieldsToParse = ['businessHours', 'gpsCoordinates', 'subcategory', 'keywords'];
+        fieldsToParse.forEach(field => {
+            if (typeof updateData[field] === 'string') {
+                try {
+                    updateData[field] = JSON.parse(updateData[field]);
+                } catch (e) {
+                    // Fallback to splitting if JSON parse fails for array fields
+                }
+                
+                // If after parsing (or failing) we still have a string for array fields, split it
+                if (typeof updateData[field] === 'string' && (field === 'subcategory' || field === 'keywords')) {
+                    updateData[field] = updateData[field].split(',').map(s => s.trim()).filter(s => s);
+                }
+            }
+        });
 
         // Parse services and map files
         if (updateData.servicesData) {

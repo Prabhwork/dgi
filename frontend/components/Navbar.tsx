@@ -67,8 +67,8 @@ const NavDropdown = ({
                         className="absolute top-full left-0 mt-1 z-50 flex"
                     >
                         {/* Left Panel — Categories */}
-                        <div className={`w-80 p-2 rounded-2xl border border-solid shadow-2xl backdrop-blur-xl ${isLight 
-                            ? 'bg-[#FFFFF0]/80 border-slate-200/50 shadow-blue-500/10' 
+                        <div className={`w-80 p-2 rounded-2xl border border-solid shadow-[0_8px_32px_rgba(0,0,0,0.1)] backdrop-blur-2xl ${isLight 
+                            ? 'bg-[#FCF8EB]/95 border-slate-900/10' 
                             : 'bg-slate-900/80 border-white/10 shadow-black/40'
                             }`}>
                             <div className="max-h-[65vh] overflow-y-auto custom-scrollbar relative">
@@ -96,17 +96,20 @@ const NavDropdown = ({
                                                 }
                                             }}
                                             className={`flex items-center gap-2 p-1.5 rounded-xl transition-all duration-200 cursor-pointer ${isActive
-                                                ? isLight ? 'bg-primary/10' : 'bg-white/10'
-                                                : 'hover:bg-transparent'
+                                                ? isLight ? 'bg-primary/20' : 'bg-white/10'
+                                                : isLight ? 'hover:bg-slate-900/5' : 'hover:bg-transparent'
                                                 }`}
                                         >
                                             <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300 ${isActive
                                                 ? 'bg-primary text-white scale-110 shadow-lg shadow-primary/20'
-                                                : isLight ? 'bg-slate-100/50 text-slate-500' : 'bg-slate-800/50 text-slate-400'
+                                                : isLight ? 'bg-black/5 text-black/60' : 'bg-slate-800/50 text-slate-400'
                                                 }`}>
                                                 <item.icon size={15} />
                                             </div>
-                                            <div className={`flex-1 text-[12px] font-semibold tracking-tight transition-colors ${isActive ? (isLight ? 'text-primary' : 'text-white') : (isLight ? 'text-slate-600' : 'text-slate-300')}`}>
+                                            <div className={`flex-1 text-[12px] font-bold tracking-tight transition-colors ${isActive 
+                                                ? 'text-primary' 
+                                                : isLight ? 'text-black' : 'text-slate-300'
+                                            }`}>
                                                 {item.name}
                                             </div>
                                             {hasSubs && (
@@ -131,12 +134,12 @@ const NavDropdown = ({
                                             x: { duration: 0.2 },
                                             y: { type: "spring", stiffness: 300, damping: 30 } 
                                         }}
-                                        className={`w-72 ml-2 p-2 rounded-2xl border border-solid shadow-2xl h-fit backdrop-blur-xl pointer-events-auto ${isLight 
-                                            ? 'bg-[#FFFFF0]/80 border-slate-200/50 shadow-blue-500/10' 
+                                        className={`w-72 ml-2 p-2 rounded-2xl border border-solid shadow-[0_8px_32px_rgba(0,0,0,0.1)] h-fit backdrop-blur-2xl pointer-events-auto ${isLight 
+                                            ? 'bg-[#FCF8EB]/95 border-slate-900/10' 
                                             : 'bg-slate-900/80 border-white/10 shadow-black/40'
                                             }`}
                                     >
-                                        <div className={`px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] opacity-40 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                                        <div className={`px-3 py-2 text-[10px] font-black uppercase tracking-[0.2em] opacity-40 ${isLight ? 'text-black' : 'text-white'}`}>
                                             {activeItem.name}
                                         </div>
                                         <div className="max-h-[60vh] overflow-y-auto custom-scrollbar">
@@ -145,11 +148,11 @@ const NavDropdown = ({
                                                     key={sub.id}
                                                     href={`/details/${sub.id}`}
                                                     className={`flex items-center gap-2 p-1 rounded-xl transition-all duration-200 ${isLight
-                                                        ? 'text-slate-600 hover:text-primary hover:bg-primary/5'
+                                                        ? 'text-black hover:text-primary hover:bg-primary/5'
                                                         : 'text-slate-300 hover:text-white hover:bg-white/5'
                                                         }`}
                                                 >
-                                                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${isLight ? 'bg-slate-100/50 text-slate-400' : 'bg-slate-800/50 text-slate-500'
+                                                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${isLight ? 'bg-black/5 text-black/40' : 'bg-slate-800/50 text-slate-500'
                                                         }`}>
                                                         <Circle size={5} fill="currentColor" />
                                                     </div>
@@ -400,32 +403,34 @@ export default function Navbar() {
                 </div>
 
                 <div className="hidden lg:flex items-center gap-3">
-                    {/* Theme Toggle */}
+                    {/* Theme Toggle - Hidden for now */}
+                    {/* 
                     <button
                         onClick={toggle}
                         aria-label="Toggle theme"
                         suppressHydrationWarning
-                        className={`relative w-14 h-7 rounded-full border border-solid transition-all duration-300 flex items-center px-1 cursor-pointer ${isLight ? 'border-primary/20 bg-blue-50' : 'border-border/50 bg-slate-900'}`}
+                        className={`relative w-14 h-7 rounded-full border border-solid transition-all duration-300 flex items-center px-1 cursor-pointer ${isLight ? 'border-blue-300 bg-blue-50/50 shadow-inner' : 'border-border/50 bg-slate-900'}`}
                         style={{
                             boxShadow: theme === "dark"
                                 ? "0 0 12px rgba(59,130,246,0.3)"
-                                : "0 0 12px rgba(100,150,255,0.25)",
+                                : "0 0 12px rgba(100,150,255,0.15)",
                         }}
                     >
                         <motion.div
                             layout
                             transition={{ type: "spring", stiffness: 500, damping: 35 }}
-                            className="w-5 h-5 rounded-full flex items-center justify-center shadow-md bg-white dark:bg-slate-700"
+                            className="w-5 h-5 rounded-full flex items-center justify-center shadow-md bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600"
                             style={{
                                 marginLeft: isLight ? "28px" : "0px",
                             }}
                         >
                             {theme === "dark"
                                 ? <Moon size={11} className="text-blue-400" />
-                                : <Sun size={11} className="text-yellow-500" />
+                                : <Sun size={11} className="text-yellow-600" />
                             }
                         </motion.div>
                     </button>
+                    */}
 
                     {businessUser || regularUser ? (
                         <div className="relative isolate" ref={dropdownRef}>
@@ -495,26 +500,30 @@ export default function Navbar() {
                         </div>
                     ) : (
                         <div className="flex items-center gap-3">
-                            <div className="flex items-center bg-white/5 rounded-full p-1 border border-white/10">
+                            <div className={`flex items-center rounded-full p-1 border transition-all ${isLight ? 'bg-[#FFFFF0]/30 border-black/10' : 'bg-white/5 border-white/10'}`}>
                                 <Link 
                                     href="/login" 
-                                    className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-full transition-all hover:text-primary text-white/70`}
+                                    className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-full transition-all hover:text-primary ${isLight ? 'text-slate-900/80 hover:bg-black/5' : 'text-white/70 hover:bg-white/5'}`}
                                 >
                                     Login
                                 </Link>
-                                <div className="w-px h-4 bg-white/10" />
+                                <div className={`w-px h-4 ${isLight ? 'bg-black/10' : 'bg-white/10'}`} />
                                 <Link 
                                     href="/register" 
-                                    className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-full transition-all hover:text-primary text-white/70`}
+                                    className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-full transition-all hover:text-primary ${isLight ? 'text-slate-900/80 hover:bg-black/5' : 'text-white/70 hover:bg-white/5'}`}
                                 >
                                     Sign Up
                                 </Link>
                             </div>
                             
                             <Button
-                                variant={isLight ? 'default' : 'glow'}
+                                variant="default"
                                 size="sm"
-                                className={isLight ? "bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20 font-bold" : "bg-primary text-white hover:opacity-90 shadow-[0_0_20px_rgba(59,130,246,0.5)] border-none px-4 py-2"}
+                                className={`font-bold border-none transition-all duration-300 rounded-xl px-5 h-10 shadow-lg ${
+                                    isLight 
+                                        ? "bg-blue-600 text-white hover:bg-blue-700 shadow-blue-600/20" 
+                                        : "bg-primary text-white hover:bg-primary/90 shadow-primary/20"
+                                }`}
                                 asChild
                             >
                                 <Link href="/community/register" className="flex items-center gap-2">
@@ -527,6 +536,8 @@ export default function Navbar() {
                 </div>
 
                 <div className="flex lg:hidden items-center gap-3">
+                    {/* Mobile Theme Toggle - Hidden */}
+                    {/* 
                     <button
                         onClick={toggle}
                         aria-label="Toggle theme"
@@ -538,6 +549,7 @@ export default function Navbar() {
                             : <Sun size={14} className="text-yellow-500" />
                         }
                     </button>
+                    */}
                     <button className={isLight ? 'text-slate-900' : 'text-foreground'} onClick={() => setMobileOpen(!mobileOpen)}>
                         {mobileOpen ? <X size={24} /> : <Menu size={24} />}
                     </button>
@@ -609,7 +621,10 @@ export default function Navbar() {
                                                                                 }`}>
                                                                                 <item.icon size={14} />
                                                                             </div>
-                                                                            <span className={`text-[12px] font-bold tracking-tight ${isExpanded ? isLight ? 'text-primary' : 'text-white' : isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+                                                                            <span className={`text-sm font-bold tracking-tight transition-colors ${isExpanded 
+                                                                                ? 'text-primary' 
+                                                                                : isLight ? 'text-black' : 'text-slate-300'
+                                                                            }`}>
                                                                                 {item.name}
                                                                             </span>
                                                                         </div>

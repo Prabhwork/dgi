@@ -104,7 +104,7 @@ export default function UpcomingFeatures() {
                 whileHover={{ y: -5, scale: 1.02 }}
                 className={`flex flex-col items-start gap-2 rounded-3xl p-6 border transition-all duration-500 cursor-pointer backdrop-blur-xl group w-full h-full relative overflow-hidden ${
                     theme === 'light' 
-                    ? 'bg-white border-slate-200 shadow-sm hover:border-blue-400 hover:shadow-[0_20px_40px_-15px_rgba(59,130,246,0.15)]' 
+                    ? 'bg-white border-slate-300 shadow-sm hover:border-blue-500 hover:shadow-md' 
                     : 'bg-white/5 border-white/5 hover:border-blue-500/40 hover:shadow-[0_20px_50px_-12px_rgba(59,130,246,0.25)]'
                 }`}
             >

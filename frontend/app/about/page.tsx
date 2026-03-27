@@ -17,11 +17,11 @@ export default function AboutPage() {
                 <Navbar />
 
                 <main className="container mx-auto px-4 pt-32 pb-20 flex-1 max-w-4xl">
-                    <div className={`rounded-3xl p-8 md:p-12 border backdrop-blur-xl shadow-xl ${isLight ? 'bg-white/90 border-slate-200' : 'bg-white/5 border-white/10'}`}>
-                        <h1 className="text-3xl md:text-5xl font-black mb-6 text-foreground">About Digital Book of India</h1>
+                    <div className={`rounded-3xl p-8 md:p-12 border backdrop-blur-xl shadow-xl ${isLight ? 'bg-white border-slate-300 shadow-sm' : 'bg-white/5 border-white/10'}`}>
+                        <h1 className={`text-3xl md:text-5xl font-black mb-6 ${isLight ? 'text-slate-900' : 'text-white'}`}>About Digital Book of India</h1>
                         
-                        <div className="space-y-6 text-muted-foreground leading-relaxed">
-                            <p className="text-lg font-medium text-foreground">
+                        <div className={`space-y-6 leading-relaxed ${isLight ? 'text-slate-600' : 'text-white/70'}`}>
+                            <p className={`text-lg font-medium ${isLight ? 'text-slate-800' : 'text-white/90'}`}>
                                 Welcome to Digital Book of India (DBI) – your trusted destination for discovering, verifying, and connecting with businesses across the country.
                             </p>
                             

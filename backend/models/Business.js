@@ -57,6 +57,15 @@ const BusinessSchema = new mongoose.Schema({
         type: String,
         default: 'None'
     },
+    businessHours: {
+        monday: { isOpen: { type: Boolean, default: true }, slots: [{ open: String, close: String }] },
+        tuesday: { isOpen: { type: Boolean, default: true }, slots: [{ open: String, close: String }] },
+        wednesday: { isOpen: { type: Boolean, default: true }, slots: [{ open: String, close: String }] },
+        thursday: { isOpen: { type: Boolean, default: true }, slots: [{ open: String, close: String }] },
+        friday: { isOpen: { type: Boolean, default: true }, slots: [{ open: String, close: String }] },
+        saturday: { isOpen: { type: Boolean, default: true }, slots: [{ open: String, close: String }] },
+        sunday: { isOpen: { type: Boolean, default: true }, slots: [{ open: String, close: String }] }
+    },
 
     // Step 4: Verification & Trust
     aadhaarNumber: {

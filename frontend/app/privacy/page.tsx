@@ -17,11 +17,11 @@ export default function PrivacyPage() {
                 <Navbar />
 
                 <main className="container mx-auto px-4 pt-32 pb-20 flex-1 max-w-4xl">
-                    <div className={`rounded-3xl p-8 md:p-12 border backdrop-blur-xl shadow-xl ${isLight ? 'bg-white/90 border-slate-200' : 'bg-white/5 border-white/10'}`}>
-                        <h1 className="text-3xl md:text-5xl font-black mb-6 text-foreground">Privacy Policy</h1>
+                    <div className={`rounded-3xl p-8 md:p-12 border backdrop-blur-xl shadow-xl ${isLight ? 'bg-white border-slate-300 shadow-sm' : 'bg-white/5 border-white/10'}`}>
+                        <h1 className={`text-3xl md:text-5xl font-black mb-6 ${isLight ? 'text-slate-900' : 'text-white'}`}>Privacy Policy</h1>
                         <p className="text-sm font-medium text-primary mb-8">Last Updated: March 2026</p>
                         
-                        <div className="space-y-6 text-muted-foreground leading-relaxed text-sm md:text-base">
+                        <div className={`space-y-6 leading-relaxed text-sm md:text-base ${isLight ? 'text-slate-600' : 'text-white/70'}`}>
                             <p>
                                 At Digital Book of India, your privacy is our priority. This Privacy Policy details the types of personal data we collect and how it is used and protected.
                             </p>

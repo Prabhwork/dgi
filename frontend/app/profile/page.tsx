@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const BASE_URL = (API_URL || '').replace('/api', '');
@@ -55,28 +57,88 @@ export default function ProfilePage() {
         officialWhatsAppNumber: '',
         officialEmailAddress: '',
         website: '',
-        openingTime: '',
-        closingTime: '',
-        weeklyOff: 'None',
+        businessHours: {
+            monday: { isOpen: true, slots: [{ open: "09:00", close: "18:00" }] },
+            tuesday: { isOpen: true, slots: [{ open: "09:00", close: "18:00" }] },
+            wednesday: { isOpen: true, slots: [{ open: "09:00", close: "18:00" }] },
+            thursday: { isOpen: true, slots: [{ open: "09:00", close: "18:00" }] },
+            friday: { isOpen: true, slots: [{ open: "09:00", close: "18:00" }] },
+            saturday: { isOpen: true, slots: [{ open: "09:00", close: "18:00" }] },
+            sunday: { isOpen: false, slots: [{ open: "09:00", close: "18:00" }] },
+        },
         joinBulkBuying: false,
         joinFraudAlerts: false,
     });
-
-    // Timings State
-    const [timings, setTimings] = useState<{ open: string; close: string }[]>([{ open: "", close: "" }]);
 
     // Services & Products State
     const [services, setServices] = useState<any[]>([]);
     const [products, setProducts] = useState<any[]>([]);
 
-    // Sync timings to form
-    useEffect(() => {
+    const copyToAllHours = (sourceDay: string) => {
+        const sourceData = form.businessHours[sourceDay as keyof typeof form.businessHours];
+        setForm(prev => {
+            const newHours = { ...prev.businessHours };
+            Object.keys(newHours).forEach(day => {
+                if (day !== sourceDay && newHours[day as keyof typeof newHours].isOpen) {
+                    newHours[day as keyof typeof newHours] = {
+                        ...newHours[day as keyof typeof newHours],
+                        slots: JSON.parse(JSON.stringify(sourceData.slots))
+                    };
+                }
+            });
+            return { ...prev, businessHours: newHours };
+        });
+    };
+
+    const handleToggleDay = (day: string) => {
         setForm(prev => ({
             ...prev,
-            openingTime: timings.map(t => t.open).join(','),
-            closingTime: timings.map(t => t.close).join(',')
+            businessHours: {
+                ...prev.businessHours,
+                [day]: { ...prev.businessHours[day as keyof typeof prev.businessHours], isOpen: !prev.businessHours[day as keyof typeof prev.businessHours].isOpen }
+            }
         }));
-    }, [timings]);
+    };
+
+    const handleSlotChange = (day: string, index: number, field: 'open' | 'close', value: string) => {
+        const newSlots = [...form.businessHours[day as keyof typeof form.businessHours].slots];
+        newSlots[index] = { ...newSlots[index], [field]: value };
+        setForm(prev => ({
+            ...prev,
+            businessHours: {
+                ...prev.businessHours,
+                [day]: { ...prev.businessHours[day as keyof typeof prev.businessHours], slots: newSlots }
+            }
+        }));
+    };
+
+    const addSlot = (day: string) => {
+        setForm(prev => ({
+            ...prev,
+            businessHours: {
+                ...prev.businessHours,
+                [day]: {
+                    ...prev.businessHours[day as keyof typeof prev.businessHours],
+                    slots: [...prev.businessHours[day as keyof typeof prev.businessHours].slots, { open: "09:00", close: "18:00" }]
+                }
+            }
+        }));
+    };
+
+    const removeSlot = (day: string, index: number) => {
+        const currentSlots = form.businessHours[day as keyof typeof form.businessHours].slots;
+        if (currentSlots.length <= 1) return;
+        setForm(prev => ({
+            ...prev,
+            businessHours: {
+                ...prev.businessHours,
+                [day]: {
+                    ...prev.businessHours[day as keyof typeof prev.businessHours],
+                    slots: currentSlots.filter((_, i) => i !== index)
+                }
+            }
+        }));
+    };
 
     // File states
     const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
@@ -109,6 +171,51 @@ export default function ProfilePage() {
                 if (data.success) {
                     const b = data.data;
                     setBusiness(b);
+                    
+                    const defaultHours = {
+                        monday: { isOpen: true, slots: [{ open: "09:00", close: "18:00" }] },
+                        tuesday: { isOpen: true, slots: [{ open: "09:00", close: "18:00" }] },
+                        wednesday: { isOpen: true, slots: [{ open: "09:00", close: "18:00" }] },
+                        thursday: { isOpen: true, slots: [{ open: "09:00", close: "18:00" }] },
+                        friday: { isOpen: true, slots: [{ open: "09:00", close: "18:00" }] },
+                        saturday: { isOpen: true, slots: [{ open: "09:00", close: "18:00" }] },
+                        sunday: { isOpen: false, slots: [{ open: "09:00", close: "18:00" }] },
+                    };
+
+                    let businessHours = b.businessHours || defaultHours;
+                    
+                    // If it is a string (legacy/saved as string), parse it
+                    if (typeof businessHours === 'string') {
+                        try {
+                            businessHours = JSON.parse(businessHours);
+                        } catch (e) {
+                            businessHours = defaultHours;
+                        }
+                    }
+
+                    // Ensure all days have slots to avoid empty display
+                    const finalHours = { ...defaultHours, ...businessHours };
+                    Object.keys(finalHours).forEach(day => {
+                        if (!finalHours[day as keyof typeof finalHours].slots || finalHours[day as keyof typeof finalHours].slots.length === 0) {
+                            finalHours[day as keyof typeof finalHours].slots = [{ open: "09:00", close: "18:00" }];
+                        }
+                    });
+
+                    // Support legacy data migration (if businessHours was missing but openingTime existed)
+                    if (!b.businessHours && (b.openingTime || b.closingTime)) {
+                        const opens = (b.openingTime || "09:00").split(",");
+                        const closes = (b.closingTime || "18:00").split(",");
+                        const slots = opens.map((o: string, i: number) => ({ open: o || "09:00", close: closes[i] || "18:00" }));
+                        
+                        Object.keys(finalHours).forEach(day => {
+                            finalHours[day as keyof typeof finalHours].slots = JSON.parse(JSON.stringify(slots));
+                            if (b.weeklyOff && b.weeklyOff.toLowerCase() === day) {
+                                finalHours[day as keyof typeof finalHours].isOpen = false;
+                            }
+                        });
+                    }
+                    businessHours = finalHours;
+
                     setForm({
                         businessName: b.businessName || '',
                         brandName: b.brandName || '',
@@ -120,23 +227,10 @@ export default function ProfilePage() {
                         officialWhatsAppNumber: b.officialWhatsAppNumber || '',
                         officialEmailAddress: b.officialEmailAddress || '',
                         website: b.website || '',
-                        openingTime: b.openingTime || '',
-                        closingTime: b.closingTime || '',
-                        weeklyOff: b.weeklyOff || 'None',
+                        businessHours: businessHours,
                         joinBulkBuying: b.joinBulkBuying || false,
                         joinFraudAlerts: b.joinFraudAlerts || false,
                     });
-                    
-                    if (b.openingTime || b.closingTime) {
-                        const opens = (b.openingTime || "").split(",");
-                        const closes = (b.closingTime || "").split(",");
-                        const len = Math.max(opens.length, closes.length, 1);
-                        const newTimings = [];
-                        for (let i = 0; i < len; i++) {
-                            newTimings.push({ open: opens[i] || "", close: closes[i] || "" });
-                        }
-                        setTimings(newTimings);
-                    }
 
                     if (b.coverImage) setCoverImagePreview(`${BASE_URL}/${b.coverImage}`);
                     if (b.bannerImage) setBannerImagePreview(`${BASE_URL}/${b.bannerImage}`);
@@ -194,7 +288,13 @@ export default function ProfilePage() {
         const token = localStorage.getItem('businessToken');
         const fd = new FormData();
 
-        Object.entries(form).forEach(([k, v]) => fd.append(k, String(v)));
+        Object.entries(form).forEach(([k, v]) => {
+            if (k === 'businessHours') {
+                fd.append(k, JSON.stringify(v));
+            } else {
+                fd.append(k, String(v));
+            }
+        });
         if (coverImageFile) fd.append('coverImage', coverImageFile);
         if (bannerImageFile) fd.append('bannerImage', bannerImageFile);
         galleryFiles.forEach(f => fd.append('gallery', f));
@@ -459,74 +559,87 @@ export default function ProfilePage() {
                                     {/* ─── Hours ─── */}
                                     {activeTab === 'hours' && (
                                         <div className="space-y-6">
-                                            <h2 className="text-lg font-bold text-foreground flex items-center gap-2"><Clock size={18} />Business Hours</h2>
+                                            <div className="flex items-center justify-between">
+                                                <h2 className="text-lg font-bold text-foreground flex items-center gap-2"><Clock size={18} />Business Hours</h2>
+                                            </div>
                                             
-                                            <div className="space-y-4">
-                                                {timings.map((timing, index) => (
-                                                    <div key={index} className="flex flex-col sm:flex-row gap-4 items-end bg-white/5 p-4 rounded-xl border border-white/10 relative">
-                                                        {timings.length > 1 && (
-                                                            <button 
-                                                                type="button" 
-                                                                onClick={() => setTimings(timings.filter((_, i) => i !== index))}
-                                                                className="absolute top-2 right-2 text-muted-foreground hover:text-red-400 transition"
-                                                            >
-                                                                <X size={16} />
-                                                            </button>
+                                            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar pb-4">
+                                                {Object.entries(form.businessHours).map(([day, data]) => (
+                                                    <div key={day} className={`p-4 rounded-xl border transition-all ${data.isOpen ? (isLight ? 'bg-slate-50 border-slate-200' : 'bg-white/5 border-white/10') : (isLight ? 'bg-slate-100 border-slate-200 opacity-60' : 'bg-black/20 border-white/5 opacity-40')}`}>
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className={`w-1.5 h-1.5 rounded-full ${data.isOpen ? 'bg-primary' : (isLight ? 'bg-slate-300' : 'bg-white/10')}`} />
+                                                                <Label className={`text-sm font-bold capitalize ${data.isOpen ? 'text-foreground' : 'text-muted-foreground'}`}>{day}</Label>
+                                                            </div>
+                                                            <div className="flex items-center gap-4">
+                                                                {data.isOpen && (
+                                                                    <button 
+                                                                        type="button" 
+                                                                        onClick={() => copyToAllHours(day)}
+                                                                        className="text-[10px] uppercase tracking-widest font-bold text-primary/60 hover:text-primary transition-colors flex items-center gap-1"
+                                                                    >
+                                                                        <Plus size={10} /> Copy to all
+                                                                    </button>
+                                                                )}
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">
+                                                                        {data.isOpen ? 'Open' : 'Closed'}
+                                                                    </span>
+                                                                    <Switch 
+                                                                        checked={data.isOpen} 
+                                                                        onCheckedChange={() => handleToggleDay(day)}
+                                                                        className="scale-75 data-[state=checked]:bg-primary"
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {data.isOpen && (
+                                                            <div className="mt-4 pt-4 border-t border-white/5 space-y-3">
+                                                                {data.slots.map((slot, idx) => (
+                                                                    <div key={idx} className="flex items-center gap-2">
+                                                                        <div className="flex-1 grid grid-cols-2 gap-2">
+                                                                            <Input 
+                                                                                type="time" 
+                                                                                value={slot.open} 
+                                                                                onChange={(e) => handleSlotChange(day, idx, 'open', e.target.value)}
+                                                                                className={inputClass}
+                                                                                style={{ colorScheme: isLight ? 'light' : 'dark' }}
+                                                                            />
+                                                                            <Input 
+                                                                                type="time" 
+                                                                                value={slot.close} 
+                                                                                onChange={(e) => handleSlotChange(day, idx, 'close', e.target.value)}
+                                                                                className={inputClass}
+                                                                                style={{ colorScheme: isLight ? 'light' : 'dark' }}
+                                                                            />
+                                                                        </div>
+                                                                        {data.slots.length > 1 && (
+                                                                            <button 
+                                                                                type="button" 
+                                                                                onClick={() => removeSlot(day, idx)}
+                                                                                className="p-2 text-muted-foreground hover:text-red-400 transition-all"
+                                                                            >
+                                                                                <X size={14} />
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
+                                                                ))}
+                                                                <button 
+                                                                    type="button" 
+                                                                    onClick={() => addSlot(day)}
+                                                                    className="text-[10px] text-primary hover:text-primary/80 font-bold uppercase tracking-widest flex items-center gap-1 mt-1"
+                                                                >
+                                                                    <Plus size={12} /> Add Shift
+                                                                </button>
+                                                            </div>
                                                         )}
-                                                        <div className="grid gap-1.5 w-full">
-                                                            <label className="text-sm font-medium text-muted-foreground">Opening Time</label>
-                                                            <Input 
-                                                                type="time" 
-                                                                value={timing.open} 
-                                                                onChange={(e) => {
-                                                                    const newTimings = [...timings];
-                                                                    newTimings[index].open = e.target.value;
-                                                                    setTimings(newTimings);
-                                                                }} 
-                                                                className={inputClass}
-                                                                style={{ colorScheme: isLight ? 'light' : 'dark' }}
-                                                            />
-                                                        </div>
-                                                        <div className="grid gap-1.5 w-full">
-                                                            <label className="text-sm font-medium text-muted-foreground">Closing Time</label>
-                                                            <Input 
-                                                                type="time" 
-                                                                value={timing.close} 
-                                                                onChange={(e) => {
-                                                                    const newTimings = [...timings];
-                                                                    newTimings[index].close = e.target.value;
-                                                                    setTimings(newTimings);
-                                                                }} 
-                                                                className={inputClass}
-                                                                style={{ colorScheme: isLight ? 'light' : 'dark' }}
-                                                            />
-                                                        </div>
                                                     </div>
                                                 ))}
-
-                                                <Button 
-                                                    type="button" 
-                                                    variant="outline" 
-                                                    onClick={() => setTimings([...timings, { open: "", close: "" }])}
-                                                    className={`w-fit border-dashed ${isLight ? 'border-slate-300 text-slate-600' : 'border-white/20 text-white/70 hover:text-white bg-transparent'} text-sm h-9 px-4`}
-                                                >
-                                                    <Plus size={16} className="mr-2" /> Add Timing Block
-                                                </Button>
-
-                                                <div className="pt-2">
-                                                    <label className="block text-sm font-medium text-muted-foreground mb-1.5">Weekly Off</label>
-                                                    <select value={form.weeklyOff} onChange={e => setForm({ ...form, weeklyOff: e.target.value })}
-                                                        className={`w-full rounded-lg border px-3 py-2 text-sm transition-colors ${inputClass}`}>
-                                                        {DAYS.map(d => <option key={d} value={d} className={isLight ? '' : 'bg-[#020631] text-white'}>{d}</option>)}
-                                                    </select>
-                                                </div>
                                             </div>
 
                                             <div className={`rounded-xl border p-4 ${isLight ? 'bg-blue-50 border-blue-200' : 'bg-blue-500/10 border-blue-500/20'}`}>
-                                                <p className="text-sm text-muted-foreground">Preview: <span className="font-medium text-foreground">
-                                                    {timings.map(t => `${t.open || '--:--'} – ${t.close || '--:--'}`).join(', ')}
-                                                    {form.weeklyOff && form.weeklyOff !== 'None' ? ` • Closed on ${form.weeklyOff}` : ''}
-                                                </span></p>
+                                                <p className="text-sm text-muted-foreground">Tip: <span className="text-foreground">Use the "Copy to all" button to quickly apply timings to all other open days.</span></p>
                                             </div>
                                         </div>
                                     )}

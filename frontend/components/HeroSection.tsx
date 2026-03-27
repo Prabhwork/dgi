@@ -347,13 +347,14 @@ export default function HeroSection() {
                         const locationName = data.features && data.features[0] ? data.features[0].text : "Detected Location";
                         setDetectedLocation(locationName);
                     } catch (err) {
-                        console.error("Auto-location name fetch failed:", err);
+                        console.warn("Auto-location name fetch failed:", err);
                     } finally {
                         setIsLocating(false);
                     }
                 },
                 (err) => {
-                    console.error("Auto-location permission/fetch failed:", err);
+                    // Use console.warn to prevent Next.js dev overlay from appearing for non-critical permission/timeout issues
+                    console.warn("Auto-location: User denied permission or timeout.");
                     setIsLocating(false);
                 },
                 { enableHighAccuracy: false, timeout: 5000 }
@@ -414,7 +415,7 @@ export default function HeroSection() {
                                             animate={{ opacity: 1, y: 0, scale: 1 }}
                                             exit={{ opacity: 0, y: 10, scale: 0.95 }}
                                             className={`absolute top-full left-0 right-[-1px] mt-2 rounded-xl border border-solid shadow-2xl overflow-hidden z-[100] backdrop-blur-2xl ${theme === 'light'
-                                                ? 'bg-[#FFFFF0]/95 border-slate-200'
+                                                ? 'bg-[#FCF8EB]/95 border-slate-900/10'
                                                 : 'bg-[#020631]/95 border-white/10'
                                                 }`}
                                         >
@@ -436,8 +437,8 @@ export default function HeroSection() {
                                                             {s.type === 'category' ? <ChevronRight size={14} /> : (s.type === 'subcategory' ? <Tag size={14} /> : <Store size={14} />)}
                                                         </div>
                                                         <div className="flex-1 overflow-hidden">
-                                                            <div className="text-sm font-bold truncate">{s.text}</div>
-                                                            <div className="text-[10px] uppercase tracking-wider opacity-50 font-black">{s.type}</div>
+                                                            <div className={`text-sm font-bold truncate ${theme === 'light' ? 'text-black' : 'text-white'}`}>{s.text}</div>
+                                                            <div className={`text-[10px] uppercase tracking-wider font-black ${theme === 'light' ? 'text-black/50' : 'text-white/40'}`}>{s.type}</div>
                                                         </div>
                                                         <Search size={12} className="opacity-20" />
                                                     </button>
@@ -516,19 +517,19 @@ export default function HeroSection() {
                         whileHover={{ scale: 1.05, y: -3 }}
                         whileTap={{ scale: 0.95 }}
                         transition={{ delay: 0.5, duration: 1.5, type: "spring", stiffness: 150, damping: 15 }}
-                        className="hidden lg:flex relative px-5 py-2 rounded-2xl items-center gap-3 group multicolor-vibrate z-50 shadow-2xl cursor-pointer pointer-events-auto overflow-hidden shrink-0"
+                        className={`hidden lg:flex relative px-5 py-2 rounded-2xl items-center gap-3 z-50 shadow-2xl cursor-pointer pointer-events-auto overflow-hidden shrink-0 ${theme === 'light' ? 'bg-primary shadow-lg shadow-primary/20' : 'multicolor-vibrate'}`}
                     >
                         <div className="relative flex items-center gap-3 z-10">
                             <div className="relative w-8 h-8 flex items-center justify-center shrink-0">
-                                <div className="absolute inset-0 bg-white/10 rounded-full blur-sm group-hover:bg-white/20 transition-colors" />
+                                <div className={`absolute inset-0 rounded-full blur-sm transition-colors ${theme === 'light' ? 'bg-white/20' : 'bg-white/10 group-hover:bg-white/20'}`} />
                                 <img
                                     src="/assets/swadeshi-logo-dark.png"
                                     alt="Swadeshi"
-                                    className="w-full h-full object-contain mix-blend-screen brightness-110 contrast-125"
+                                    className={`w-full h-full object-contain brightness-110 contrast-125 ${theme === 'light' ? 'mix-blend-screen' : 'mix-blend-screen'}`}
                                     onError={(e) => (e.currentTarget.style.display = 'none')}
                                 />
                             </div>
-                            <span className="relative text-white font-display font-black text-xs tracking-[0.2em] uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+                            <span className={`relative font-display font-black text-xs tracking-[0.2em] uppercase ${theme === 'light' ? 'text-white' : 'text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]'}`}>
                                 Swadeshi Platform
                             </span>
                         </div>
@@ -546,13 +547,13 @@ export default function HeroSection() {
                                     DBI for Business <ChevronDown size={14} />
                                 </button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent className={`border border-solid p-2 min-w-[240px] z-[60] shadow-[0_8px_32px_rgba(0,0,0,0.2)] backdrop-blur-2xl ${theme === 'light' ? 'bg-white/60 border-white/80' : 'bg-white/10 border-white/30'}`}>
+                            <DropdownMenuContent className={`border border-solid p-2 min-w-[240px] z-[60] shadow-[0_8px_32px_rgba(0,0,0,0.2)] backdrop-blur-2xl ${theme === 'light' ? 'bg-[#FCF8EB]/95 border-slate-900/10' : 'bg-slate-900/80 border-white/10'}`}>
                                 <DropdownMenuItem className="focus:bg-primary/20 focus:text-white cursor-pointer py-3 rounded-lg group" asChild>
                                     <Link href="/success-stories" className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                                             <Trophy size={18} className="text-primary" />
                                         </div>
-                                        <span className="font-medium">Success Stories</span>
+                                        <span className={`font-bold transition-colors ${theme === 'light' ? 'text-black' : 'text-slate-200'}`}>Success Stories</span>
                                     </Link>
                                 </DropdownMenuItem>
 
@@ -561,7 +562,7 @@ export default function HeroSection() {
                                         <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                                             <TrendingUp size={18} className="text-primary" />
                                         </div>
-                                        <span className="font-medium">Listing Benefits</span>
+                                        <span className={`font-bold transition-colors ${theme === 'light' ? 'text-black' : 'text-slate-200'}`}>Listing Benefits</span>
                                     </Link>
                                 </DropdownMenuItem>
 
@@ -570,7 +571,7 @@ export default function HeroSection() {
                                         <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                                             <Zap size={18} className="text-primary" />
                                         </div>
-                                        <span className="font-medium">Business Plans</span>
+                                        <span className={`font-bold transition-colors ${theme === 'light' ? 'text-black' : 'text-slate-200'}`}>Business Plans</span>
                                     </Link>
                                 </DropdownMenuItem>
 
@@ -580,7 +581,7 @@ export default function HeroSection() {
                                         <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                                             <Compass size={18} className="text-primary" />
                                         </div>
-                                        <span className="font-medium">Why Choose DBI</span>
+                                        <span className={`font-bold transition-colors ${theme === 'light' ? 'text-black' : 'text-slate-200'}`}>Why Choose DBI</span>
                                     </Link>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -624,8 +625,8 @@ export default function HeroSection() {
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{ delay: i * 0.1, duration: 0.3 }}
                                     onClick={() => router.push(`/main-category/${encodeURIComponent(cat.name)}`)}
-                                    className={`rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:scale-110 transition-all duration-700 w-[140px] h-[130px] group relative overflow-hidden backdrop-blur-md border border-solid ${theme === 'light'
-                                        ? 'bg-[#FFFFF0] border-slate-200 hover:border-primary/40 shadow-xl'
+                                    className={`rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:scale-110 transition-all duration-700 w-[140px] h-[130px] group relative overflow-hidden backdrop-blur-[2px] border border-solid ${theme === 'light'
+                                        ? 'bg-transparent border-slate-900/25 hover:border-primary/50 shadow-sm'
                                         : 'bg-white/[0.02] border-white/10 hover:bg-white/[0.08] hover:border-primary/50 shadow-2xl'
                                         }`}
                                 >
@@ -650,22 +651,21 @@ export default function HeroSection() {
                             whileHover={{ scale: 1.05, y: -5 }}
                             whileTap={{ scale: 0.95 }}
                             transition={{ delay: 0.5, duration: 1.5, type: "spring", stiffness: 150, damping: 15 }}
-                            className="relative mb-4 sm:mb-6 lg:hidden px-5 sm:px-8 py-2.5 sm:py-3 rounded-2xl flex items-center gap-3 sm:gap-5 group multicolor-vibrate z-50 shadow-2xl scale-90 sm:scale-100 cursor-pointer pointer-events-auto overflow-hidden"
+                            className={`relative mb-4 sm:mb-6 lg:hidden px-5 sm:px-8 py-2.5 sm:py-3 rounded-2xl flex items-center gap-3 sm:gap-5 z-50 shadow-2xl scale-90 sm:scale-100 cursor-pointer pointer-events-auto overflow-hidden ${theme === 'light' ? 'bg-primary shadow-lg shadow-primary/20' : 'multicolor-vibrate'}`}
                         >
                             <div className="relative flex items-center gap-2 sm:gap-4 z-10">
                                 <div className="relative w-8 h-8 sm:w-12 sm:h-12 flex items-center justify-center shrink-0">
-                                    <div className="absolute inset-0 bg-white/10 rounded-full blur-sm group-hover:bg-white/20 transition-colors" />
+                                    <div className={`absolute inset-0 rounded-full blur-sm transition-colors ${theme === 'light' ? 'bg-white/20' : 'bg-white/10 group-hover:bg-white/20'}`} />
                                     <img 
                                         src="/assets/swadeshi-logo-dark.png" 
                                         alt="Swadeshi" 
-                                        className="w-full h-full object-contain mix-blend-screen brightness-110 contrast-125" 
+                                        className={`w-full h-full object-contain brightness-110 contrast-125 ${theme === 'light' ? 'mix-blend-screen' : 'mix-blend-screen'}`} 
                                         onError={(e) => (e.currentTarget.style.display = 'none')}
                                     />
                                 </div>
-                                <span className="relative text-white font-display font-black text-xs sm:text-base tracking-[0.1em] sm:tracking-[0.2em] uppercase drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
+                                <span className={`relative font-display font-black text-xs sm:text-base tracking-[0.1em] sm:tracking-[0.2em] uppercase ${theme === 'light' ? 'text-white' : 'text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]'}`}>
                                     Swadeshi Platform
                                 </span>
-                              
                             </div>
                         </motion.div>
 
@@ -728,7 +728,7 @@ export default function HeroSection() {
                                     className="mt-4 pointer-events-auto relative z-20"
                                 >
                                     <Link href="/community/register" hrefLang="en">
-                                        <Button asChild className="bg-[#00d4ff] hover:bg-white text-[#020631] font-black px-5 py-4 rounded-full text-[10px] sm:text-xs shadow-[0_0_25px_rgba(0,212,255,0.3)] transition-all hover:scale-105 active:scale-95 uppercase tracking-[0.08em] cursor-pointer">
+                                        <Button asChild className="bg-primary hover:bg-primary/90 text-white font-black px-5 py-4 rounded-full text-[10px] sm:text-xs shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95 uppercase tracking-[0.08em] cursor-pointer">
                                             <span>List Your Business</span>
                                         </Button>
                                     </Link>
@@ -756,8 +756,8 @@ export default function HeroSection() {
                                     <div
                                         key={`${cat.name}-${i}`}
                                         onClick={() => router.push(`/main-category/${encodeURIComponent(cat.name)}`)}
-                                        className={`flex-shrink-0 flex flex-col items-center justify-center p-4 rounded-[2rem] border transition-all duration-300 cursor-pointer w-[150px] h-[150px] relative overflow-hidden backdrop-blur-md ${theme === 'light'
-                                            ? 'bg-[#FFFFF0] border-blue-600/30 text-slate-900 active:scale-95 shadow-lg'
+                                        className={`flex-shrink-0 flex flex-col items-center justify-center p-4 rounded-[2rem] border transition-all duration-300 cursor-pointer w-[150px] h-[150px] relative overflow-hidden backdrop-blur-[2px] ${theme === 'light'
+                                            ? 'bg-transparent border-slate-900/40 text-slate-900 active:scale-95 shadow-sm'
                                             : 'bg-white/5 border-white/20 text-white active:scale-95 shadow-2xl'
                                             }`}
                                     >
@@ -791,8 +791,8 @@ export default function HeroSection() {
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{ delay: i * 0.1, duration: 0.3 }}
                                     onClick={() => router.push(`/main-category/${encodeURIComponent(cat.name)}`)}
-                                    className={`rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:scale-110 transition-all duration-700 w-[140px] h-[130px] group relative overflow-hidden backdrop-blur-md border border-solid ${theme === 'light'
-                                        ? 'bg-[#FFFFF0] border-slate-200 hover:border-primary/40 shadow-xl'
+                                    className={`rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:scale-110 transition-all duration-700 w-[140px] h-[130px] group relative overflow-hidden backdrop-blur-[2px] border border-solid ${theme === 'light'
+                                        ? 'bg-transparent border-slate-900/25 hover:border-primary/50 shadow-sm'
                                         : 'bg-white/[0.02] border-white/10 hover:bg-white/[0.08] hover:border-primary/50 shadow-2xl'
                                         }`}
                                 >

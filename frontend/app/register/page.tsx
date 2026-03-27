@@ -18,7 +18,7 @@ import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
     return (
-        <div className="min-h-screen bg-background relative overflow-hidden text-white">
+        <div className="min-h-screen bg-[#020631] relative overflow-hidden text-white">
             <ParticleNetworkWrapper className="z-0 opacity-40" />
             <CursorGlow />
             <Navbar />

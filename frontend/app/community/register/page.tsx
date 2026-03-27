@@ -5,11 +5,12 @@ import { useState, useEffect, Suspense, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Building2, MapPin, Clock, ShieldCheck, Image as ImageIcon, Users,
-    ChevronRight, ChevronLeft, Upload, CheckCircle2, AlertCircle, X, Map,
-    Loader2, CheckCircle, ExternalLink, Fingerprint, Plus, Search, Mic
+    ChevronRight, ChevronLeft, CheckCircle2, AlertCircle, X, Map,
+    Loader2, CheckCircle, Plus, Search, Mic
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import {
     Select,
     SelectContent,
@@ -85,6 +86,7 @@ const TRANSLATIONS = {
             whatsappNumber: "Official WhatsApp Number",
             emailAddress: "Official Email Address",
             password: "Password",
+            confirmPassword: "Re-enter Password",
             openingTime: "Opening Time",
             closingTime: "Closing Time",
             weeklyOff: "Weekly Off",
@@ -180,6 +182,7 @@ const TRANSLATIONS = {
             whatsappNumber: "आधिकारिक व्हाट्सएप नंबर",
             emailAddress: "आधिकारिक ईमेल पता",
             password: "पासवर्ड",
+            confirmPassword: "पासवर्ड पुनः दर्ज करें",
             openingTime: "खुलने का समय",
             closingTime: "बंद होने का समय",
             weeklyOff: "साप्ताहिक अवकाश",
@@ -322,7 +325,7 @@ function RegisterPageContent() {
         if (recognitionRef.current) {
             try {
                 recognitionRef.current.abort();
-            } catch (e) {}
+            } catch (e) { }
         }
 
         // SET IMMEDIATELY FOR UI FEEDBACK (Pulse)
@@ -334,7 +337,7 @@ function RegisterPageContent() {
             try {
                 const recognition = new SpeechRecognition();
                 recognitionRef.current = recognition;
-                
+
                 recognition.lang = language === 'hi' ? 'hi-IN' : 'en-US';
                 recognition.interimResults = true;
                 recognition.continuous = false;
@@ -349,7 +352,7 @@ function RegisterPageContent() {
                     for (let i = event.resultIndex; i < event.results.length; i++) {
                         currentTranscript += event.results[i][0].transcript;
                     }
-                    
+
                     if (fieldName === 'keywordInput') {
                         setKeywordInput(currentTranscript);
                     } else if (fieldName === 'catSearchTerm') {
@@ -392,8 +395,8 @@ function RegisterPageContent() {
 
     const autoTranslateCategories = async (names: string[]) => {
         if (language !== 'hi') return;
-        
-        const toTranslate = names.filter(name => 
+
+        const toTranslate = names.filter(name =>
             !(TRANSLATIONS.hi as any).categoryNames[name] && !categoryTranslationCache[name]
         );
 
@@ -423,7 +426,17 @@ function RegisterPageContent() {
     const [rejectionReason, setRejectionReason] = useState<string | null>(null);
 
     // Dynamic Translation Cache
-    const [categoryTranslationCache, setCategoryTranslationCache] = useState<{[key: string]: string}>({});
+    const [categoryTranslationCache, setCategoryTranslationCache] = useState<{ [key: string]: string }>({});
+
+    const initialBusinessHours = {
+        monday: { isOpen: true, slots: [{ open: "09:00", close: "18:00" }] },
+        tuesday: { isOpen: true, slots: [{ open: "09:00", close: "18:00" }] },
+        wednesday: { isOpen: true, slots: [{ open: "09:00", close: "18:00" }] },
+        thursday: { isOpen: true, slots: [{ open: "09:00", close: "18:00" }] },
+        friday: { isOpen: true, slots: [{ open: "09:00", close: "18:00" }] },
+        saturday: { isOpen: true, slots: [{ open: "09:00", close: "13:00" }] },
+        sunday: { isOpen: false, slots: [{ open: "00:00", close: "00:00" }] },
+    };
 
     // Form State
     const [formData, setFormData] = useState({
@@ -437,11 +450,10 @@ function RegisterPageContent() {
         registeredOfficeAddress: "",
         primaryContactNumber: "",
         password: "",
+        confirmPassword: "",
         officialWhatsAppNumber: "",
         officialEmailAddress: "",
-        openingTime: "",
-        closingTime: "",
-        weeklyOff: "None",
+        businessHours: initialBusinessHours,
         aadhaarNumber: "",
         website: "",
         joinBulkBuying: false,
@@ -459,14 +471,14 @@ function RegisterPageContent() {
     const [isLocating, setIsLocating] = useState(false);
     const [mainCategories, setMainCategories] = useState<{ _id: string, name: string }[]>([]);
     const [mainSubcategories, setMainSubcategories] = useState<{ _id: string, name: string }[]>([]);
-    
+
     // Google Categories Search State
     const [googleCategories, setGoogleCategories] = useState<{ _id: string, name: string }[]>([]);
     const [catSearchTerm, setCatSearchTerm] = useState("");
     const [showCatSuggestions, setShowCatSuggestions] = useState(false);
     const [isCatLoading, setIsCatLoading] = useState(false);
     const catSuggestionRef = useRef<HTMLDivElement>(null);
-    
+
     // Keyword Suggestions State
     const [keywordInput, setKeywordInput] = useState("");
     const [keywordSuggestions, setKeywordSuggestions] = useState<{ text: string, type: string }[]>([]);
@@ -479,7 +491,7 @@ function RegisterPageContent() {
     const fetchKeywordSuggestions = async (query: string, pageNum: number = 1, append: boolean = false) => {
         const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
         if (pageNum > 1) setIsLoadingMoreKeywords(true);
-        
+
         try {
             let url = `${API_URL}/business/suggestions?q=${encodeURIComponent(query)}&page=${pageNum}&limit=20`;
             if (formData.businessCategory) {
@@ -491,7 +503,7 @@ function RegisterPageContent() {
 
             const res = await fetch(url);
             const data = await res.json();
-            
+
             if (data.success) {
                 if (append) {
                     setKeywordSuggestions(prev => {
@@ -577,7 +589,7 @@ function RegisterPageContent() {
     const addKeyword = (keyword: string) => {
         const trimmed = keyword.trim().toLowerCase();
         if (!trimmed) return;
-        
+
         const existing = formData.keywords ? formData.keywords.split(',').map(k => k.trim().toLowerCase()) : [];
         if (!existing.includes(trimmed)) {
             const newKeywords = [...existing, trimmed].join(', ');
@@ -600,7 +612,74 @@ function RegisterPageContent() {
         }
     };
 
-    // Subcategory Logic
+    const handleToggleDay = (day: string) => {
+        setFormData(prev => ({
+            ...prev,
+            businessHours: {
+                ...prev.businessHours,
+                [day]: {
+                    ...prev.businessHours[day as keyof typeof prev.businessHours],
+                    isOpen: !prev.businessHours[day as keyof typeof prev.businessHours].isOpen
+                }
+            }
+        }));
+    };
+
+    const handleSlotChange = (day: string, index: number, field: 'open' | 'close', value: string) => {
+        const newSlots = [...formData.businessHours[day as keyof typeof formData.businessHours].slots];
+        newSlots[index] = { ...newSlots[index], [field]: value };
+        setFormData(prev => ({
+            ...prev,
+            businessHours: {
+                ...prev.businessHours,
+                [day]: { ...prev.businessHours[day as keyof typeof prev.businessHours], slots: newSlots }
+            }
+        }));
+    };
+
+    const addSlot = (day: string) => {
+        setFormData(prev => ({
+            ...prev,
+            businessHours: {
+                ...prev.businessHours,
+                [day]: {
+                    ...prev.businessHours[day as keyof typeof prev.businessHours],
+                    slots: [...prev.businessHours[day as keyof typeof prev.businessHours].slots, { open: "09:00", close: "18:00" }]
+                }
+            }
+        }));
+    };
+
+    const removeSlot = (day: string, index: number) => {
+        const currentSlots = formData.businessHours[day as keyof typeof formData.businessHours].slots;
+        if (currentSlots.length <= 1) return;
+        setFormData(prev => ({
+            ...prev,
+            businessHours: {
+                ...prev.businessHours,
+                [day]: {
+                    ...prev.businessHours[day as keyof typeof prev.businessHours],
+                    slots: currentSlots.filter((_, i) => i !== index)
+                }
+            }
+        }));
+    };
+
+    const copyToAllHours = (sourceDay: string) => {
+        const sourceData = formData.businessHours[sourceDay as keyof typeof formData.businessHours];
+        setFormData(prev => {
+            const newHours = { ...prev.businessHours };
+            Object.keys(newHours).forEach(day => {
+                if (day !== sourceDay && newHours[day as keyof typeof newHours].isOpen) {
+                    newHours[day as keyof typeof newHours] = {
+                        ...newHours[day as keyof typeof newHours],
+                        slots: JSON.parse(JSON.stringify(sourceData.slots))
+                    };
+                }
+            });
+            return { ...prev, businessHours: newHours };
+        });
+    };
     const addSubcategory = (sub: string) => {
         if (!sub || sub === "add-new") return;
         if (!formData.subcategory.includes(sub)) {
@@ -618,18 +697,6 @@ function RegisterPageContent() {
         }));
     };
 
-    // Timings State
-    const [timings, setTimings] = useState<{ open: string; close: string }[]>([{ open: "", close: "" }]);
-
-    // Sync timings to formData
-    useEffect(() => {
-        setFormData(prev => ({
-            ...prev,
-            openingTime: timings.map(t => t.open).join(','),
-            closingTime: timings.map(t => t.close).join(',')
-        }));
-    }, [timings]);
-
 
     useEffect(() => {
         const fetchMainCats = async () => {
@@ -638,7 +705,7 @@ function RegisterPageContent() {
                 const res = await fetch(`${API_URL}/main-categories?limit=100`);
                 const data = await res.json();
                 if (data.success) setMainCategories(data.data);
-            } catch (err) {}
+            } catch (err) { }
         };
         fetchMainCats();
     }, []);
@@ -649,7 +716,7 @@ function RegisterPageContent() {
                 setMainSubcategories([]);
                 return;
             }
-            
+
             const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
             try {
                 const cat = mainCategories.find(c => c.name === formData.businessCategory);
@@ -658,7 +725,7 @@ function RegisterPageContent() {
                 const res = await fetch(`${API_URL}/main-categories/${cat._id}/main-subcategories?limit=100`);
                 const data = await res.json();
                 if (data.success) setMainSubcategories(data.data);
-            } catch (err) {}
+            } catch (err) { }
         };
         fetchSubCats();
     }, [formData.businessCategory, formData.isCustomCategory, mainCategories]);
@@ -678,7 +745,7 @@ function RegisterPageContent() {
         if (!word || word.trim() === "" || language !== 'hi') return word;
         // Skip if already contains Devanagari or is a number/special char
         if (!/[a-zA-Z]/.test(word)) return word;
-        
+
         try {
             const url = `https://inputtools.google.com/request?text=${encodeURIComponent(word)}&itc=hi-t-i0-und&num=1&cp=0&cs=1&ie=utf-8&oe=utf-8&app=test`;
             const res = await fetch(url);
@@ -694,25 +761,25 @@ function RegisterPageContent() {
 
     const handleKeyUp = async (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         if (language !== 'hi') return;
-        
+
         const target = e.target as HTMLInputElement;
         const name = target.name;
         const value = target.value;
-        
+
         const transliterateFields = ['businessName', 'brandName', 'registeredOfficeAddress', 'description', 'customCategory', 'customSubcategory', 'keywordInput', 'catSearchTerm', 'weeklyOff'];
-        
+
         if (e.key === ' ' && transliterateFields.includes(name)) {
             const words = value.split(' ');
             if (words.length < 2) return;
-            
-            const lastWord = words[words.length - 2]; 
+
+            const lastWord = words[words.length - 2];
             if (!lastWord) return;
 
             const transliterated = await transliterateWord(lastWord);
             if (transliterated !== lastWord) {
                 words[words.length - 2] = transliterated;
                 const newValue = words.join(' ');
-                
+
                 if (name === 'keywordInput') {
                     setKeywordInput(newValue);
                 } else if (name === 'catSearchTerm') {
@@ -727,13 +794,13 @@ function RegisterPageContent() {
 
     const handleBlur = async (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         if (language !== 'hi') return;
-        
+
         const target = e.target as HTMLInputElement;
         const name = target.name;
         const value = target.value;
-        
+
         const transliterateFields = ['businessName', 'brandName', 'registeredOfficeAddress', 'description', 'customCategory', 'customSubcategory', 'keywordInput', 'catSearchTerm', 'weeklyOff'];
-        
+
         if (transliterateFields.includes(name)) {
             const words = value.split(' ');
             let hasChanged = false;
@@ -764,6 +831,18 @@ function RegisterPageContent() {
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
+        
+        // --- MOBILE NUMBER VALIDATION (+91 Logic) ---
+        if (name === "primaryContactNumber" || name === "officialWhatsAppNumber") {
+            const digits = value.replace(/\D/g, "").slice(0, 10);
+            // Must start with 6, 7, 8, or 9
+            if (digits.length > 0 && !["6", "7", "8", "9"].includes(digits[0])) {
+                return; // Ignore invalid start digit
+            }
+            setFormData(prev => ({ ...prev, [name]: digits }));
+            return;
+        }
+
         setFormData(prev => ({ ...prev, [name]: value }));
         // If email changes, reset verification
         if (name === "officialEmailAddress") {
@@ -874,39 +953,26 @@ function RegisterPageContent() {
                             businessName: b.businessName || "",
                             brandName: b.brandName || "",
                             businessCategory: b.businessCategory || "Automobile",
-                            subcategory: b.subcategory || [], // Ensure this is an array
+                            subcategory: b.subcategory || [],
                             description: b.description || "",
                             keywords: (b.keywords || []).join(", "),
                             gpsCoordinates: b.gpsCoordinates || { lat: 0, lng: 0, address: "" },
                             registeredOfficeAddress: b.registeredOfficeAddress || "",
                             primaryContactNumber: b.primaryContactNumber || "",
-                            password: "", // Keep password empty for security
+                            password: "",
+                            confirmPassword: "",
                             officialWhatsAppNumber: b.officialWhatsAppNumber || "",
                             officialEmailAddress: b.officialEmailAddress || "",
-                            openingTime: b.openingTime || "",
-                            closingTime: b.closingTime || "",
-                            weeklyOff: b.weeklyOff || "None",
+                            businessHours: b.businessHours || initialBusinessHours,
                             aadhaarNumber: b.aadhaarNumber || "",
                             website: b.website || "",
                             joinBulkBuying: b.joinBulkBuying || false,
                             joinFraudAlerts: b.joinFraudAlerts || false,
-                            isCustomCategory: false, // Reset these for update mode
+                            isCustomCategory: false,
                             customCategory: "",
                             isCustomSubcategory: false,
                             customSubcategory: ""
                         });
-                        
-                        // Parse mult-timings
-                        if (b.openingTime || b.closingTime) {
-                            const opens = (b.openingTime || "").split(",");
-                            const closes = (b.closingTime || "").split(",");
-                            const len = Math.max(opens.length, closes.length, 1);
-                            const newTimings = [];
-                            for (let i = 0; i < len; i++) {
-                                newTimings.push({ open: opens[i] || "", close: closes[i] || "" });
-                            }
-                            setTimings(newTimings);
-                        }
 
                         setIsEmailVerified(true);
                         if (b.rejectionReason) setRejectionReason(b.rejectionReason);
@@ -937,7 +1003,7 @@ function RegisterPageContent() {
         navigator.geolocation.getCurrentPosition(
             async (position) => {
                 const { latitude, longitude } = position.coords;
-                
+
                 try {
                     const response = await fetch(
                         `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}&types=address,place,locality`
@@ -987,6 +1053,16 @@ function RegisterPageContent() {
             if (currentStep === 2 && !isEmailVerified) {
                 setError("Please verify your email address to continue");
                 return;
+            }
+            if (currentStep === 2) {
+                if (formData.primaryContactNumber.length !== 10) {
+                    setError(language === 'hi' ? "कृपया 10 अंकों का मोबाइल नंबर दर्ज करें" : "Please enter a 10-digit mobile number");
+                    return;
+                }
+                if (formData.password !== formData.confirmPassword) {
+                    setError(language === 'hi' ? "पासवर्ड मेल नहीं खाते!" : "Passwords do not match!");
+                    return;
+                }
             }
             if (currentStep === 4 && formData.aadhaarNumber.length !== 12) {
                 setError("Please enter a valid 12-digit Aadhaar number");
@@ -1043,7 +1119,7 @@ function RegisterPageContent() {
             const token = localStorage.getItem("businessToken");
             const headers: any = {};
             if (token) headers["Authorization"] = `Bearer ${token}`;
-            
+
             try {
                 const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/business/update-details`, {
                     method: "PUT", headers, body: buildApiBody()
@@ -1081,7 +1157,7 @@ function RegisterPageContent() {
             }
 
             const orderData = await orderRes.json();
-            
+
             if (!orderData.success) {
                 setError(orderData.error || "Failed to create payment order");
                 setLoading(false);
@@ -1092,7 +1168,7 @@ function RegisterPageContent() {
             const resLoader = await loadRazorpayScript();
             if (!resLoader) {
                 setError("Failed to load payment gateway. Please check your internet connection.");
-                setLoading(false); 
+                setLoading(false);
                 return;
             }
 
@@ -1144,7 +1220,7 @@ function RegisterPageContent() {
                 },
                 theme: { color: "#10b981" },
                 modal: {
-                    ondismiss: function() {
+                    ondismiss: function () {
                         setLoading(false);
                         // Data is preserved - user can try payment again
                     }
@@ -1181,8 +1257,8 @@ function RegisterPageContent() {
                                 <Label className="text-white/70">{t('labels.businessName')} <span className="text-red-500">*</span></Label>
                                 <div className="relative group/mic">
                                     <Input name="businessName" value={formData.businessName} onChange={handleInputChange} onKeyUp={handleKeyUp} onBlur={handleBlur} placeholder={t('placeholders.legalName')} className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50 pr-10 h-14" required />
-                                    <button 
-                                        type="button" 
+                                    <button
+                                        type="button"
                                         onClick={() => toggleVoiceInput('businessName')}
                                         className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${isListening && listeningField === 'businessName' ? 'text-primary animate-pulse scale-110' : 'text-white/20 hover:text-primary'}`}
                                     >
@@ -1197,8 +1273,8 @@ function RegisterPageContent() {
                                 <Label className="text-white/70">{t('labels.brandName')}</Label>
                                 <div className="relative group/mic">
                                     <Input name="brandName" value={formData.brandName} onChange={handleInputChange} onKeyUp={handleKeyUp} onBlur={handleBlur} placeholder={t('placeholders.tradingName')} className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50 pr-10 h-14" />
-                                    <button 
-                                        type="button" 
+                                    <button
+                                        type="button"
                                         onClick={() => toggleVoiceInput('brandName')}
                                         className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${isListening && listeningField === 'brandName' ? 'text-primary animate-pulse scale-110' : 'text-white/20 hover:text-primary'}`}
                                     >
@@ -1208,7 +1284,7 @@ function RegisterPageContent() {
                             </div>
                             <div className="grid gap-2">
                                 <Label className="text-white/70">{t('labels.businessCategory')} <span className="text-red-500">*</span></Label>
-                                
+
                                 <div className="relative" ref={catSuggestionRef}>
                                     <div className="relative group/mic">
                                         <Input
@@ -1227,8 +1303,8 @@ function RegisterPageContent() {
                                             className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50 pr-20 h-12"
                                         />
                                         <div className="absolute inset-y-0 right-0 flex items-center pr-3 gap-2">
-                                            <button 
-                                                type="button" 
+                                            <button
+                                                type="button"
                                                 onClick={() => toggleVoiceInput('catSearchTerm')}
                                                 className={`transition-colors ${isListening && listeningField === 'catSearchTerm' ? 'text-primary animate-pulse' : 'text-white/20 hover:text-primary'}`}
                                             >
@@ -1325,18 +1401,18 @@ function RegisterPageContent() {
                                     <Building2 className="w-3 h-3 text-primary" />
                                     {t('labels.selectedSubcategories')} *
                                 </Label>
-                            
+
                                 {/* Selected Subcategories Tags */}
                                 <div className="flex flex-wrap gap-2 mb-3">
                                     {formData.subcategory.map((sub, idx) => (
-                                        <motion.div 
+                                        <motion.div
                                             initial={{ scale: 0.8, opacity: 0 }}
                                             animate={{ scale: 1, opacity: 1 }}
                                             key={idx}
                                             className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-full text-xs font-bold text-primary group"
                                         >
                                             {tc(sub)}
-                                            <button 
+                                            <button
                                                 type="button"
                                                 onClick={() => removeSubcategory(sub)}
                                                 className="hover:bg-primary/20 rounded-full p-0.5 transition-colors"
@@ -1347,8 +1423,8 @@ function RegisterPageContent() {
                                     ))}
                                 </div>
 
-                                <Select 
-                                    value="" 
+                                <Select
+                                    value=""
                                     onValueChange={(val) => {
                                         if (val === "add-new") {
                                             setFormData(prev => ({ ...prev, isCustomSubcategory: true }));
@@ -1362,8 +1438,8 @@ function RegisterPageContent() {
                                     </SelectTrigger>
                                     <SelectContent className="bg-slate-900 border-white/10 text-white !z-[9999] max-h-[300px]" position="popper" sideOffset={5}>
                                         {mainSubcategories.map((sub) => (
-                                            <SelectItem 
-                                                key={sub._id} 
+                                            <SelectItem
+                                                key={sub._id}
                                                 value={sub.name}
                                                 disabled={formData.subcategory.includes(sub.name)}
                                             >
@@ -1377,12 +1453,12 @@ function RegisterPageContent() {
                                 </Select>
 
                                 {formData.isCustomSubcategory && (
-                                    <motion.div 
-                                        initial={{ opacity: 0, y: -10 }} 
+                                    <motion.div
+                                        initial={{ opacity: 0, y: -10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         className="space-y-3 p-4 bg-primary/5 rounded-xl border border-primary/10 relative"
                                     >
-                                        <button 
+                                        <button
                                             type="button"
                                             onClick={() => setFormData(prev => ({ ...prev, isCustomSubcategory: false }))}
                                             className="absolute top-2 right-2 text-white/40 hover:text-white"
@@ -1392,7 +1468,7 @@ function RegisterPageContent() {
                                         <Label className="text-white/60 text-[10px] font-bold uppercase tracking-wider block mb-1">{language === 'hi' ? 'अपनी अनूठी विशेषज्ञता दर्ज करें' : 'Enter Your Unique Specialty'}</Label>
                                         <div className="flex gap-2">
                                             <div className="relative flex-1 group/mic">
-                                                <Input 
+                                                <Input
                                                     placeholder={t('placeholders.uniqueSpecialty')}
                                                     value={formData.customSubcategory}
                                                     name="customSubcategory"
@@ -1401,15 +1477,15 @@ function RegisterPageContent() {
                                                     onBlur={handleBlur}
                                                     className="bg-white/5 border-white/10 text-white h-12 pr-10"
                                                 />
-                                                <button 
-                                                    type="button" 
+                                                <button
+                                                    type="button"
                                                     onClick={() => toggleVoiceInput('customSubcategory')}
                                                     className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${isListening && listeningField === 'customSubcategory' ? 'text-primary animate-pulse' : 'text-white/20 hover:text-primary'}`}
                                                 >
                                                     <Mic size={16} />
                                                 </button>
                                             </div>
-                                            <Button 
+                                            <Button
                                                 type="button"
                                                 onClick={() => {
                                                     if (formData.customSubcategory.trim()) {
@@ -1429,8 +1505,8 @@ function RegisterPageContent() {
                                 <Label className="text-white/70">{t('labels.businessDescription')}</Label>
                                 <div className="relative group/mic">
                                     <Textarea name="description" value={formData.description} onChange={handleInputChange} onKeyUp={handleKeyUp} onBlur={handleBlur} placeholder={t('placeholders.aboutSection')} className="bg-white/5 border-white/10 text-white min-h-[100px] pr-10" />
-                                    <button 
-                                        type="button" 
+                                    <button
+                                        type="button"
                                         onClick={() => toggleVoiceInput('description')}
                                         className={`absolute right-3 top-4 transition-colors ${isListening && listeningField === 'description' ? 'text-primary animate-pulse' : 'text-white/20 hover:text-primary'}`}
                                     >
@@ -1445,14 +1521,14 @@ function RegisterPageContent() {
                                     <div className="flex flex-wrap gap-2 min-h-[40px] p-2 rounded-lg bg-white/5 border border-white/10">
                                         {formData.keywords ? (
                                             formData.keywords.split(',').map((tag, idx) => (
-                                                <Badge 
-                                                    key={idx} 
-                                                    variant="secondary" 
+                                                <Badge
+                                                    key={idx}
+                                                    variant="secondary"
                                                     className="bg-primary/20 hover:bg-primary/30 text-primary border-primary/20 flex items-center gap-1 py-1 px-3 group"
                                                 >
                                                     {tag.trim()}
-                                                    <X 
-                                                        className="w-3 h-3 cursor-pointer group-hover:text-red-400 transition-colors" 
+                                                    <X
+                                                        className="w-3 h-3 cursor-pointer group-hover:text-red-400 transition-colors"
                                                         onClick={() => removeKeyword(tag.trim())}
                                                     />
                                                 </Badge>
@@ -1465,7 +1541,7 @@ function RegisterPageContent() {
                                     {/* Keyword Input with Autocomplete */}
                                     <div className="relative" ref={suggestionRef}>
                                         <div className="relative group/mic">
-                                            <Input 
+                                            <Input
                                                 value={keywordInput}
                                                 name="keywordInput"
                                                 onFocus={() => setShowKeywordSuggestions(true)}
@@ -1481,60 +1557,48 @@ function RegisterPageContent() {
                                                         addKeyword(keywordInput);
                                                     }
                                                 }}
-                                                placeholder={t('placeholders.keywordType')} 
-                                                className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50 pr-10" 
+                                                placeholder={t('placeholders.keywordType')}
+                                                className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50 pr-10"
                                             />
-                                            <button 
-                                                type="button" 
+                                            <button
+                                                type="button"
                                                 onClick={() => toggleVoiceInput('keywordInput')}
                                                 className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${isListening && listeningField === 'keywordInput' ? 'text-primary animate-pulse' : 'text-white/20 hover:text-primary'}`}
                                             >
                                                 <Mic size={16} />
                                             </button>
                                         </div>
-                                        
+
+                                        {/* Keyword Suggestions Dropdown */}
                                         <AnimatePresence>
                                             {showKeywordSuggestions && keywordSuggestions.length > 0 && (
-                                                <motion.div 
+                                                <motion.div
                                                     initial={{ opacity: 0, y: -10 }}
                                                     animate={{ opacity: 1, y: 0 }}
                                                     exit={{ opacity: 0, y: -10 }}
+                                                    className="absolute z-[100] w-full mt-2 bg-slate-900 border border-white/10 rounded-xl shadow-2xl backdrop-blur-xl max-h-[250px] overflow-y-auto custom-scrollbar"
                                                     onScroll={handleKeywordScroll}
-                                                    className="absolute z-[100] w-full mt-2 bg-slate-900/95 border border-white/10 rounded-lg shadow-2xl backdrop-blur-xl max-h-[300px] overflow-y-auto custom-scrollbar pb-2"
                                                 >
-                                                    {keywordSuggestions.map((suggestion, idx) => (
-                                                        <div 
-                                                            key={`${suggestion.text}-${idx}`}
-                                                            onClick={() => addKeyword(suggestion.text)}
-                                                            className="px-4 py-3 hover:bg-primary/10 transition-colors cursor-pointer flex items-center justify-between border-b border-white/5 last:border-0"
-                                                        >
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                                                                    {suggestion.type === 'recommended' ? (
-                                                                        <CheckCircle className="w-4 h-4 text-primary" />
-                                                                    ) : suggestion.type === 'place' ? (
-                                                                        <MapPin className="w-4 h-4 text-primary" />
-                                                                    ) : (
-                                                                        <Plus className="w-4 h-4 text-primary" />
-                                                                    )}
+                                                    <div className="p-2 space-y-1">
+                                                        {keywordSuggestions.map((suggestion, idx) => (
+                                                            <div
+                                                                key={idx}
+                                                                onClick={() => addKeyword(suggestion.text)}
+                                                                className="px-4 py-2 hover:bg-white/5 rounded-lg cursor-pointer flex items-center justify-between group transition-colors"
+                                                            >
+                                                                <div className="flex items-center gap-3">
+                                                                    <Search size={14} className="text-white/20 group-hover:text-primary transition-colors" />
+                                                                    <span className="text-sm text-white/70 group-hover:text-white">{suggestion.text}</span>
                                                                 </div>
-                                                                <div>
-                                                                    <span className="text-white font-medium block">{suggestion.text}</span>
-                                                                    {suggestion.type === 'recommended' && (
-                                                                        <span className="text-[10px] text-primary block">{language === 'hi' ? `${formData.businessCategory} के लिए अनुशंसित` : `Recommended for ${formData.businessCategory}`}</span>
-                                                                    )}
-                                                                </div>
+                                                                <span className="text-[10px] uppercase tracking-widest text-white/20 group-hover:text-primary/50 font-bold">{suggestion.type}</span>
                                                             </div>
-                                                            <span className="text-[10px] uppercase tracking-wider text-white/40 bg-white/5 px-2 py-0.5 rounded-md">
-                                                                {suggestion.type}
-                                                            </span>
-                                                        </div>
-                                                    ))}
-                                                    {isLoadingMoreKeywords && (
-                                                        <div className="py-4 flex justify-center">
-                                                            <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                                                        </div>
-                                                    )}
+                                                        ))}
+                                                        {isLoadingMoreKeywords && (
+                                                            <div className="py-2 text-center text-primary animate-pulse">
+                                                                <Loader2 size={16} className="mx-auto animate-spin" />
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </motion.div>
                                             )}
                                         </AnimatePresence>
@@ -1556,10 +1620,10 @@ function RegisterPageContent() {
                                 <Label className="text-white/70">{t('labels.gpsCoordinates')} <span className="text-red-500">*</span></Label>
                                 <div className="flex gap-2">
                                     <Input value={formData.gpsCoordinates.address} readOnly placeholder={t('placeholders.locateHelp')} className="bg-white/5 border-white/10 text-white flex-1" />
-                                    <Button 
-                                        type="button" 
-                                        variant="glow" 
-                                        size="sm" 
+                                    <Button
+                                        type="button"
+                                        variant="glow"
+                                        size="sm"
                                         onClick={handleLocateMe}
                                         disabled={isLocating}
                                         className="shrink-0 gap-2"
@@ -1574,12 +1638,12 @@ function RegisterPageContent() {
                                     </Button>
                                 </div>
                             </div>
-                             <div className="grid gap-2">
+                            <div className="grid gap-2">
                                 <Label className="text-white/70">{t('labels.officeAddress')} <span className="text-red-500">*</span></Label>
                                 <div className="relative group/mic">
                                     <Textarea name="registeredOfficeAddress" value={formData.registeredOfficeAddress} onChange={handleInputChange} onKeyUp={handleKeyUp} onBlur={handleBlur} className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50 min-h-[100px] pr-10" required />
-                                    <button 
-                                        type="button" 
+                                    <button
+                                        type="button"
                                         onClick={() => toggleVoiceInput('registeredOfficeAddress')}
                                         className={`absolute right-3 top-4 transition-colors ${isListening && listeningField === 'registeredOfficeAddress' ? 'text-primary animate-pulse' : 'text-white/20 hover:text-primary'}`}
                                     >
@@ -1590,11 +1654,17 @@ function RegisterPageContent() {
                             <div className="grid md:grid-cols-2 gap-4">
                                 <div className="grid gap-2">
                                     <Label className="text-white/70">{t('labels.primaryContact')} <span className="text-red-500">*</span></Label>
-                                    <Input name="primaryContactNumber" value={formData.primaryContactNumber} onChange={handleInputChange} className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50" required />
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 font-bold text-sm tracking-tighter">+91</span>
+                                        <Input name="primaryContactNumber" value={formData.primaryContactNumber} onChange={handleInputChange} className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50 pl-12" placeholder="9876543210" required />
+                                    </div>
                                 </div>
                                 <div className="grid gap-2">
                                     <Label className="text-white/70">{t('labels.whatsappNumber')}</Label>
-                                    <Input name="officialWhatsAppNumber" value={formData.officialWhatsAppNumber} onChange={handleInputChange} className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50" />
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 font-bold text-sm tracking-tighter">+91</span>
+                                        <Input name="officialWhatsAppNumber" value={formData.officialWhatsAppNumber} onChange={handleInputChange} className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50 pl-12" placeholder="9876543210" />
+                                    </div>
                                 </div>
                             </div>
                             <div className="grid gap-2">
@@ -1691,9 +1761,15 @@ function RegisterPageContent() {
                                     </div>
                                 </motion.div>
                             )}
-                            <div className="grid gap-2">
-                                <Label className="text-white/70">Password <span className="text-red-500">*</span></Label>
-                                <Input type="password" name="password" value={formData.password} onChange={handleInputChange} className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50" required />
+                            <div className="grid md:grid-cols-2 gap-4">
+                                <div className="grid gap-2">
+                                    <Label className="text-white/70">{t('labels.password')} <span className="text-red-500">*</span></Label>
+                                    <Input type="password" name="password" value={formData.password} onChange={handleInputChange} className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50" required />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label className="text-white/70">{t('labels.confirmPassword')} <span className="text-red-500">*</span></Label>
+                                    <Input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleInputChange} className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50" required />
+                                </div>
                             </div>
                         </div>
                     </motion.div>
@@ -1701,75 +1777,88 @@ function RegisterPageContent() {
             case 3:
                 return (
                     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
-                        <div className="flex items-center gap-3 mb-8">
+                        <div className="flex items-center gap-3 mb-6">
                             <Clock className="text-primary w-8 h-8" />
                             <h2 className="text-2xl font-bold text-white pr-24 sm:pr-0">Operations & Status</h2>
                         </div>
-                        <div className="space-y-4">
-                            {timings.map((timing, index) => (
-                                <div key={index} className="flex flex-col sm:flex-row gap-4 items-end bg-white/5 p-4 rounded-xl border border-white/10 relative">
-                                    {timings.length > 1 && (
-                                        <button 
-                                            type="button" 
-                                            onClick={() => setTimings(timings.filter((_, i) => i !== index))}
-                                            className="absolute top-2 right-2 text-white/40 hover:text-red-400 transition"
-                                        >
-                                            <X size={16} />
-                                        </button>
+
+                        <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar pb-10">
+                            {Object.entries(formData.businessHours).map(([day, data]) => (
+                                <div key={day} className={`p-4 rounded-xl border transition-all ${data.isOpen ? 'bg-white/5 border-white/10' : 'bg-black/20 border-white/5 opacity-40'}`}>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-1.5 h-1.5 rounded-full ${data.isOpen ? 'bg-primary animate-pulse' : 'bg-white/10'}`} />
+                                            <Label className={`text-sm font-bold capitalize ${data.isOpen ? 'text-white' : 'text-white/40'}`}>{day}</Label>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            {data.isOpen && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => copyToAllHours(day)}
+                                                    className="text-[10px] uppercase tracking-widest font-bold text-primary/60 hover:text-primary transition-colors flex items-center gap-1"
+                                                >
+                                                    <Plus size={10} /> Copy to all
+                                                </button>
+                                            )}
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[9px] font-bold uppercase tracking-tight text-white/20">
+                                                    {data.isOpen ? (language === 'hi' ? 'खुला है' : 'Open') : (language === 'hi' ? 'बंद है' : 'Closed')}
+                                                </span>
+                                                <Switch
+                                                    checked={data.isOpen}
+                                                    onCheckedChange={() => handleToggleDay(day)}
+                                                    className="scale-75 data-[state=checked]:bg-primary"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {data.isOpen && (
+                                        <div className="mt-4 pt-4 border-t border-white/5 space-y-3">
+                                            {data.slots.map((slot, idx) => (
+                                                <div key={idx} className="flex items-center gap-2">
+                                                    <div className="flex-1 grid grid-cols-2 gap-2">
+                                                        <div className="relative">
+                                                            <Input
+                                                                type="time"
+                                                                value={slot.open}
+                                                                onChange={(e) => handleSlotChange(day, idx, 'open', e.target.value)}
+                                                                className="bg-transparent border-white/10 text-white h-9 text-xs focus:ring-primary/30 pl-3"
+                                                                style={{ colorScheme: 'dark' }}
+                                                            />
+                                                        </div>
+                                                        <div className="relative">
+                                                            <Input
+                                                                type="time"
+                                                                value={slot.close}
+                                                                onChange={(e) => handleSlotChange(day, idx, 'close', e.target.value)}
+                                                                className="bg-transparent border-white/10 text-white h-9 text-xs focus:ring-primary/30 pl-3"
+                                                                style={{ colorScheme: 'dark' }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    {data.slots.length > 1 && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeSlot(day, idx)}
+                                                            className="p-2 text-white/20 hover:text-red-400 transition-all"
+                                                        >
+                                                            <X size={14} />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            ))}
+                                            <button
+                                                type="button"
+                                                onClick={() => addSlot(day)}
+                                                className="text-[10px] text-primary/70 hover:text-primary font-bold uppercase tracking-widest flex items-center gap-1 mt-1 px-1"
+                                            >
+                                                <Plus size={12} /> Add Shift
+                                            </button>
+                                        </div>
                                     )}
-                                    <div className="grid gap-2 w-full">
-                                        <Label className="text-white/70">Opening Time</Label>
-                                        <Input 
-                                            type="time" 
-                                            value={timing.open} 
-                                            onChange={(e) => {
-                                                const newTimings = [...timings];
-                                                newTimings[index].open = e.target.value;
-                                                setTimings(newTimings);
-                                            }} 
-                                            className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50 [&::-webkit-calendar-picker-indicator]:brightness-0 [&::-webkit-calendar-picker-indicator]:invert-[1] [&::-webkit-calendar-picker-indicator]:opacity-70"
-                                            style={{ colorScheme: 'dark' }}
-                                        />
-                                    </div>
-                                    <div className="grid gap-2 w-full">
-                                        <Label className="text-white/70">Closing Time</Label>
-                                        <Input 
-                                            type="time" 
-                                            value={timing.close} 
-                                            onChange={(e) => {
-                                                const newTimings = [...timings];
-                                                newTimings[index].close = e.target.value;
-                                                setTimings(newTimings);
-                                            }} 
-                                            className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50 [&::-webkit-calendar-picker-indicator]:brightness-0 [&::-webkit-calendar-picker-indicator]:invert-[1] [&::-webkit-calendar-picker-indicator]:opacity-70"
-                                            style={{ colorScheme: 'dark' }}
-                                        />
-                                    </div>
                                 </div>
                             ))}
-                            
-                            <Button 
-                                type="button" 
-                                variant="outline" 
-                                onClick={() => setTimings([...timings, { open: "", close: "" }])}
-                                className="w-fit border-dashed border-white/20 text-white/70 hover:text-white bg-transparent text-sm h-9 px-4"
-                            >
-                                <Plus size={16} className="mr-2" /> Add Timing Block
-                            </Button>
-
-                            <div className="grid gap-2 pt-2">
-                                <Label className="text-white/70">Weekly Off</Label>
-                                <div className="relative group/mic">
-                                    <Input name="weeklyOff" value={formData.weeklyOff} onChange={handleInputChange} onKeyUp={handleKeyUp} onBlur={handleBlur} className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50 pr-10" />
-                                    <button 
-                                        type="button" 
-                                        onClick={() => toggleVoiceInput('weeklyOff')}
-                                        className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${isListening && listeningField === 'weeklyOff' ? 'text-primary animate-pulse' : 'text-white/20 hover:text-primary'}`}
-                                    >
-                                        <Mic size={16} />
-                                    </button>
-                                </div>
-                            </div>
                         </div>
                     </motion.div>
                 );
@@ -1783,15 +1872,15 @@ function RegisterPageContent() {
                         <div className="space-y-6">
                             <div className="grid gap-4">
                                 <Label className="text-white/70">{t('labels.aadhaarNumber')} <span className="text-red-500">*</span></Label>
-                                <Input 
-                                    name="aadhaarNumber" 
+                                <Input
+                                    name="aadhaarNumber"
                                     maxLength={12}
                                     placeholder={t('placeholders.aadhaarHelp')}
-                                    value={formData.aadhaarNumber} 
-                                    onChange={handleInputChange} 
+                                    value={formData.aadhaarNumber}
+                                    onChange={handleInputChange}
                                     onKeyUp={handleKeyUp}
                                     onBlur={handleBlur}
-                                    className="bg-white/5 border-white/10 text-white h-12" 
+                                    className="bg-white/5 border-white/10 text-white h-12"
                                     required
                                 />
                             </div>
@@ -1886,14 +1975,14 @@ function RegisterPageContent() {
     if (success) {
         return (
             <main className="pt-32 pb-24 container mx-auto px-4 max-w-2xl text-center space-y-8 relative z-10">
-                <motion.div 
+                <motion.div
                     initial={{ scale: 0.5, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     className="space-y-6"
                 >
                     <div className="relative inline-block">
                         <CheckCircle2 className="w-24 h-24 text-primary mx-auto" />
-                        <motion.div 
+                        <motion.div
                             className="absolute inset-0 bg-primary/20 blur-3xl -z-10 rounded-full"
                             animate={{ scale: [1, 1.2, 1] }}
                             transition={{ duration: 2, repeat: Infinity }}
@@ -1913,7 +2002,7 @@ function RegisterPageContent() {
                         {t('messages.successMessage')}
                         <span className="block mt-2 text-primary font-bold">{t('messages.notificationNote')}</span>
                     </p>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
                         <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
                             <h3 className="text-primary font-bold uppercase text-xs tracking-widest mb-2 flex items-center gap-2">
@@ -2046,7 +2135,7 @@ function RegisterPageContent() {
                                 disabled={currentStep === 1 || loading}
                                 className="rounded-xl px-4 sm:px-8 border-white/10 text-white/70 hover:bg-white/5 hover:text-white disabled:opacity-30 transition-all font-display uppercase tracking-widest text-[10px] sm:text-xs h-10 sm:h-12"
                             >
-                                 <ChevronLeft className="mr-1 sm:mr-2 w-3 h-3 sm:w-4 h-4" /> {t('prev')}
+                                <ChevronLeft className="mr-1 sm:mr-2 w-3 h-3 sm:w-4 h-4" /> {t('prev')}
                             </Button>
 
                             {currentStep < 6 ? (
@@ -2075,14 +2164,13 @@ function RegisterPageContent() {
         </main>
     );
 }
-
 export default function RegisterPage() {
     return (
-        <div className="min-h-screen bg-background relative overflow-hidden text-white font-sans">
+        <div className="min-h-screen bg-[#020631] relative overflow-hidden text-white font-sans">
             <ParticleNetworkWrapper className="z-0 opacity-40" />
             <CursorGlow />
             <Navbar />
-            
+
             <Suspense fallback={
                 <div className="min-h-screen flex flex-col items-center justify-center text-center p-6">
                     <Loader2 className="w-16 h-16 text-primary animate-spin mx-auto" />

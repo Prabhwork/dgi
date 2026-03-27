@@ -69,7 +69,7 @@ export default function BusinessListingSection() {
                     <motion.div 
                         initial={{ opacity: 0, x: -30 }}
                         whileInView={{ opacity: 1, x: 0 }}
-                        className={`p-8 md:p-12 rounded-[2.5rem] border border-solid backdrop-blur-xl ${isLight ? 'bg-white border-blue-100 shadow-xl shadow-blue-500/5' : 'bg-white/5 border-white/10 shadow-2xl'}`}
+                        className={`p-8 md:p-12 rounded-[2.5rem] border border-solid backdrop-blur-xl ${isLight ? 'bg-white border-slate-300 shadow-xl shadow-blue-500/5' : 'bg-white/5 border-white/10 shadow-2xl'}`}
                     >
                         <h3 className="text-2xl font-bold mb-6 flex items-center gap-3">
                             <span className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-sm font-black italic">1</span>
@@ -97,7 +97,7 @@ export default function BusinessListingSection() {
                                 initial={{ opacity: 0, y: 20 }}
                                 whileInView={{ opacity: 1, y: 0 }}
                                 transition={{ delay: i * 0.1 }}
-                                className={`p-6 rounded-3xl border border-solid transition-all duration-500 group ${isLight ? 'bg-white border-slate-100 hover:border-primary/30 hover:shadow-lg' : 'bg-white/[0.02] border-white/10 hover:bg-white/[0.05] hover:border-white/20'}`}
+                                className={`p-6 rounded-3xl border border-solid transition-all duration-500 group ${isLight ? 'bg-white border-slate-300 hover:border-blue-500 hover:shadow-lg' : 'bg-white/[0.02] border-white/10 hover:bg-white/[0.05] hover:border-white/20'}`}
                             >
                                 <feature.icon className={`w-10 h-10 mb-4 ${feature.color}`} />
                                 <h4 className="font-bold mb-2">{feature.title}</h4>

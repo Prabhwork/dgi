@@ -17,10 +17,10 @@ export default function CareersPage() {
                 <Navbar />
 
                 <main className="container mx-auto px-4 pt-32 pb-20 flex-1 max-w-4xl">
-                    <div className={`rounded-3xl p-8 md:p-12 border backdrop-blur-xl shadow-xl ${isLight ? 'bg-white/90 border-slate-200' : 'bg-white/5 border-white/10'}`}>
-                        <h1 className="text-3xl md:text-5xl font-black mb-6 text-foreground">Careers at DBI</h1>
+                    <div className={`rounded-3xl p-8 md:p-12 border backdrop-blur-xl shadow-xl ${isLight ? 'bg-white border-slate-300 shadow-sm' : 'bg-white/5 border-white/10'}`}>
+                        <h1 className={`text-3xl md:text-5xl font-black mb-6 ${isLight ? 'text-slate-900' : 'text-white'}`}>Careers at DBI</h1>
                         
-                        <div className="space-y-6 text-muted-foreground leading-relaxed">
+                        <div className={`space-y-6 leading-relaxed ${isLight ? 'text-slate-600' : 'text-white/70'}`}>
                             <p className="text-lg font-medium text-foreground">
                                 Join us in reshaping the digital face of businesses across India.
                             </p>

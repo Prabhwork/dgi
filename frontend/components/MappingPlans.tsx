@@ -9,83 +9,90 @@ import { useTheme } from "@/components/ThemeProvider";
 
 const plans = [
     {
-        id: "mini",
-        name: "Mini Mapping",
-        tagline: "Perfect for Solo Traders",
-        price: "₹99",
-        period: "/month",
+        id: "micro",
+        name: "Micro (Starter Plan)",
+        tagline: "Perfect for starting online presence",
+        price: "₹365",
+        period: "/year",
         color: "from-slate-500/20 to-slate-700/10",
         border: "border-white/10",
-        badge: null,
+        badge: "₹1/day",
+        isComingSoon: false,
         features: [
-            "1 Business Listing",
-            "Basic Profile Page",
-            "Location Pin on Map",
-            "Customer Contact Info",
-            "DBI Verified Badge",
-            "Email Support",
-        ],
-    },
-    {
-        id: "micro",
-        name: "Micro",
-        tagline: "For Small Local Shops",
-        price: "₹249",
-        period: "/month",
-        color: "from-blue-500/20 to-blue-900/10",
-        border: "border-primary/30",
-        badge: null,
-        features: [
-            "Up to 3 Business Listings",
-            "Enhanced Profile with Photos",
-            "Live Open/Closed Status",
-            "Location Mapping + Route Guide",
-            "DBI Verified Badge",
-            "Community Broadcast Access",
-            "Priority Email Support",
+            "Listed on Map",
+            "Basic Business Profile",
+            "Personalized Page (Photos, Posts)",
+            "Business Timings",
+            "Direction (Map Navigation)",
+            "Basic Ratings",
+            "1 Category Listing",
+            "Limited Updates",
         ],
     },
     {
         id: "small",
-        name: "Small",
-        tagline: "For Growing Businesses",
-        price: "₹599",
-        period: "/month",
-        color: "from-indigo-500/20 to-indigo-900/10",
-        border: "border-indigo-400/40",
-        badge: "Most Popular",
+        name: "Small (Growth Plan)",
+        tagline: "Best for growing local businesses",
+        price: "₹3,650",
+        period: "/year",
+        color: "from-blue-500/20 to-blue-900/10",
+        border: "border-primary/30",
+        badge: "Coming Soon",
+        isComingSoon: true,
         features: [
-            "Up to 10 Business Listings",
-            "Premium Profile + Gallery",
-            "Live Active / Inactive Pulse",
-            "Tender Alerts (Domain-Specific)",
-            "Inter-Member Flash Sale Access",
-            "Analytics Dashboard",
-            "DBI Verified Badge",
-            "Fraud Protection Shield",
-            "Priority Chat Support",
+            "Everything in Micro +",
+            "Reviews (Customer Feedback)",
+            "Gallery (Unlimited Photos)",
+            "Multiple Categories",
+            "Merchant Panel Access",
+            "Status Control (Open/Close)",
+            "Receiving Orders",
+            "Priority Listing on Map",
+            "Basic Analytics",
         ],
     },
     {
         id: "medium",
-        name: "Medium",
-        tagline: "For Established Enterprises",
-        price: "₹1,299",
-        period: "/month",
+        name: "Medium (Pro Plan)",
+        tagline: "For serious business scaling",
+        price: "₹9,999",
+        period: "/year",
+        color: "from-indigo-500/20 to-indigo-900/10",
+        border: "border-indigo-400/40",
+        badge: "Coming Soon",
+        isComingSoon: true,
+        features: [
+            "Everything in Small +",
+            "Featured Listing (Top Placement)",
+            "Advertisement Access",
+            "Advanced Analytics (Views, Clicks, Leads)",
+            "Custom Branding (Logo, Theme)",
+            "Customer Inquiry System",
+            "Social Media Integration",
+            "Faster Support",
+        ],
+    },
+    {
+        id: "premium",
+        name: "Premium (Business Suite 🚀)",
+        tagline: "The absolute growth engine",
+        price: "₹19,999",
+        period: "/year",
         color: "from-violet-500/20 to-violet-900/10",
         border: "border-violet-400/40",
-        badge: "Best Value",
+        badge: "Coming Soon",
+        isComingSoon: true,
         features: [
-            "Unlimited Business Listings",
-            "Full Suite Profile & Branding",
-            "Live Status + Hyper-Local Boost",
-            "All Tender Categories Access",
-            "Community Broadcast Priority",
-            "Advanced Analytics + Reports",
-            "DBI Business Certification",
-            "Dedicated Account Manager",
-            "API Access (Business Suite)",
-            "24/7 Priority Support",
+            "Everything in Medium +",
+            "Top Priority Map Placement",
+            "Sponsored Listings Boost",
+            "Advanced Business Insights & Reports",
+            "Smart Recommendations (Growth Tips)",
+            "Ad Campaign Management",
+            "Full Order Management System",
+            "Invoice & Billing System",
+            "Dedicated Support",
+            "Early Access Features",
         ],
     },
 ];
@@ -116,7 +123,7 @@ export default function MappingPlans() {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ delay: 0.1 }}
-                        className="text-3xl sm:text-5xl font-display font-bold text-white tracking-tight"
+                        className={`text-3xl sm:text-5xl font-display font-bold tracking-tight ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}
                     >
                         Explore Our <span className="gradient-text italic">Mapping Plans</span>
                     </motion.h2>
@@ -142,16 +149,20 @@ export default function MappingPlans() {
                             transition={{ delay: i * 0.08 }}
                             onMouseEnter={() => setHovered(plan.id)}
                             onMouseLeave={() => setHovered(null)}
-                            className={`relative flex flex-col rounded-2xl border ${plan.border} bg-gradient-to-b ${plan.color} backdrop-blur-sm p-5 transition-all duration-300 ${hovered === plan.id
-                                ? (theme === 'light' ? 'scale-[1.02] border-blue-600/40' : 'scale-[1.02] shadow-[0_0_30px_rgba(59,130,246,0.2)]')
+                            className={`relative flex flex-col rounded-2xl border backdrop-blur-sm p-5 transition-all duration-300 ${
+                                theme === 'light'
+                                    ? `bg-white border-slate-300 shadow-sm`
+                                    : `${plan.border} bg-gradient-to-b ${plan.color}`
+                            } ${hovered === plan.id
+                                ? (theme === 'light' ? 'scale-[1.02] border-blue-500 shadow-md' : 'scale-[1.02] shadow-[0_0_30px_rgba(59,130,246,0.2)]')
                                 : ''
                                 }`}
                         >
                             {/* Popular Badge */}
                             {plan.badge && (
                                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                                    <span className={`flex items-center gap-1 px-3 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest ${plan.badge === "Most Popular" ? "bg-primary text-white" : "bg-violet-500 text-white"}`}>
-                                        <Star size={9} fill="currentColor" /> {plan.badge}
+                                    <span className={`flex items-center gap-1 px-3 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest ${plan.isComingSoon ? "bg-slate-500/50 text-white" : "bg-primary text-white"}`}>
+                                        {plan.id === "micro" ? <Check size={9} fill="currentColor" /> : <Star size={9} fill="currentColor" />} {plan.badge}
                                     </span>
                                 </div>
                             )}
@@ -159,8 +170,8 @@ export default function MappingPlans() {
                             {/* Plan Title */}
                             <div className="mb-4 pt-2">
                                 <div className="flex items-center gap-2 mb-1">
-                                    <MapPin size={14} className="text-primary shrink-0" />
-                                    <h3 className="text-base font-display font-bold text-white uppercase tracking-wider">
+                                    <MapPin size={14} className={plan.isComingSoon ? "text-slate-500" : "text-primary shrink-0"} />
+                                    <h3 className={`text-base font-display font-bold uppercase tracking-wider ${plan.isComingSoon ? "text-slate-400" : (theme === 'light' ? "text-slate-900" : "text-white")}`}>
                                         {plan.name}
                                     </h3>
                                 </div>
@@ -168,9 +179,9 @@ export default function MappingPlans() {
                             </div>
 
                             {/* Price */}
-                            <div className="border-t border-white/10 pt-4 mb-5">
+                            <div className={`border-t pt-4 mb-5 ${theme === 'light' ? 'border-slate-200' : 'border-white/10'}`}>
                                 <div className="flex items-end gap-1">
-                                    <span className="text-3xl font-display font-bold text-white">{plan.price}</span>
+                                    <span className={`text-3xl font-display font-bold ${plan.isComingSoon ? "text-slate-400" : (theme === 'light' ? "text-slate-900" : "text-white")}`}>{plan.price}</span>
                                     <span className="text-xs text-muted-foreground mb-1">{plan.period}</span>
                                 </div>
                             </div>
@@ -178,8 +189,8 @@ export default function MappingPlans() {
                             {/* Features */}
                             <ul className="flex-1 space-y-2.5 mb-6">
                                 {plan.features.map((f, fi) => (
-                                    <li key={fi} className="flex items-start gap-2 text-xs text-white/70">
-                                        <Check size={13} className="text-primary shrink-0 mt-0.5" />
+                                    <li key={fi} className={`flex items-start gap-2 text-xs ${plan.isComingSoon ? "text-slate-500" : (theme === 'light' ? "text-slate-700" : "text-white/70")}`}>
+                                        <Check size={13} className={plan.isComingSoon ? "text-slate-400" : "text-primary shrink-0 mt-0.5"} />
                                         {f}
                                     </li>
                                 ))}
@@ -187,10 +198,18 @@ export default function MappingPlans() {
 
                             {/* CTA */}
                             <Button
-                                className={`w-full h-9 text-xs font-semibold uppercase tracking-widest rounded-xl transition-all ${plan.badge === "Most Popular" || plan.badge === "Best Value" ? "bg-primary hover:bg-primary/80 text-white shadow-[0_0_15px_rgba(59,130,246,0.3)]" : "bg-white/10 hover:bg-white/20 text-white"}`}
-                                asChild
+                                className={`w-full h-9 text-xs font-semibold uppercase tracking-widest rounded-xl transition-all border ${plan.isComingSoon
+                                        ? (theme === 'light' ? "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed" : "bg-white/5 text-slate-500 cursor-not-allowed border-white/5")
+                                        : (theme === 'light' ? "bg-primary hover:bg-primary/90 text-white shadow-md border-transparent" : "bg-primary hover:bg-primary/90 text-white shadow-[0_0_15px_rgba(59,130,246,0.3)] border-transparent")
+                                    }`}
+                                asChild={!plan.isComingSoon}
+                                disabled={plan.isComingSoon}
                             >
-                                <Link href="/community/register">Get Started</Link>
+                                {plan.isComingSoon ? (
+                                    <span>Coming Soon</span>
+                                ) : (
+                                    <Link href="/community/register">Get Started</Link>
+                                )}
                             </Button>
                         </motion.div>
                     ))}
@@ -203,10 +222,7 @@ export default function MappingPlans() {
                     viewport={{ once: true }}
                     className="text-center text-xs text-muted-foreground mt-8"
                 >
-                    All plans include a free 14-day trial. No credit card required. &nbsp;
-                    <Link href="/community/register" className="text-primary underline underline-offset-2 hover:text-primary/80 transition-colors">
-                        Apply now →
-                    </Link>
+        
                 </motion.p>
             </div>
         </section>

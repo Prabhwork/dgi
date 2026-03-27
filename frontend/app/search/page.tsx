@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/components/ThemeProvider";
 import ParticleNetwork from "@/components/ParticleNetwork";
 import Link from "next/link";
+import EmptyState from "@/components/EmptyState";
 
 function CardImageSlider({ item }: { item: any }) {
     const images = [item.coverImage, ...(item.gallery || [])].filter(Boolean);
@@ -361,12 +362,7 @@ function SearchResults() {
                             <Button onClick={() => window.location.reload()} className="bg-primary text-white hover:bg-primary/90">Try Again</Button>
                         </div>
                     ) : results.length === 0 ? (
-                        <div className={`text-center py-20 rounded-3xl border border-dashed backdrop-blur-md ${isLight ? 'bg-white/60 border-slate-300' : 'bg-white/5 border-white/10'}`}>
-                            <Search size={48} className="mx-auto text-muted-foreground mb-4 opacity-50" />
-                            <h3 className="text-xl font-bold mb-2 text-foreground">No matches found</h3>
-                            <p className="text-muted-foreground mb-6">Try adjusting your search terms or filters.</p>
-                            <Button onClick={() => router.push('/search')} variant={isLight ? 'default' : 'outline-glow'}>Clear Filters</Button>
-                        </div>
+                        <EmptyState />
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {results.map((item, idx) => (
@@ -429,14 +425,43 @@ function SearchResults() {
                                                                 const h12 = h % 12 || 12;
                                                                 return `${h12.toString().padStart(2, '0')}:${minutes} ${ampm}`;
                                                             };
+
+                                                            // NEW: Use businessHours if available
+                                                            if (item.businessHours) {
+                                                                const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+                                                                const today = days[new Date().getDay()];
+                                                                const todayData = item.businessHours[today];
+                                                                
+                                                                if (todayData) {
+                                                                    if (!todayData.isOpen) return "Closed Today";
+                                                                    if (todayData.slots && todayData.slots.length > 0) {
+                                                                        const slot = todayData.slots[0];
+                                                                        return `${formatTime(slot.open)} - ${formatTime(slot.close)}`;
+                                                                    }
+                                                                }
+                                                            }
+
+                                                            // Fallback to legacy fields
                                                             return `${formatTime(item.openingTime || '09:00')} - ${formatTime(item.closingTime || '18:00')}`;
                                                         })()}
                                                     </span>
-                                                    {item.weeklyOff && item.weeklyOff.toLowerCase() !== 'none' && (
-                                                        <span className="text-[10px] font-black uppercase text-red-500 tracking-wider mt-0.5">
-                                                            Closed {item.weeklyOff}
-                                                        </span>
-                                                    )}
+                                                    {(() => {
+                                                        const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+                                                        const today = days[new Date().getDay()];
+                                                        
+                                                        // Check if currently closed due to weeklyOff (legacy) or businessHours (new)
+                                                        const isWeeklyOffLegacy = item.weeklyOff && item.weeklyOff.toLowerCase() === today;
+                                                        const isClosedNew = item.businessHours?.[today]?.isOpen === false;
+                                                        
+                                                        if (isClosedNew || isWeeklyOffLegacy) {
+                                                            return (
+                                                                <span className="text-[10px] font-black uppercase text-red-500 tracking-wider mt-0.5">
+                                                                    Closed Now
+                                                                </span>
+                                                            );
+                                                        }
+                                                        return null;
+                                                    })()}
                                                 </div>
                                             </div>
                                         </div>

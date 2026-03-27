@@ -15,7 +15,7 @@ export default function JoinCommunityBanner() {
                 <motion.div 
                     initial={{ opacity: 0, scale: 0.95 }}
                     whileInView={{ opacity: 1, scale: 1 }}
-                    className={`relative rounded-[3rem] p-8 md:p-16 overflow-hidden border border-solid border-primary/20 bg-[#020631] ${isLight ? 'bg-primary shadow-2xl shadow-primary/40 text-white' : 'bg-white/[0.03] border-white/10 shadow-3xl text-white'}`}
+                    className={`relative rounded-[3rem] p-8 md:p-16 overflow-hidden border border-solid border-primary/20 bg-[#020631] ${isLight ? 'bg-primary border-blue-400 shadow-2xl shadow-primary/40 text-white' : 'bg-white/[0.03] border-white/10 shadow-3xl text-white'}`}
                 >
                     {/* Background glow effects */}
                     <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/20 blur-[100px] rounded-full translate-x-1/2 -translate-y-1/2" />

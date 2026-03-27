@@ -59,7 +59,7 @@ export default function ContactPage() {
     };
 
     return (
-        <div className={`min-h-screen relative overflow-hidden font-sans transition-colors duration-500 ${isLight ? 'bg-background' : ''}`}>
+        <div className={`min-h-screen relative overflow-hidden font-sans transition-colors duration-500 ${isLight ? 'bg-slate-50' : 'bg-[#020631]'}`}>
             {/* Background elements */}
             <ParticleNetwork className="z-0 opacity-80" />
             <CursorGlow />
@@ -110,7 +110,7 @@ export default function ContactPage() {
                         <div className="absolute -inset-1 bg-[#0066ff]/20 rounded-[2.5rem] blur-3xl opacity-30 group-hover:opacity-50 transition-opacity duration-500"></div>
                         
                         <div className={`relative glass-strong border rounded-[2rem] p-5 md:p-12 backdrop-blur-3xl shadow-2xl transition-all duration-500 ${
-                            isLight ? 'bg-white/70 border-slate-200' : 'bg-[#020631]/40 border-white/5'
+                            isLight ? 'bg-white border-slate-300 shadow-sm' : 'bg-[#020631]/40 border-white/5'
                         }`}>
                             {!isSubmitted ? (
                                 <form onSubmit={handleSubmit} className="space-y-6">

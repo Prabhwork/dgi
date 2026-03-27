@@ -407,6 +407,37 @@ function BusinessDetail() {
                                 
                                 <div className="space-y-1">
                                     {(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']).map((day) => {
+                                        const dayKey = day.toLowerCase();
+                                        
+                                        // NEW: Use businessHours if available
+                                        if (business.businessHours && business.businessHours[dayKey]) {
+                                            const dayData = business.businessHours[dayKey];
+                                            return (
+                                                <div key={day} className="flex justify-between items-center py-1">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`w-1 h-1 rounded-full ${!dayData.isOpen ? 'bg-red-500' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]'}`} />
+                                                        <span className={`text-[13px] font-bold ${isLight ? 'text-slate-700' : 'text-slate-400'}`}>{day}</span>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        {!dayData.isOpen ? (
+                                                            <span className="text-[10px] font-black text-red-500 uppercase tracking-widest px-2 py-0.5 rounded-md bg-red-500/10 border border-red-500/10">
+                                                                Closed
+                                                            </span>
+                                                        ) : (
+                                                            <div className="flex flex-col items-end">
+                                                                {(dayData.slots || [{ open: "09:00", close: "18:00" }]).map((slot: any, sIdx: number) => (
+                                                                    <span key={sIdx} className={`text-[11px] font-black tracking-tight ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                                                                        {format12Hour(slot.open)} - {format12Hour(slot.close)}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+
+                                        // Fallback to legacy logic
                                         const isOff = business.weeklyOff?.toLowerCase() === day.toLowerCase();
                                         const opens = (business.openingTime || "09:00").split(',');
                                         const closes = (business.closingTime || "18:00").split(',');
