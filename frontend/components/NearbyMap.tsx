@@ -3,7 +3,7 @@
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useEffect, useRef, useState, useCallback } from "react";
 import mapboxgl from "mapbox-gl";
-import { Search, X, MapPin, Phone, Star, Filter, Loader2, Navigation as NavigationIcon, SlidersHorizontal, Circle, ChevronDown, Globe, MessageCircle, Share2, ExternalLink, Octagon } from "lucide-react";
+import { Search, X, MapPin, Phone, Star, Filter, Loader2, Navigation as NavigationIcon, SlidersHorizontal, Circle, ChevronDown, Globe, MessageCircle, Share2, ExternalLink, Octagon, Mic, MicOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -57,6 +57,8 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
     const [searchResults, setSearchResults] = useState<Business[]>([]);
     const [routeInfo, setRouteInfo] = useState<{ distance: number, duration: number, businessName: string, trafficCondition: string } | null>(null);
     const [isNavigating, setIsNavigating] = useState(false);
+    const [isListening, setIsListening] = useState(false);
+    const recognitionRef = useRef<any>(null);
     const watchIdRef = useRef<number | null>(null);
     const userMarkerRef = useRef<mapboxgl.Marker | null>(null);
     const startMarkerRef = useRef<mapboxgl.Marker | null>(null);
@@ -572,6 +574,46 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
         backgroundColor: "#020631"
     };
 
+    const toggleVoiceInput = () => {
+        if (isListening) {
+            if (recognitionRef.current) {
+                recognitionRef.current.stop();
+            }
+            setIsListening(false);
+            return;
+        }
+
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert("Your browser does not support Speech Recognition. Please try Chrome.");
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        recognition.onstart = () => setIsListening(true);
+        recognition.onend = () => setIsListening(false);
+        recognition.onerror = (event: any) => {
+            console.error("Speech recognition error", event.error);
+            setIsListening(false);
+        };
+
+        recognition.onresult = (event: any) => {
+            const transcript = event.results[0][0].transcript;
+            setSearchQuery(transcript);
+            setIsListening(false);
+            if (recognitionRef.current) {
+                recognitionRef.current.stop();
+            }
+        };
+
+        recognitionRef.current = recognition;
+        recognition.start();
+    };
+
     const filteredBusinesses = businesses.filter(b =>
         (b.brandName || b.businessName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
         (b.businessCategory || "").toLowerCase().includes(searchQuery.toLowerCase())
@@ -659,12 +701,29 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                 <Search size={18} className="text-primary animate-pulse shrink-0" />
                                 <input
                                     type="text"
-                                    placeholder="Search for businesses..."
+                                    placeholder={isListening ? "Listening..." : "Search for businesses..."}
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     suppressHydrationWarning
                                     className="bg-transparent border-none outline-none text-white text-sm md:text-base font-semibold flex-1 placeholder:text-white/50"
                                 />
+                                <button
+                                    onClick={toggleVoiceInput}
+                                    className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all duration-500 pointer-events-auto shrink-0 relative ${isListening ? 'bg-primary text-white shadow-[0_0_20px_rgba(14,165,233,0.4)]' : 'text-primary/60 hover:text-primary hover:bg-white/10'}`}
+                                >
+                                    <AnimatePresence>
+                                        {isListening && (
+                                            <motion.div
+                                                initial={{ scale: 0.8, opacity: 0.5 }}
+                                                animate={{ scale: 1.8, opacity: 0 }}
+                                                exit={{ opacity: 0 }}
+                                                transition={{ repeat: Infinity, duration: 1.5, ease: "easeOut" }}
+                                                className="absolute inset-0 bg-primary rounded-full -z-10"
+                                            />
+                                        )}
+                                    </AnimatePresence>
+                                    {isListening ? <MicOff size={20} className="relative z-10" /> : <Mic size={20} className="relative z-10" />}
+                                </button>
                                 {loading && <Loader2 size={18} className="text-primary animate-spin shrink-0" />}
                             </div>
 
