@@ -4,7 +4,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CursorGlow from "@/components/CursorGlow";
 import ParticleNetworkWrapper from "@/components/ParticleNetworkWrapper";
-import { MapPin, Users, Star, Navigation, Shield, Zap, TrendingUp, Eye } from "lucide-react";
+import { MapPin, Users, Star, Navigation, Shield, Zap, TrendingUp, Eye, Compass } from "lucide-react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { useTheme } from "@/components/ThemeProvider";
