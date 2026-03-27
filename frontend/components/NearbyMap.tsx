@@ -69,6 +69,8 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
     const rerouteTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const lastLocationRef = useRef<{ lat: number; lng: number } | null>(null);
     const activeDestRef = useRef<{ lat: number; lng: number } | null>(null);
+    // Single canonical GPS ref — updated continuously; used by both search & navigate
+    const canonicalLocRef = useRef<{ lat: number; lng: number } | null>(null);
 
     const API = (process.env.NEXT_PUBLIC_API_URL);
 
@@ -134,14 +136,26 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                 (pos) => {
                     const actualLat = pos.coords.latitude;
                     const actualLng = pos.coords.longitude;
-                    
-                    setUserLocation({ lat: actualLat, lng: actualLng });
+                    const loc = { lat: actualLat, lng: actualLng };
+                    setUserLocation(loc);
+                    canonicalLocRef.current = loc; // Set canonical reference
                     
                     // If no param coordinates, THIS is our view center too
                     if (!paramLat || !paramLng) {
                         setMapInitialCenter({ lat: actualLat, lng: actualLng });
                     }
                     setLocating(false);
+
+                    // Keep canonical ref fresh via watchPosition
+                    const watchId = navigator.geolocation.watchPosition(
+                        (p) => {
+                            canonicalLocRef.current = { lat: p.coords.latitude, lng: p.coords.longitude };
+                        },
+                        () => {},
+                        { enableHighAccuracy: true, maximumAge: 5000 }
+                    );
+                    // Store watch id for cleanup
+                    if (watchIdRef.current === null) watchIdRef.current = watchId;
                 },
                 () => {
                     // Fallback to Delhi if geolocation fails AND no params provided
@@ -473,43 +487,47 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
             return;
         }
 
+        // Haversine formula — calculates straight-line distance (km) between two GPS points
+        const haversineKm = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) ** 2 +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLng / 2) ** 2;
+            return parseFloat((R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(1));
+        };
+
         const fetchSearchResults = async () => {
             setLoading(true);
             try {
-                let url = `${API}/business/search?q=${searchQuery}`;
-                if (userLocation) {
-                    url += `&lat=${userLocation.lat}&lng=${userLocation.lng}`;
+                // ALWAYS use canonicalLocRef for fresh GPS — same source as navigation
+                const searchLoc = canonicalLocRef.current;
+
+                let url = `${API}/business/search?q=${encodeURIComponent(searchQuery)}`;
+                if (searchLoc) {
+                    url += `&lat=${searchLoc.lat}&lng=${searchLoc.lng}`;
                 }
                 const res = await fetch(url);
                 const data = await res.json();
                 if (data.success) {
                     const results = data.data;
-                    setSearchResults(results);
 
-                    // Matrix API for exact road distances
-                    if (userLocation && results.length > 0) {
-                        const coordinates = [
-                            `${userLocation.lng},${userLocation.lat}`,
-                            ...results.map((b: any) => `${b.gpsCoordinates.lng},${b.gpsCoordinates.lat}`)
-                        ].join(';');
+                    // Calculate straight-line distance client-side using Haversine
+                    // This is fast, free, consistent and avoids Matrix API vs Directions API discrepancy
+                    const withDistances = searchLoc
+                        ? results.map((b: any) => ({
+                            ...b,
+                            distanceKm: haversineKm(
+                                searchLoc.lat, searchLoc.lng,
+                                b.gpsCoordinates.lat, b.gpsCoordinates.lng
+                            )
+                        }))
+                        : results;
 
-                        // Use mapbox/driving-traffic profile for both to ensure consistency
-                        const matrixUrl = `https://api.mapbox.com/directions-matrix/v1/mapbox/driving-traffic/${coordinates}?sources=0&annotations=distance&access_token=${MAPBOX_TOKEN}`;
-                        
-                        console.log("Matrix API Request:", matrixUrl);
-                        const matrixRes = await fetch(matrixUrl);
-                        const matrixData = await matrixRes.json();
-                        console.log("Matrix API Response:", matrixData);
-                        
-                        if (matrixData.code === 'Ok' && matrixData.distances) {
-                            const updatedResults = results.map((b: any, index: number) => ({
-                                ...b,
-                                distanceKm: (matrixData.distances[0][index + 1] / 1000) // Convert meters to km
-                            }));
-                            console.log("Updated Search Results with Matrix:", updatedResults);
-                            setSearchResults(updatedResults);
-                        }
-                    }
+                    // Sort by distance ascending so nearest appears first
+                    withDistances.sort((a: any, b: any) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity));
+                    setSearchResults(withDistances);
                 }
             } catch (e) {
                 console.error("Search failed:", e);
@@ -518,9 +536,12 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
             }
         };
 
+
         const timer = setTimeout(fetchSearchResults, 300);
         return () => clearTimeout(timer);
-    }, [searchQuery, API, userLocation]);
+    // NOTE: userLocation intentionally excluded — we use canonicalLocRef.current (live ref) instead
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchQuery, API]);
 
     useEffect(() => {
         // Handle initial selection from URL ID - DRY: Only once
@@ -601,12 +622,49 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
             setIsListening(false);
         };
 
-        recognition.onresult = (event: any) => {
+        recognition.onresult = async (event: any) => {
             const transcript = event.results[0][0].transcript;
             setSearchQuery(transcript);
             setIsListening(false);
             if (recognitionRef.current) {
                 recognitionRef.current.stop();
+            }
+
+            // Direct Search and Open
+            try {
+                // Use canonicalLocRef for live GPS — same as navigation & text search
+                const voiceLoc = canonicalLocRef.current;
+                let url = `${API}/business/search?q=${encodeURIComponent(transcript)}`;
+                if (voiceLoc) {
+                    url += `&lat=${voiceLoc.lat}&lng=${voiceLoc.lng}`;
+                }
+                const res = await fetch(url);
+                const data = await res.json();
+                
+                if (data.success && data.data && data.data.length > 0) {
+                    const topBiz = data.data[0];
+                    setSelectedBusiness(topBiz);
+                    
+                    // Add to local businesses list if missing to ensure marker is visible
+                    setBusinesses(prev => {
+                        if (!prev.some(b => b._id === topBiz._id)) {
+                            return [...prev, topBiz];
+                        }
+                        return prev;
+                    });
+
+                    // Immediate focus with cinematic fly-to
+                    mapRef.current?.flyTo({
+                        center: [topBiz.gpsCoordinates.lng, topBiz.gpsCoordinates.lat],
+                        zoom: 18,
+                        pitch: 65,
+                        bearing: -17,
+                        duration: 2500,
+                        essential: true
+                    });
+                }
+            } catch (err) {
+                console.error("Direct voice search failed:", err);
             }
         };
 
@@ -857,21 +915,25 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                             <button
                                 onClick={async () => {
                                     if (!mapRef.current) return;
-                                    if (!userLocation) {
-                                        alert("Waiting for your location. Please ensure location access is enabled.");
+
+                                    // Use the same canonical ref that search used — guaranteed same coordinate
+                                    const freshUserLoc = canonicalLocRef.current || userLocation;
+                                    if (!freshUserLoc) {
+                                        alert('Cannot get your location. Please enable location access and try again.');
                                         return;
                                     }
+
                                     activeDestRef.current = selectedBusiness.gpsCoordinates;
                                     try {
                                          const query = await fetch(
-                                             `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${userLocation.lng},${userLocation.lat};${selectedBusiness.gpsCoordinates.lng},${selectedBusiness.gpsCoordinates.lat}?steps=true&geometries=geojson&annotations=congestion&access_token=${MAPBOX_TOKEN}`,
+                                             `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${freshUserLoc.lng},${freshUserLoc.lat};${selectedBusiness.gpsCoordinates.lng},${selectedBusiness.gpsCoordinates.lat}?steps=true&geometries=geojson&annotations=congestion&access_token=${MAPBOX_TOKEN}`,
                                              { method: 'GET' }
                                          );
                                          let json = await query.json();
                                          if (!json || !json.routes || json.routes.length === 0) {
-                                             console.warn("Traffic route failed, trying standard driving...");
+                                             console.warn('Traffic route failed, trying standard driving...');
                                              const fallbackQuery = await fetch(
-                                                 `https://api.mapbox.com/directions/v5/mapbox/driving/${userLocation.lng},${userLocation.lat};${selectedBusiness.gpsCoordinates.lng},${selectedBusiness.gpsCoordinates.lat}?steps=true&geometries=geojson&access_token=${MAPBOX_TOKEN}`,
+                                                 `https://api.mapbox.com/directions/v5/mapbox/driving/${freshUserLoc.lng},${freshUserLoc.lat};${selectedBusiness.gpsCoordinates.lng},${selectedBusiness.gpsCoordinates.lat}?steps=true&geometries=geojson&access_token=${MAPBOX_TOKEN}`,
                                                  { method: 'GET' }
                                              );
                                              json = await fallbackQuery.json();
@@ -883,13 +945,14 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                              return;
                                          }
                                          const data = json.routes[0];
-                                         const userCoord = [userLocation.lng, userLocation.lat] as [number, number];
+                                         const userCoord = [freshUserLoc.lng, freshUserLoc.lat] as [number, number];
                                          const rawRoute = data.geometry.coordinates;
                                          // Prepend exact user GPS to the snapped road route
                                          const route = [userCoord, ...rawRoute];
 
                                          const rawCongestion = data.legs[0].annotation?.congestion || [];
                                          const routeDist = data.distance / 1000;
+                                         setIsNavigating(true);
                                          setRouteInfo({
                                              distance: routeDist,
                                              duration: data.duration / 60,

@@ -1,56 +1,67 @@
 "use client";
 
 import { motion, AnimatePresence, animate } from "framer-motion";
-import { useEffect, useState } from "react";
-import { Rocket, MessageSquare, TrendingUp, Plus, Info } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { Rocket, MessageSquare, TrendingUp, Plus, Brain, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useTheme } from "@/components/ThemeProvider";
 
-export default function EmptyState() {
+export default function EmptyState({ categoryName }: { categoryName?: string }) {
     const { theme } = useTheme();
     const isLight = theme === 'light';
-    const [count, setCount] = useState(164);
-    const [displayCount, setDisplayCount] = useState(164);
+
+    // Helper to generate a deterministic "random" number based on category name
+    const getBaseCount = (name?: string) => {
+        if (!name) return 47; // sensible default
+        let hash = 0;
+        for (let i = 0; i < name.length; i++) {
+            hash = name.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        // Range: 5 to 79 (leaves room to grow up to 99)
+        return Math.abs(hash % 75) + 5;
+    };
+
+    const CAP = 99; // absolute max per category
+
+    const initialBase = getBaseCount(categoryName);
+    const [count, setCount] = useState(initialBase);
+    const [displayCount, setDisplayCount] = useState(initialBase);
     const [increment, setIncrement] = useState<number | null>(null);
 
-    // Initial "Realistic" Count Calculation (Persists across refreshes)
+    // Dynamic Growth simulation
     useEffect(() => {
-        // Base: 164 businesses on March 27, 2026 (Modern Calibration)
-        // Growth: 1 business every 20 minutes (more methodical)
-        const baseDate = new Date('2026-03-27T14:00:00').getTime();
+        const base = getBaseCount(categoryName);
+        const baseDate = new Date('2026-03-27T17:00:00').getTime();
         const now = Date.now();
         const elapsedMinutes = (now - baseDate) / (1000 * 60);
-        const realisticBase = Math.floor(164 + (elapsedMinutes / 20));
+        const realisticBase = Math.min(Math.floor(base + (elapsedMinutes / 15)), CAP);
         
-        // Ensure it never goes backwards using localStorage (saved state)
-        const savedCount = localStorage.getItem('dgi_growth_count');
-        const finalBase = savedCount ? Math.max(parseInt(savedCount), realisticBase) : realisticBase;
+        const storageKey = `dgi_growth_count_${categoryName || 'default'}`;
+        const savedCount = localStorage.getItem(storageKey);
+        const finalBase = savedCount ? Math.min(Math.max(parseInt(savedCount), realisticBase), CAP) : realisticBase;
 
         setCount(finalBase);
         setDisplayCount(finalBase);
-    }, []);
+    }, [categoryName]);
 
     useEffect(() => {
-        // Infinite loop for live growth simulation
         const interval = setInterval(() => {
-            const inc = Math.floor(Math.random() * 2) + 1; // Random +1 to +2 (slower)
-            setIncrement(inc);
             setCount(prev => {
-                const next = prev + inc;
-                // Sync to localStorage
-                localStorage.setItem('dgi_growth_count', next.toString());
+                if (prev >= CAP) return prev; // stop growing at cap
+                const inc = Math.floor(Math.random() * 2) + 1;
+                const next = Math.min(prev + inc, CAP);
+                setIncrement(next > prev ? next - prev : null);
+                const storageKey = `dgi_growth_count_${categoryName || 'default'}`;
+                localStorage.setItem(storageKey, next.toString());
+                setTimeout(() => setIncrement(null), 3000);
                 return next;
             });
-            
-            // Clear the floating "+X" indicator after animation completes
-            setTimeout(() => setIncrement(null), 2500);
-        }, 15000 + Math.random() * 15000); // Slower random interval: 15-30 seconds
+        }, 20000 + Math.random() * 20000);
 
         return () => clearInterval(interval);
-    }, []);
+    }, [categoryName]);
 
-    // Smooth counting-up effect
     useEffect(() => {
         const controls = animate(displayCount, count, {
             duration: 3,
@@ -61,63 +72,96 @@ export default function EmptyState() {
     }, [count]);
 
     return (
-        <div className="flex flex-col items-center justify-center py-12 px-4 text-center max-w-5xl mx-auto min-h-[60vh]">
-            <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className={`relative p-10 md:p-24 rounded-[3rem] border border-solid shadow-2xl overflow-hidden backdrop-blur-[80px] transform-gpu transition-all duration-500 ${
-                    isLight 
-                        ? 'bg-white/20 border-white shadow-blue-500/10' 
-                        : 'bg-white/5 border-white/5 shadow-black/50'
-                }`}
+        <div className="relative min-h-screen w-full flex flex-col items-center justify-center ">
+            {/* --- PREMIUM SPACE BACKGROUND --- */}
+            <div className={``}>
+                {!isLight && (
+                    <>
+                        {/* Nebula Clouds */}
+                        <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-blue-600/10 blur-[120px] rounded-full animate-pulse" />
+                        <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-purple-600/10 blur-[120px] rounded-full animate-pulse delay-1000" />
+                        <div className="absolute top-[20%] right-[10%] w-[40%] h-[40%] bg-indigo-600/5 blur-[100px] rounded-full animate-pulse delay-700" />
+                        
+                        {/* Star Field */}
+                        <div className="absolute inset-0 opacity-40 [background-image:radial-gradient(1px_1px_at_20px_30px,#eee,transparent),radial-gradient(1.5px_1.5px_at_100px_150px,#fff,transparent),radial-gradient(2px_2px_at_250px_50px,#aaa,transparent)] [background-size:300px_300px]" />
+                        <div className="absolute inset-0 opacity-20 [background-image:radial-gradient(1px_1px_at_10px_10px,#eee,transparent)] [background-size:100px_100px] animate-pulse" />
+                        
+                        {/* Digital Grid Overlay */}
+                        <div className="absolute inset-0 opacity-[0.05] pointer-events-none [background-image:linear-gradient(rgba(255,255,255,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.1)_1px,transparent_1px)] [background-size:60px_60px]" />
+                    </>
+                )}
+            </div>
+
+            {/* --- MAIN CONTENT CONTAINER --- */}
+            <motion.div 
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="relative z-10 w-full max-w-5xl flex flex-col items-center text-center"
             >
-                {/* Decorative background glows */}
-                
-                
-                {/* Tech grid overlay effect */}
-                <div className={`absolute inset-0 opacity-[0.03] pointer-events-none [background-image:radial-gradient(#fff_1px,transparent_1px)] [background-size:24px_24px] ${isLight ? 'invert' : ''}`} />
+                {/* 1. MAIN TITLE */}
+                <h1 className="text-5xl md:text-7xl font-black mb-10 tracking-tight text-white leading-tight font-display drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
+                    We’re building <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-300 drop-shadow-[0_0_20px_rgba(34,211,238,0.5)]">something amazing</span>
+                </h1>
 
-                <motion.div 
-                    initial={{ y: 30, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.2, duration: 0.8 }}
-                    className="relative z-10"
-                >
-                    {/* Floating Orb Icon */}
-                    
-
-                    <h2 className="text-4xl md:text-5xl font-black mb-6 tracking-tight text-foreground leading-[1.1] font-display">
-                        We’re building <span className="gradient-text">something amazing</span>
-                    </h2>
-                    
-                    <p className="text-muted-foreground text-lg mb-6 max-w-xl mx-auto leading-relaxed font-medium">
-                        We are currently onboarding businesses in this category. 
-                        Be among the first to explore and grow with us.
-                    </p>
-
-                    <div className="mb-12 flex items-center justify-center">
-                        <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-2xl border font-bold text-sm shadow-xl transition-all ${
-                            isLight ? 'bg-blue-50 border-blue-100 text-blue-600 shadow-blue-500/5' : 'bg-primary/10 border-primary/20 text-primary shadow-primary/5'
-                        }`}>
-                             <div className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
-                             Official Launch: <span className={isLight ? 'text-blue-700 font-black' : 'text-white font-black'}>May 1st</span> | Accepting New Listings Now
+                {/* 2. PREMIUM ANNOUNCEMENT BADGES */}
+                <div className="flex flex-wrap items-center justify-center gap-4 mb-10">
+                    <motion.div 
+                        initial={{ x: -20, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ delay: 0.3 }}
+                        className="group relative"
+                    >
+                        <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full blur opacity-30 group-hover:opacity-60 transition duration-1000" />
+                        <span className="relative flex items-center gap-3 px-6 py-3 bg-black/40 backdrop-blur-xl border border-white/20 rounded-full text-white font-bold text-sm md:text-base cursor-default">
+                             <div className="w-3 h-3 rounded-full bg-[#0ea5e9] animate-pulse shadow-[0_0_15px_#0ea5e9]" />
+                             Official Launch: <span className="text-cyan-400 font-black ml-1 drop-shadow-[0_0_15px_rgba(34,211,238,0.8)]">May 1st</span>
                         </span>
-                    </div>
+                    </motion.div>
 
-                    {/* Animated Counter Section with Startup Vibe */}
-                    <div className="mb-14 p-8 rounded-3xl bg-white/5 border border-white/5 backdrop-blur-xl relative group">
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                        
-                        <p className="text-[10px] uppercase tracking-[0.4em] font-black text-primary mb-6 opacity-70">
-                            Businesses onboarded so far
-                        </p>
-                        
-                        <div className="flex flex-col items-center">
-                            <div className="relative inline-flex items-center">
+                    <motion.div
+                        initial={{ x: 20, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ delay: 0.4 }}
+                        className="group relative"
+                    >
+                        <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full blur opacity-20 group-hover:opacity-40 transition duration-1000" />
+                        <span className="relative flex items-center gap-3 px-6 py-3 bg-black/40 backdrop-blur-xl border border-white/10 rounded-full text-emerald-400 font-bold text-sm md:text-base cursor-default">
+                             <Rocket size={18} className="text-emerald-400 animate-bounce" />
+                             Accepting New Listings Now
+                        </span>
+                    </motion.div>
+                </div>
+
+                {/* 3. SUBTITLE DESCRIPTION */}
+                <p className="text-slate-300 text-lg md:text-xl font-medium max-w-2xl mx-auto mb-14 leading-relaxed opacity-90">
+                    We are currently onboarding businesses in this category. 
+                    Be among the first to explore and grow with us.
+                </p>
+
+                {/* 4. THE MASTER "WOW" CARD */}
+                <div className="relative w-full max-w-3xl aspect-[16/10] md:aspect-[21/10] perspective-1000">
+                    {/* Floating AI Assistant Badge - Hidden per user's last manual removal */}
+                   
+
+                    {/* Main Card Container */}
+                    <div className="relative w-full h-full p-[2px] rounded-[2.5rem] bg-gradient-to-br from-indigo-500 via-purple-500 to-cyan-500 shadow-[0_0_80px_rgba(139,92,246,0.3)] group overflow-hidden">
+                        <div className="w-full h-full bg-[#030014]/90 backdrop-blur-3xl rounded-[2.4rem] p-8 md:p-12 flex flex-col items-center justify-center relative overflow-hidden">
+                            
+                            {/* Animated Background Mesh */}
+                            <div className="absolute inset-0 opacity-[0.2] bg-[radial-gradient(circle_at_50%_120%,#3b82f6,transparent_50%),radial-gradient(circle_at_0%_0%,#8b5cf6,transparent_50%)]" />
+                            
+                            {/* Card Header Label - User's custom text preserved */}
+                            <div className="mb-6 flex items-center gap-3 relative z-10">
+                                <span className="text-slate-400 text-[10px] md:text-xs font-black uppercase tracking-[0.4em]">Add your Business Immediate</span>
+                            </div>
+
+                            {/* THE BIG NUMBER */}
+                            <div className="relative z-10 mb-4">
                                 <motion.span 
-                                    animate={{ scale: increment ? [1, 1.2, 1] : 1 }}
-                                    transition={{ duration: 0.4 }}
-                                    className="text-5xl md:text-6xl font-display font-black tracking-tighter text-foreground"
+                                    key={categoryName}
+                                    initial={{ scale: 0.8, opacity: 0 }}
+                                    animate={{ scale: increment ? [1, 1.05, 1] : 1, opacity: 1 }}
+                                    className="text-8xl md:text-9xl font-display font-black tracking-tighter text-white drop-shadow-[0_0_40px_rgba(255,255,255,0.4)]"
                                 >
                                     {displayCount}
                                 </motion.span>
@@ -125,71 +169,108 @@ export default function EmptyState() {
                                 <AnimatePresence>
                                     {increment && (
                                         <motion.div
-                                            initial={{ y: 10, opacity: 0, scale: 0, x: "-50%" }}
-                                            animate={{ y: -65, opacity: 1, scale: 1.1, x: "-50%" }}
-                                            exit={{ y: -90, opacity: 0, scale: 0.8, x: "-50%" }}
-                                            transition={{ type: "spring", stiffness: 400, damping: 15 }}
-                                            className="absolute left-1/2 bg-emerald-500 text-white text-xl font-black px-4 py-1.5 rounded-full shadow-[0_8px_30px_rgba(16,185,129,0.5)] flex items-center gap-1 z-[60] border-2 border-white/30"
+                                            initial={{ y: 20, opacity: 0, scale: 0 }}
+                                            animate={{ y: -40, opacity: 1, scale: 1 }}
+                                            exit={{ y: -60, opacity: 0 }}
+                                            className="absolute top-0 -right-4 md:-right-8 text-emerald-400 text-xl md:text-2xl font-black drop-shadow-[0_0_10px_rgba(16,185,129,0.5)] z-20"
                                         >
-                                            <Plus size={20} strokeWidth={4} /> {increment}
+                                            +{increment}
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
+
+                                {/* GROWTH CURVE SVG */}
+                                <div className="absolute bottom-[-35px] left-[-35%] right-[-35%] h-36 opacity-80 pointer-events-none filter drop-shadow-[0_0_20px_rgba(59,130,246,0.5)]">
+                                    <svg viewBox="0 0 400 100" className="w-full h-full">
+                                        <defs>
+                                            <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                <stop offset="0%" stopColor="#3b82f6" stopOpacity="0" />
+                                                <stop offset="50%" stopColor="#06b6d4" stopOpacity="1" />
+                                                <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.7" />
+                                            </linearGradient>
+                                        </defs>
+                                        <motion.path 
+                                            initial={{ pathLength: 0 }}
+                                            animate={{ pathLength: 1 }}
+                                            transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                                            d="M 0,80 C 50,85 150,40 200,60 S 300,20 400,10"
+                                            fill="none"
+                                            stroke="url(#lineGrad)"
+                                            strokeWidth="4"
+                                            strokeLinecap="round"
+                                            className="drop-shadow-[0_0_10px_rgba(34,211,238,0.8)]"
+                                        />
+                                        
+                                        {/* Multiple data point "sparkles" along the line */}
+                                        <motion.circle 
+                                            r="5" 
+                                            fill="#fff" 
+                                            className="shadow-[0_0_15px_#fff]"
+                                            animate={{ cx: [0, 50, 150, 200, 300, 400], cy: [80, 85, 40, 60, 20, 10] }}
+                                            transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                                        />
+                                        
+                                        {/* Static glowing points */}
+                                        <circle cx="50" cy="85" r="3" fill="#3b82f6" className="animate-pulse shadow-lg" />
+                                        <circle cx="200" cy="60" r="3" fill="#06b6d4" className="animate-pulse delay-500 shadow-lg" />
+                                        <circle cx="400" cy="10" r="4" fill="#8b5cf6" className="animate-pulse delay-1000 shadow-lg" />
+                                    </svg>
+                                </div>
                             </div>
 
-                            {/* Live Growth Metric */}
-                            <div className="mt-8 flex items-center gap-4 text-xs font-bold">
-                                <span className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all ${
-                                    isLight ? 'bg-blue-50 border-blue-100 text-blue-600' : 'bg-primary/10 border-primary/20 text-primary'
-                                } shadow-lg shadow-primary/5`}>
-                                    <TrendingUp size={14} className="animate-pulse" />
+                            {/* Live Metric Footer */}
+                            <div className="mt-8 flex items-center gap-4 bg-white/5 border border-white/10 backdrop-blur-md px-6 py-2.5 rounded-2xl shadow-xl hover:bg-white/10 transition-colors cursor-default z-10">
+                                <span className="text-white font-black text-[10px] md:text-xs uppercase tracking-[0.2em] flex items-center gap-2">
+                                    <TrendingUp size={14} className="text-cyan-400" />
                                     Live Platform Growth
                                 </span>
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                                <div className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-ping shadow-[0_0_12px_#3b82f6]" />
                             </div>
                         </div>
-                    </div>
 
-                    {/* CTA Section - Premium Buttons */}
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
-                        <Button 
-                            asChild
-                            variant="default"
-                            size="lg"
-                            className={`w-full sm:w-auto px-10 h-14 rounded-2xl font-bold text-sm uppercase tracking-wider group border-none transition-all duration-300 shadow-lg ${
-                                isLight 
-                                    ? "bg-blue-600 text-white hover:bg-blue-700 shadow-blue-600/20" 
-                                    : "bg-primary text-white hover:bg-primary/90 shadow-primary/20"
-                            }`}
-                        >
-                            <Link href="/community/register" className="flex items-center gap-2">
-                                List Your Business
-                                
-                            </Link>
-                        </Button>
-                        
-                        <Button 
-                            asChild
-                            variant="ghost"
-                            size="lg"
-                            className={`w-full sm:w-auto px-10 h-14 rounded-2xl font-bold text-sm uppercase tracking-wider transition-all border border-solid group ${
-                                isLight 
-                                    ? 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50' 
-                                    : 'bg-white/5 border-white/10 text-white hover:bg-white/10 hover:border-white/30'
-                            }`}
-                        >
-                            <Link href="/review" className="flex items-center gap-2">
-                                <MessageSquare size={18} className="group-hover:scale-110 transition-transform" />
-                                Share Review
-                            </Link>
-                        </Button>
+                        {/* Neon Edge Highlights */}
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-60" />
+                        <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-purple-500 to-transparent opacity-60" />
                     </div>
-                </motion.div>
-                
-                {/* Decorative background orbs */}
-                <div className="absolute top-[10%] left-[5%] w-24 h-24 bg-primary/20 blur-3xl animate-pulse delay-700" />
-                <div className="absolute bottom-[10%] right-[5%] w-32 h-32 bg-purple-500/20 blur-3xl animate-pulse" />
+                </div>
+
+                {/* 5. CALL TO ACTION BUTTONS */}
+                <div className="mt-16 flex flex-row items-center justify-center gap-3 md:gap-6 w-full max-w-2xl px-2">
+                    <Button 
+                        asChild
+                        className="relative h-14 md:h-16 flex-1 group overflow-hidden rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 border-none px-4 md:px-10 transition-all duration-500 hover:scale-105 active:scale-95 shadow-[0_15px_40px_rgba(37,99,235,0.4)]"
+                    >
+                        <Link href="/community/register" className="flex items-center justify-center gap-3">
+                             <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 skew-x-[30deg]" />
+                             <Plus size={18} className="md:w-5 md:h-5" strokeWidth={4} />
+                             <span className="text-white font-black text-[10px] md:text-sm uppercase tracking-wider md:tracking-widest drop-shadow-md">List Business</span>
+                        </Link>
+                    </Button>
+                    
+                    <Button 
+                        asChild
+                        variant="ghost"
+                        className="h-14 md:h-16 flex-1 rounded-2xl bg-gradient-to-r from-purple-700/80 to-pink-600/80 border border-white/10 px-4 md:px-10 transition-all duration-500 hover:scale-105 active:scale-95 shadow-[0_15px_40px_rgba(147,51,234,0.4)]"
+                    >
+                        <Link href="/review" className="flex items-center justify-center gap-3">
+                            <MessageSquare size={18} className="text-white md:w-5 md:h-5" />
+                            <span className="text-white font-black text-[10px] md:text-sm uppercase tracking-wider md:tracking-widest drop-shadow-md">Share Review</span>
+                        </Link>
+                    </Button>
+                </div>
             </motion.div>
+
+            <style jsx global>{`
+                .perspective-1000 {
+                    perspective: 1000px;
+                }
+                .gradient-text {
+                    background: linear-gradient(to right, #60a5fa, #22d3ee);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                }
+            `}</style>
         </div>
     );
 }
+

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { animate as animateValue } from "framer-motion";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, MapPin, Store, CheckCircle2, Compass, ChevronDown, Loader2, Trophy, TrendingUp, Zap, ChevronRight, Navigation as NavigationIcon, Tag, Mic } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
@@ -41,6 +42,42 @@ export default function HeroSection() {
     const suggestionRef = useRef<HTMLDivElement>(null);
     const [isListening, setIsListening] = useState(false);
     const recognitionRef = useRef<any>(null);
+
+    // Overall listings counter — starts at 4200, grows to ~5000 range
+    const LISTING_BASE = 4200;
+    const LISTING_CAP = 4999;
+    const [listingCount, setListingCount] = useState(LISTING_BASE);
+    const [listingDisplay, setListingDisplay] = useState(LISTING_BASE);
+
+    useEffect(() => {
+        const storageKey = 'dgi_overall_listings';
+        const saved = localStorage.getItem(storageKey);
+        const baseDate = new Date('2026-03-27T17:00:00').getTime();
+        const elapsed = (Date.now() - baseDate) / (1000 * 60); // minutes
+        const grown = Math.min(Math.floor(LISTING_BASE + elapsed * 0.3), LISTING_CAP);
+        const final = saved ? Math.min(Math.max(parseInt(saved), grown), LISTING_CAP) : grown;
+        setListingCount(final);
+        setListingDisplay(final);
+
+        const interval = setInterval(() => {
+            setListingCount(prev => {
+                if (prev >= LISTING_CAP) return prev;
+                const next = Math.min(prev + 1, LISTING_CAP);
+                localStorage.setItem(storageKey, next.toString());
+                return next;
+            });
+        }, 3000);
+        return () => clearInterval(interval);
+    }, []);
+
+    useEffect(() => {
+        const ctrl = animateValue(listingDisplay, listingCount, {
+            duration: 2.5,
+            ease: 'easeOut',
+            onUpdate: v => setListingDisplay(Math.round(v))
+        });
+        return ctrl.stop;
+    }, [listingCount]);
 
     useEffect(() => {
         const fetchCategories = async () => {
@@ -810,6 +847,90 @@ export default function HeroSection() {
 
                 </div>
             </div>
+
+            {/* ── Premium Overall Listings Stats Bar ── */}
+            <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.5, duration: 0.8 }}
+                className="relative z-10 w-full px-4 pb-12"
+            >
+                <div className="max-w-4xl mx-auto relative group">
+                    {/* Animated Outer Glow */}
+                    <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-emerald-500/10 to-primary/20 rounded-[2rem] blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+                    
+                    <div className={`relative flex flex-col md:flex-row items-center justify-between gap-8 py-6 px-10 rounded-[2rem] border backdrop-blur-3xl transition-all duration-500 ${
+                        theme === 'light'
+                            ? 'bg-white/80 border-slate-200 shadow-[0_8px_32px_rgba(0,0,0,0.05)]'
+                            : 'bg-[#0A0F1E]/60 border-white/10 shadow-[0_8px_40px_rgba(0,0,0,0.5)] group-hover:border-primary/30'
+                    }`}>
+                        
+                        {/* Left: Live Status & Listings */}
+                        <div className="flex items-center gap-8">
+                            <div className="flex flex-col gap-1.5">
+                                <div className="flex items-center gap-2">
+                                    <div className="relative flex h-2.5 w-2.5">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                                    </div>
+                                    <span className={`text-[10px] font-black uppercase tracking-[0.25em] ${theme === 'light' ? 'text-slate-400' : 'text-emerald-400/80'}`}>Live Now</span>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary group-hover:scale-110 transition-transform duration-500">
+                                        <Store size={24} strokeWidth={2.5} />
+                                    </div>
+                                    <div className="flex items-baseline gap-1.5">
+                                        <span className={`text-4xl sm:text-5xl font-display font-black tracking-tight tabular-nums transition-all ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>
+                                            {listingDisplay.toLocaleString('en-IN')}
+                                        </span>
+                                        <span className="text-primary font-black text-2xl animate-pulse">+</span>
+                                        <span className={`text-[11px] font-bold uppercase tracking-widest ml-1 ${theme === 'light' ? 'text-slate-500' : 'text-white/40'}`}>Listings</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Divider - hidden on mobile */}
+                        <div className="hidden md:block h-14 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent" />
+
+                        {/* Middle: Categories */}
+                        <div className="flex items-center gap-5 group/cat">
+                            <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 group-hover:rotate-12 transition-transform duration-500">
+                                <Tag size={24} strokeWidth={2.5} />
+                            </div>
+                            <div className="flex flex-col">
+                                <span className={`text-3xl font-black tracking-tight ${theme === 'light' ? 'text-slate-800' : 'text-white/90'}`}>4000+</span>
+                                <span className={`text-[10px] font-bold uppercase tracking-[0.25em] mt-1 ${theme === 'light' ? 'text-slate-400' : 'text-white/30'}`}>Categories</span>
+                            </div>
+                        </div>
+
+                        {/* Divider - hidden on mobile */}
+                        <div className="hidden md:block h-14 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent" />
+
+                        {/* Right: CTA & Location */}
+                        <div className="flex flex-col items-center md:items-end gap-3.5 w-full md:w-auto">
+                            <Link href="/community/register" className="group/btn relative w-full md:w-auto">
+                                <div className="absolute -inset-1 bg-gradient-to-r from-primary to-blue-600 rounded-xl blur opacity-25 group-hover/btn:opacity-60 transition duration-500" />
+                               
+                            </Link>
+                            <div className="flex items-center gap-3 px-3 py-1 rounded-full bg-primary/5 border border-primary/10">
+                                <NavigationIcon size={12} className="text-primary animate-pulse" />
+                                <span className={`text-[9px] font-black uppercase tracking-[0.4em] ${theme === 'light' ? 'text-primary/70' : 'text-primary'}`}>Across India</span>
+                            </div>
+                        </div>
+
+                    </div>
+                    
+                    {/* Bottom Status Decoration */}
+                    <div className="absolute -bottom-px left-1/2 -translate-x-1/2 w-1/2 flex justify-center">
+                        <motion.div 
+                            animate={{ opacity: [0.2, 0.5, 0.2], width: ['40%', '80%', '40%'] }}
+                            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                            className="h-px bg-gradient-to-r from-transparent via-primary to-transparent blur-sm"
+                        />
+                    </div>
+                </div>
+            </motion.div>
 
         </section>
     );

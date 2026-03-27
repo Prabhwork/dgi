@@ -362,7 +362,7 @@ function SearchResults() {
                             <Button onClick={() => window.location.reload()} className="bg-primary text-white hover:bg-primary/90">Try Again</Button>
                         </div>
                     ) : results.length === 0 ? (
-                        <EmptyState />
+                        <EmptyState categoryName={categoryParam || searchInput} />
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {results.map((item, idx) => (
