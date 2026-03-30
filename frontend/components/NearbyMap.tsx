@@ -73,6 +73,9 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
     // ✅ Single canonical GPS ref — continuously updated
     const canonicalLocRef = useRef<{ lat: number; lng: number } | null>(null);
 
+    // ✅ The EXACT GPS coord used when route was drawn — used by START NAVIGATION to fly to correct origin
+    const routeOriginRef = useRef<{ lat: number; lng: number } | null>(null);
+
     // ✅ GPS ready flag — true jab real GPS mil jaaye
     const gpsReadyRef = useRef<boolean>(false);
     const [gpsReady, setGpsReady] = useState(false);
@@ -653,9 +656,14 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
             const rawCongestion = data.legs[0].annotation?.congestion || [];
             const routeDist = data.distance / 1000;
 
-            console.log(`✅ Route: ${routeDist.toFixed(2)} km, ${(data.duration / 60).toFixed(1)} min`);
+            // ✅ CRITICAL: Route draw karne ka exact GPS save karo — START NAVIGATION isi se flyTo karega
+            routeOriginRef.current = freshUserLoc;
+            canonicalLocRef.current = freshUserLoc;
+            lastLocationRef.current = freshUserLoc;
 
-            setIsNavigating(true);
+            // ✅ FIX: SHOW ROUTE = sirf preview, isNavigating false rakhte hain
+            // Navigation tabhi shuru hogi jab user "START NAVIGATION" dabaaye
+            setIsNavigating(false);
             setRouteInfo({
                 distance: routeDist,
                 duration: data.duration / 60,
@@ -1019,8 +1027,9 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                 setIsAutoCentering(true);
                                                 const map = mapRef.current!;
 
-                                                // ✅ canonicalLocRef se live GPS use karo
-                                                const navLoc = canonicalLocRef.current;
+                                                // ✅ FIX: routeOriginRef use karo — yahi exact GPS tha jab route draw hua tha
+                                                // canonicalLocRef current position hai, routeOriginRef route ka start point hai
+                                                const navLoc = routeOriginRef.current || canonicalLocRef.current;
                                                 if (navLoc) {
                                                     map.flyTo({ center: [navLoc.lng, navLoc.lat], zoom: 18, pitch: 75, duration: 2000 });
                                                 }
@@ -1039,7 +1048,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                         const raw = d.legs[0]?.annotation?.congestion || [];
                                                         setRouteInfo({ distance: d.distance / 1000, duration: d.duration / 60, businessName: bName, trafficCondition: getTrafficLevel(raw) });
                                                     } catch (e) { console.warn('Reroute error:', e); }
-                                                }, 45000);
+                                                }, 5000); // ✅ har 5 sec mein distance/time update
 
                                                 if (navigator.geolocation) {
                                                     if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
@@ -1048,29 +1057,62 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                             const lat = pos.coords.latitude;
                                                             const lng = pos.coords.longitude;
                                                             const heading = pos.coords.heading;
+                                                            const speed = pos.coords.speed; // m/s
                                                             const newLoc = { lat, lng };
 
-                                                            if (lastLocationRef.current && !hasMoved(lastLocationRef.current, newLoc, 15)) return;
+                                                            // ✅ FIX: Threshold 5m kar diya — chhoti movement bhi catch hogi
+                                                            // Aur agar lastLocation null hai toh bhi update karo
+                                                            if (lastLocationRef.current && !hasMoved(lastLocationRef.current, newLoc, 5)) return;
+
                                                             lastLocationRef.current = newLoc;
                                                             canonicalLocRef.current = newLoc;
                                                             setUserLocation(newLoc);
 
-                                                            if (autoCenteringRef.current) {
-                                                                isProgrammaticMove.current = true;
-                                                                mapRef.current?.easeTo({ center: [lng, lat], bearing: (heading !== null && !isNaN(heading!)) ? heading! : mapRef.current.getBearing(), pitch: 75, zoom: 18, duration: 1000 });
-                                                                setTimeout(() => { isProgrammaticMove.current = false; }, 1100);
+                                                            // ✅ autoCentering sirf tabhi true rahega jab user ne RE-CENTER dabaya ho
+                                                            // Force true NAHI karo — user ka choice respect karo
+
+                                                            // ✅ FIX: Bearing — heading mile toh use karo, warna movement direction calculate karo
+                                                            let mapBearing = mapRef.current?.getBearing() ?? 0;
+                                                            if (heading !== null && heading !== undefined && !isNaN(heading)) {
+                                                                mapBearing = heading;
+                                                            } else if (lastLocationRef.current) {
+                                                                // Manually calculate bearing from last→current position
+                                                                const dLng = newLoc.lng - lastLocationRef.current.lng;
+                                                                const dLat = newLoc.lat - lastLocationRef.current.lat;
+                                                                if (Math.abs(dLng) > 0.00001 || Math.abs(dLat) > 0.00001) {
+                                                                    mapBearing = Math.atan2(dLng, dLat) * 180 / Math.PI;
+                                                                }
                                                             }
 
+                                                            // ✅ Map sirf tab move karo jab user ne RE-CENTER dabaya ho
+                                                            if (autoCenteringRef.current) {
+                                                                isProgrammaticMove.current = true;
+                                                                mapRef.current?.easeTo({
+                                                                    center: [lng, lat],
+                                                                    bearing: mapBearing,
+                                                                    pitch: 75,
+                                                                    zoom: 18,
+                                                                    duration: 800,
+                                                                    easing: (t) => t
+                                                                });
+                                                                setTimeout(() => { isProgrammaticMove.current = false; }, 900);
+                                                            }
+
+                                                            // ✅ Vehicle marker HAMESHA update hoga — chahe map move ho ya na ho
                                                             if (startMarkerRef.current) {
                                                                 startMarkerRef.current.setLngLat([lng, lat]);
                                                                 const arrowDiv = startMarkerRef.current.getElement().querySelector('div');
-                                                                if (arrowDiv && heading !== null && !isNaN(heading!)) {
-                                                                    arrowDiv.style.transform = `rotate(${heading}deg)`;
+                                                                if (arrowDiv) {
+                                                                    arrowDiv.style.transform = `rotate(${mapBearing}deg)`;
                                                                 }
                                                             }
                                                         },
                                                         (err) => console.warn("Watch pos err:", err),
-                                                        { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+                                                        {
+                                                            enableHighAccuracy: true,
+                                                            maximumAge: 0,    // ✅ har baar fresh GPS — no cache
+                                                            timeout: 15000
+                                                        }
                                                     );
                                                 }
                                             }}
