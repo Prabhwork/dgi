@@ -786,7 +786,7 @@ export default function HeroSection() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 1.5 }}
-                            className="flex lg:hidden mt-8 w-full overflow-hidden"
+                            className="flex lg:hidden mt-12 mb-12 w-full overflow-hidden"
                         >
                             <div
                                 ref={mobileScrollRef}
@@ -866,7 +866,7 @@ export default function HeroSection() {
                     {/* Animated Outer Glow */}
                     <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-emerald-500/10 to-primary/20 rounded-[2rem] blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
 
-                    <div className={`relative flex flex-col md:flex-row items-center justify-between gap-8 md:gap-8 py-7 md:py-6 px-6 md:px-10 rounded-[2rem] border backdrop-blur-3xl transition-all duration-500 ${theme === 'light'
+                    <div className={`relative flex flex-col md:flex-row items-center justify-between gap-8 md:gap-8 py-10 md:py-6 px-6 md:px-10 rounded-[2rem] border backdrop-blur-3xl transition-all duration-500 ${theme === 'light'
                             ? 'bg-white/80 border-slate-200 shadow-[0_8px_32px_rgba(0,0,0,0.05)]'
                             : 'bg-[#0A0F1E]/60 border-white/10 shadow-[0_8px_40px_rgba(0,0,0,0.5)] group-hover:border-primary/30'
                         }`}>
@@ -908,7 +908,7 @@ export default function HeroSection() {
                             </div>
                             <div className="flex flex-col items-center md:items-start text-center md:text-left">
                                 <span className={`text-3xl font-black tracking-tight ${theme === 'light' ? 'text-slate-800' : 'text-white/90'}`}>4000+</span>
-                                <span className={`text-[10px] font-bold uppercase tracking-[0.25em] mt-0.5 ${theme === 'light' ? 'text-slate-400' : 'text-white/30'}`}>Categories</span>
+                                <span className={`text-[10px] font-bold uppercase tracking-[0.25em] mt-0.5 ${theme === 'light' ? 'text-slate-400' : 'text-white/30'}`}>Business Categories</span>
                             </div>
                         </div>
 
