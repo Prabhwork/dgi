@@ -66,7 +66,8 @@ interface Business {
     closingTime?: string;
     coverImage?: string;
     aadhaarVerified?: boolean;
-    distanceKm?: number;
+    distanceKm?: number | null;
+    durationMins?: number | null;
 }
 
 export default function NearbyMap({ onClose }: { onClose: () => void }) {
@@ -737,11 +738,17 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
             else if (severeCount > 0 || moderateCount / totalPoints > 0.3) overallCongestion = "MODERATE";
 
             // Extract voice navigation instructions
-            const processedSteps = (data.legs?.[0]?.steps || []).map((s: any) => ({
-                lat: s.startLocation?.latLng?.latitude,
-                lng: s.startLocation?.latLng?.longitude,
-                instruction: s.navigationInstruction?.instructions?.replace(/<[^>]*>?/gm, '') || ""
-            })).filter((s: any) => s.instruction);
+            const processedSteps = (data.legs?.[0]?.steps || []).map((s: any) => {
+                let instruction = s.navigationInstruction?.instructions?.replace(/<[^>]*>?/gm, '') || "";
+                if (instruction && !instruction.toLowerCase().includes("destination") && !instruction.toLowerCase().startsWith("head ")) {
+                    instruction = `In 200 meters, ${instruction}`;
+                }
+                return {
+                    lat: s.startLocation?.latLng?.latitude,
+                    lng: s.startLocation?.latLng?.longitude,
+                    instruction
+                };
+            }).filter((s: any) => s.instruction);
 
             navigationStepsRef.current = processedSteps;
             lastInstructionSpokenRef.current = "";
@@ -1102,6 +1109,15 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                     map.flyTo({ center: [navLoc.lng, navLoc.lat], zoom: 18, pitch: 75, duration: 2000 });
                                                 }
 
+                                                if (navigationStepsRef.current.length > 0) {
+                                                    const firstStep = navigationStepsRef.current[0];
+                                                    const utterance = new SpeechSynthesisUtterance("Starting navigation. " + firstStep.instruction);
+                                                    utterance.rate = 0.95;
+                                                    utterance.pitch = 1.05;
+                                                    window.speechSynthesis.speak(utterance);
+                                                    lastInstructionSpokenRef.current = firstStep.instruction;
+                                                }
+
                                                 if (rerouteTimerRef.current) clearInterval(rerouteTimerRef.current);
 
                                                 const fetchRouteData = async (locToUse: any) => {
@@ -1136,11 +1152,17 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
 
                                                         setRouteInfo({ distance: dist, duration: dMins, businessName: bName, trafficCondition: tCond });
 
-                                                        const newSteps = (d.legs?.[0]?.steps || []).map((s: any) => ({
-                                                            lat: s.startLocation?.latLng?.latitude,
-                                                            lng: s.startLocation?.latLng?.longitude,
-                                                            instruction: s.navigationInstruction?.instructions?.replace(/<[^>]*>?/gm, '') || ""
-                                                        })).filter((s: any) => s.instruction);
+                                                        const newSteps = (d.legs?.[0]?.steps || []).map((s: any) => {
+                                                            let instruction = s.navigationInstruction?.instructions?.replace(/<[^>]*>?/gm, '') || "";
+                                                            if (instruction && !instruction.toLowerCase().includes("destination") && !instruction.toLowerCase().startsWith("head ")) {
+                                                                instruction = `In 200 meters, ${instruction}`;
+                                                            }
+                                                            return {
+                                                                lat: s.startLocation?.latLng?.latitude,
+                                                                lng: s.startLocation?.latLng?.longitude,
+                                                                instruction
+                                                            };
+                                                        }).filter((s: any) => s.instruction);
                                                         if (newSteps.length > 0) navigationStepsRef.current = newSteps;
                                                     } catch (e) { console.warn('Reroute error:', e); }
                                                 };
@@ -1166,12 +1188,14 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                             if (navigationStepsRef.current.length > 0) {
                                                                 const nextStep = navigationStepsRef.current[0];
                                                                 const distToManhattan = Math.abs(lat - nextStep.lat) + Math.abs(lng - nextStep.lng);
-                                                                if (distToManhattan < 0.002 && lastInstructionSpokenRef.current !== nextStep.instruction) {
-                                                                    const utterance = new SpeechSynthesisUtterance(nextStep.instruction);
-                                                                    utterance.rate = 0.95;
-                                                                    utterance.pitch = 1.05;
-                                                                    window.speechSynthesis.speak(utterance);
-                                                                    lastInstructionSpokenRef.current = nextStep.instruction;
+                                                                if (distToManhattan < 0.002) {
+                                                                    if (lastInstructionSpokenRef.current !== nextStep.instruction) {
+                                                                        const utterance = new SpeechSynthesisUtterance(nextStep.instruction);
+                                                                        utterance.rate = 0.95;
+                                                                        utterance.pitch = 1.05;
+                                                                        window.speechSynthesis.speak(utterance);
+                                                                        lastInstructionSpokenRef.current = nextStep.instruction;
+                                                                    }
                                                                     navigationStepsRef.current.shift();
                                                                 }
                                                             }
