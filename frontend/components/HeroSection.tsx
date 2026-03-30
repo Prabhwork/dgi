@@ -795,10 +795,9 @@ export default function HeroSection() {
                                     setIsInteractingMobile(true);
                                     if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
                                 }}
-                                onScroll={() => {
+                                onTouchMove={() => {
                                     setIsInteractingMobile(true);
                                     if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-                                    scrollTimeoutRef.current = setTimeout(() => setIsInteractingMobile(false), 2000);
                                 }}
                                 onTouchEnd={() => {
                                     if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
