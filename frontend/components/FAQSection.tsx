@@ -8,7 +8,7 @@ import { useTheme } from "@/components/ThemeProvider";
 const faqs = [
     { q: "What is Digital Book of India?", a: "Digital Book of India is a comprehensive digital directory that connects local businesses with customers across India through interactive maps and detailed listings." },
     { q: "How do I list my business on Digital Book of India?", a: "Simply sign up, fill in your business details, and your listing will be live on our platform within 24 hours." },
-    { q: "Is there a cost to list my business?", a: "Basic listings are free. Premium features and enhanced visibility options are available through our affordable plans." },
+    { q: "Is there a cost to list my business?", a: "Basic listings start at just ₹365 per year. Premium features and enhanced visibility options are available through our affordable plans." },
     { q: "How can customers find my business?", a: "Customers can discover your business through search, map exploration, category browsing, and personalized recommendations." },
     { q: "How often is the information updated?", a: "Business information is updated in real-time by business owners. Our team also performs periodic verification." },
     { q: "Can I advertise on Digital Book of India?", a: "Yes! We offer various advertising options to boost your business visibility across our platform." },

@@ -32,7 +32,7 @@ export default function Home() {
             <UpcomingFeatures />
            
             <CommunityLeader />
-             <FAQSection />
+            <FAQSection />
             <Testimonial />
             <Footer />
         </div>

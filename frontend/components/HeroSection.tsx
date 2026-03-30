@@ -44,22 +44,31 @@ export default function HeroSection() {
     const recognitionRef = useRef<any>(null);
 
     // Overall listings counter — starts at 4200, grows to ~5000 range
-    const LISTING_BASE = 4200;
-    const LISTING_CAP = 4999;
+    const LISTING_BASE = 3842;
+    const LISTING_CAP = 15000;
     const [listingCount, setListingCount] = useState(LISTING_BASE);
     const [listingDisplay, setListingDisplay] = useState(LISTING_BASE);
 
     useEffect(() => {
         const storageKey = 'dgi_overall_listings';
         const saved = localStorage.getItem(storageKey);
-        const baseDate = new Date('2026-03-27T17:00:00').getTime();
+        const baseDate = new Date('2026-03-30T12:00:00').getTime();
         const elapsed = (Date.now() - baseDate) / (1000 * 60); // minutes
         const grown = Math.min(Math.floor(LISTING_BASE + elapsed * 0.3), LISTING_CAP);
-        const final = saved ? Math.min(Math.max(parseInt(saved), grown), LISTING_CAP) : grown;
-        setListingCount(final);
-        setListingDisplay(final);
+        const final = saved ? Math.min(parseInt(saved), LISTING_CAP) : grown;
+        
+        // If saved is extremely higher than current base (e.g. from previous run), reset it to grown
+        const startingVal = (saved && parseInt(saved) > grown + 100) ? grown : final;
+        
+        setListingCount(startingVal);
+        setListingDisplay(startingVal);
 
         const interval = setInterval(() => {
+            // Office Hours: 10 AM to 7 PM (inclusive of 10:00, stop at 19:00)
+            const now = new Date();
+            const hours = now.getHours();
+            if (hours < 10 || hours >= 19) return; 
+
             setListingCount(prev => {
                 if (prev >= LISTING_CAP) return prev;
                 const next = Math.min(prev + 1, LISTING_CAP);
@@ -91,8 +100,8 @@ export default function HeroSection() {
                         .filter((c: any) => c.isActive !== false)
                         .map((c: any, i: number) => {
                             const catImg = c.image?.startsWith('uploads') ? c.image : `uploads/${c.image}`;
-                            const imgSrc = c.image && c.image !== 'no-photo.jpg' 
-                                ? `${BASE_URL}/${catImg}` 
+                            const imgSrc = c.image && c.image !== 'no-photo.jpg'
+                                ? `${BASE_URL}/${catImg}`
                                 : '/assets/placeholder-main.jpg';
 
                             return {
@@ -109,7 +118,7 @@ export default function HeroSection() {
                         const repeats = fetchedCats.slice(0, needed);
                         fetchedCats = [...fetchedCats, ...repeats];
                     }
-                    
+
                     setAllCategories(fetchedCats);
                 }
             } catch (err) {
@@ -253,7 +262,7 @@ export default function HeroSection() {
         setShowSuggestions(false);
 
         let query = queryToSearch.trim();
-        
+
         // Voice Navigation Logic
         const navMap: { [key: string]: string } = {
             'home': '/',
@@ -297,7 +306,7 @@ export default function HeroSection() {
             try {
                 const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(location)}.json?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}&types=region,postcode,district,place,locality,neighborhood`);
                 const data = await res.json();
-                
+
                 if (data.features && data.features.length > 0) {
                     const bestMatch = data.features[0];
                     if (bestMatch.relevance > 0.85) {
@@ -418,7 +427,7 @@ export default function HeroSection() {
                     <div className="flex items-center gap-0 w-full sm:w-auto sm:flex-1 sm:max-w-md group relative">
                         {/* Advanced Shadow Glow */}
                         <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/20 rounded-2xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-700 -z-10" />
-                        
+
                         <div className={`flex items-center flex-1 backdrop-blur-2xl border rounded-l-lg px-3 py-2.5 transition-all duration-500 ${theme === 'light'
                             ? 'bg-white/80 border-slate-200 group-focus-within:border-primary shadow-xl shadow-blue-900/5'
                             : 'bg-black/40 border-white/10 group-focus-within:border-primary/50 shadow-2xl'
@@ -442,7 +451,7 @@ export default function HeroSection() {
                                         : 'text-white placeholder:text-white/40'
                                         }`}
                                 />
-                                
+
                                 {/* Suggestions Dropdown */}
                                 <AnimatePresence>
                                     {showSuggestions && suggestions.length > 0 && (
@@ -484,13 +493,12 @@ export default function HeroSection() {
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
-                                
+
                                 {/* Voice Search Button */}
                                 <button
                                     onClick={toggleVoiceInput}
-                                    className={`absolute right-8 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all ${
-                                        isListening ? 'animate-pulse text-red-500 bg-red-500/10 scale-110' : 'text-muted-foreground hover:text-primary hover:bg-primary/10'
-                                    }`}
+                                    className={`absolute right-8 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all ${isListening ? 'animate-pulse text-red-500 bg-red-500/10 scale-110' : 'text-muted-foreground hover:text-primary hover:bg-primary/10'
+                                        }`}
                                     title="Voice Search"
                                 >
                                     <Mic size={18} />
@@ -512,15 +520,14 @@ export default function HeroSection() {
                                                             setDetectedLocation(place);
                                                             setSearchInput(place);
                                                         }
-                                                    } catch (e) {} finally { setIsLocating(false); }
+                                                    } catch (e) { } finally { setIsLocating(false); }
                                                 },
                                                 () => setIsLocating(false)
                                             );
                                         }
                                     }}
-                                    className={`absolute right-0 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all ${
-                                        isLocating ? 'animate-spin text-primary' : 'text-muted-foreground hover:text-primary hover:bg-primary/10'
-                                    }`}
+                                    className={`absolute right-0 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all ${isLocating ? 'animate-spin text-primary' : 'text-muted-foreground hover:text-primary hover:bg-primary/10'
+                                        }`}
                                     title="Detect My Location"
                                     suppressHydrationWarning
                                 >
@@ -529,7 +536,7 @@ export default function HeroSection() {
                             </div>
                         </div>
 
-                        <Link 
+                        <Link
                             href="/nearby-map"
                             className="relative overflow-hidden flex items-center gap-1.5 bg-primary text-white px-5 py-2.5 rounded-r-lg text-sm font-bold hover:bg-primary/90 transition-all whitespace-nowrap shadow-lg shadow-primary/20 group/btn"
                         >
@@ -541,7 +548,7 @@ export default function HeroSection() {
                             <MapPin size={18} className="group-hover/btn:animate-bounce" />
                             <span className="hidden sm:inline">See On Map</span>
                             <span className="sm:hidden">Map</span>
-                            
+
                             {/* Animated Shine */}
                             <div className="absolute top-0 -left-full w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-[-20deg] group-hover/btn:animate-[shimmer-sweep_2s_infinite] pointer-events-none" />
                         </Link>
@@ -577,7 +584,7 @@ export default function HeroSection() {
 
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <button 
+                                <button
                                     suppressHydrationWarning
                                     className="flex items-center gap-1 hover:text-primary transition-colors whitespace-nowrap outline-none"
                                 >
@@ -631,7 +638,7 @@ export default function HeroSection() {
                             claim business just 1/- a day
                         </Link>
 
-                        <Link 
+                        <Link
                             href="/write-a-review"
                             className="hover:text-primary transition-colors whitespace-nowrap outline-none"
                         >
@@ -693,10 +700,10 @@ export default function HeroSection() {
                             <div className="relative flex items-center gap-2 sm:gap-4 z-10">
                                 <div className="relative w-8 h-8 sm:w-12 sm:h-12 flex items-center justify-center shrink-0">
                                     <div className={`absolute inset-0 rounded-full blur-sm transition-colors ${theme === 'light' ? 'bg-white/20' : 'bg-white/10 group-hover:bg-white/20'}`} />
-                                    <img 
-                                        src="/assets/swadeshi-logo-dark.png" 
-                                        alt="Swadeshi" 
-                                        className={`w-full h-full object-contain brightness-110 contrast-125 ${theme === 'light' ? 'mix-blend-screen' : 'mix-blend-screen'}`} 
+                                    <img
+                                        src="/assets/swadeshi-logo-dark.png"
+                                        alt="Swadeshi"
+                                        className={`w-full h-full object-contain brightness-110 contrast-125 ${theme === 'light' ? 'mix-blend-screen' : 'mix-blend-screen'}`}
                                         onError={(e) => (e.currentTarget.style.display = 'none')}
                                     />
                                 </div>
@@ -725,12 +732,12 @@ export default function HeroSection() {
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: 0.5, duration: 0.8 }}
                                     className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-display font-black text-white tracking-[0.1em] leading-tight uppercase"
-                                    style={{ 
+                                    style={{
                                         textShadow: "0 0 30px rgba(0,157,255,0.5), 0 0 60px rgba(0,157,255,0.2)",
                                         letterSpacing: "0.15em"
                                     }}
                                 >
-                                    List Your <br/>
+                                    List Your <br />
                                     Business Online
                                 </motion.h1>
                                 <motion.p
@@ -740,7 +747,7 @@ export default function HeroSection() {
                                     className="mt-1 text-[8px] sm:text-[10px] md:text-xs font-bold tracking-[0.1em] uppercase opacity-90 max-w-[180px] sm:max-w-[220px] mx-auto leading-tight"
                                     style={{ color: "#00d4ff", textShadow: "0 0 15px rgba(0,212,255,0.4)" }}
                                 >
-                                    Grow your business with <br/> Digital Book of India
+                                    Grow your business with <br /> Digital Book of India
                                 </motion.p>
                                 <motion.div
                                     initial={{ scaleX: 0 }}
@@ -757,7 +764,7 @@ export default function HeroSection() {
                                 >
                                     ₹365/year <span className="text-[9px] sm:text-xs opacity-80">(₹1/day)</span>
                                 </motion.p>
-                                
+
                                 <motion.div
                                     initial={{ opacity: 0, scale: 0.8 }}
                                     animate={{ opacity: 1, scale: 1 }}
@@ -858,17 +865,16 @@ export default function HeroSection() {
                 <div className="max-w-4xl mx-auto relative group">
                     {/* Animated Outer Glow */}
                     <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-emerald-500/10 to-primary/20 rounded-[2rem] blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-                    
-                    <div className={`relative flex flex-col md:flex-row items-center justify-between gap-8 py-6 px-10 rounded-[2rem] border backdrop-blur-3xl transition-all duration-500 ${
-                        theme === 'light'
+
+                    <div className={`relative flex flex-col md:flex-row items-center justify-between gap-8 md:gap-8 py-7 md:py-6 px-6 md:px-10 rounded-[2rem] border backdrop-blur-3xl transition-all duration-500 ${theme === 'light'
                             ? 'bg-white/80 border-slate-200 shadow-[0_8px_32px_rgba(0,0,0,0.05)]'
                             : 'bg-[#0A0F1E]/60 border-white/10 shadow-[0_8px_40px_rgba(0,0,0,0.5)] group-hover:border-primary/30'
-                    }`}>
-                        
+                        }`}>
+
                         {/* Left: Live Status & Listings */}
-                        <div className="flex items-center gap-8">
-                            <div className="flex flex-col gap-1.5">
-                                <div className="flex items-center gap-2">
+                        <div className="flex flex-col items-center md:items-start gap-4 w-full md:w-auto">
+                            <div className="flex flex-col items-center md:items-start gap-1.5">
+                                <div className="flex items-center gap-2 mb-0.5">
                                     <div className="relative flex h-2.5 w-2.5">
                                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                                         <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
@@ -876,7 +882,7 @@ export default function HeroSection() {
                                     <span className={`text-[10px] font-black uppercase tracking-[0.25em] ${theme === 'light' ? 'text-slate-400' : 'text-emerald-400/80'}`}>Live Now</span>
                                 </div>
                                 <div className="flex items-center gap-4">
-                                    <div className="p-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary group-hover:scale-110 transition-transform duration-500">
+                                    <div className="p-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary group-hover:scale-110 transition-transform duration-500 shadow-[0_0_15px_rgba(59,130,246,0.1)]">
                                         <Store size={24} strokeWidth={2.5} />
                                     </div>
                                     <div className="flex items-baseline gap-1.5">
@@ -892,38 +898,39 @@ export default function HeroSection() {
 
                         {/* Divider - hidden on mobile */}
                         <div className="hidden md:block h-14 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent" />
+                        {/* Mobile Divider */}
+                        <div className="block md:hidden w-full h-px bg-white/5 opacity-50" />
 
-                        {/* Middle: Categories */}
-                        <div className="flex items-center gap-5 group/cat">
-                            <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 group-hover:rotate-12 transition-transform duration-500">
+                        {/* Middle: Categories - Perfectly centered vertically under listings on mobile */}
+                        <div className="flex flex-col md:flex-row items-center gap-4 md:gap-5 group/cat">
+                            <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 group-hover:rotate-12 transition-transform duration-500 shadow-[0_0_15px_rgba(245,158,11,0.1)]">
                                 <Tag size={24} strokeWidth={2.5} />
                             </div>
-                            <div className="flex flex-col">
+                            <div className="flex flex-col items-center md:items-start text-center md:text-left">
                                 <span className={`text-3xl font-black tracking-tight ${theme === 'light' ? 'text-slate-800' : 'text-white/90'}`}>4000+</span>
-                                <span className={`text-[10px] font-bold uppercase tracking-[0.25em] mt-1 ${theme === 'light' ? 'text-slate-400' : 'text-white/30'}`}>Categories</span>
+                                <span className={`text-[10px] font-bold uppercase tracking-[0.25em] mt-0.5 ${theme === 'light' ? 'text-slate-400' : 'text-white/30'}`}>Categories</span>
                             </div>
                         </div>
 
                         {/* Divider - hidden on mobile */}
                         <div className="hidden md:block h-14 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent" />
+                        {/* Mobile Divider */}
+                        <div className="block md:hidden w-full h-px bg-white/5 opacity-50" />
 
                         {/* Right: CTA & Location */}
-                        <div className="flex flex-col items-center md:items-end gap-3.5 w-full md:w-auto">
-                            <Link href="/community/register" className="group/btn relative w-full md:w-auto">
-                                <div className="absolute -inset-1 bg-gradient-to-r from-primary to-blue-600 rounded-xl blur opacity-25 group-hover/btn:opacity-60 transition duration-500" />
-                               
-                            </Link>
-                            <div className="flex items-center gap-3 px-3 py-1 rounded-full bg-primary/5 border border-primary/10">
+                        <div className="flex flex-col items-center md:items-end gap-5 w-full md:w-auto">
+
+                            <div className="flex items-center gap-3 px-4 py-2 rounded-full bg-primary/5 border border-primary/10">
                                 <NavigationIcon size={12} className="text-primary animate-pulse" />
                                 <span className={`text-[9px] font-black uppercase tracking-[0.4em] ${theme === 'light' ? 'text-primary/70' : 'text-primary'}`}>Across India</span>
                             </div>
                         </div>
 
                     </div>
-                    
+
                     {/* Bottom Status Decoration */}
                     <div className="absolute -bottom-px left-1/2 -translate-x-1/2 w-1/2 flex justify-center">
-                        <motion.div 
+                        <motion.div
                             animate={{ opacity: [0.2, 0.5, 0.2], width: ['40%', '80%', '40%'] }}
                             transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                             className="h-px bg-gradient-to-r from-transparent via-primary to-transparent blur-sm"

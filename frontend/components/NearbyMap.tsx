@@ -94,7 +94,32 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
         return R * 2 * Math.atan2(Math.sqrt(aa), Math.sqrt(1 - aa)) > thresholdM;
     };
 
-
+    // Fresh GPS lene ka helper — maximumAge: 0 = no cache!
+    const getFreshLocation = (): Promise<{ lat: number; lng: number }> => {
+        return new Promise((resolve) => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                        canonicalLocRef.current = loc; // update karo bhi
+                        resolve(loc);
+                    },
+                    () => {
+                        // GPS fail — fallback chain
+                        resolve(
+                            lastLocationRef.current ||
+                            canonicalLocRef.current ||
+                            userLocation ||
+                            { lat: 28.6139, lng: 77.2090 }
+                        );
+                    },
+                    { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 } // ← key: no cache
+                );
+            } else {
+                resolve(canonicalLocRef.current || userLocation || { lat: 28.6139, lng: 77.2090 });
+            }
+        });
+    };
     const fetchNearbyBusinesses = useCallback(async (lat: number, lng: number, cat: string, rad: number) => {
         setLoading(true);
         try {
@@ -139,7 +164,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                     const loc = { lat: actualLat, lng: actualLng };
                     setUserLocation(loc);
                     canonicalLocRef.current = loc; // Set canonical reference
-                    
+
                     // If no param coordinates, THIS is our view center too
                     if (!paramLat || !paramLng) {
                         setMapInitialCenter({ lat: actualLat, lng: actualLng });
@@ -151,7 +176,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                         (p) => {
                             canonicalLocRef.current = { lat: p.coords.latitude, lng: p.coords.longitude };
                         },
-                        () => {},
+                        () => { },
                         { enableHighAccuracy: true, maximumAge: 5000 }
                     );
                     // Store watch id for cleanup
@@ -309,6 +334,11 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
         map.on("moveend", () => {
             const center = map.getCenter();
             debouncedFetch(center.lat, center.lng, category, radius);
+
+            // ✅ YEH ADD KARO - agar real GPS nahi mila toh map center use ho
+            if (!userLocation) {
+                canonicalLocRef.current = { lat: center.lat, lng: center.lng };
+            }
         });
 
         const handleInteraction = () => {
@@ -341,13 +371,13 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                 container.removeEventListener('wheel', handleInteraction, { capture: true });
             }
         };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [mapInitialCenter !== null || userLocation !== null]); 
-    
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [mapInitialCenter !== null || userLocation !== null]);
+
     // Create/Update user marker when userLocation becomes available
     useEffect(() => {
         if (!mapRef.current || !userLocation) return;
-        
+
         if (!userMarkerRef.current && mapLoaded) {
             const userEl = document.createElement("div");
             userEl.className = "user-location-pulse";
@@ -501,8 +531,10 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
         const fetchSearchResults = async () => {
             setLoading(true);
             try {
-                // ALWAYS use canonicalLocRef for fresh GPS — same source as navigation
-                const searchLoc = canonicalLocRef.current;
+                const mapCenter = mapRef.current?.getCenter();
+                const searchLoc = mapCenter
+                    ? { lat: mapCenter.lat, lng: mapCenter.lng }
+                    : canonicalLocRef.current;
 
                 let url = `${API}/business/search?q=${encodeURIComponent(searchQuery)}`;
                 if (searchLoc) {
@@ -510,24 +542,48 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                 }
                 const res = await fetch(url);
                 const data = await res.json();
+
                 if (data.success) {
                     const results = data.data;
 
-                    // Calculate straight-line distance client-side using Haversine
-                    // This is fast, free, consistent and avoids Matrix API vs Directions API discrepancy
-                    const withDistances = searchLoc
-                        ? results.map((b: any) => ({
-                            ...b,
-                            distanceKm: haversineKm(
-                                searchLoc.lat, searchLoc.lng,
-                                b.gpsCoordinates.lat, b.gpsCoordinates.lng
-                            )
-                        }))
-                        : results;
+                    if (searchLoc && results.length > 0) {
+                        // ✅ Mapbox Matrix API — 1 call mein saare road distances
+                        const destinations = results
+                            .slice(0, 10)
+                            .map((b: any) => `${b.gpsCoordinates.lng},${b.gpsCoordinates.lat}`)
+                            .join(';');
 
-                    // Sort by distance ascending so nearest appears first
-                    withDistances.sort((a: any, b: any) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity));
-                    setSearchResults(withDistances);
+                        const matrixUrl = `https://api.mapbox.com/directions-matrix/v1/mapbox/driving/${searchLoc.lng},${searchLoc.lat};${destinations}?sources=0&annotations=distance&access_token=${MAPBOX_TOKEN}`;
+
+                        try {
+                            const matrixRes = await fetch(matrixUrl);
+                            const matrixData = await matrixRes.json();
+
+                            // distances[0] = from source (index 0) to all destinations
+                            const roadDistances = matrixData.distances?.[0]?.slice(1); // slice(1) skip karta hai source→source
+
+                            const withDistances = results.slice(0, 10).map((b: any, i: number) => ({
+                                ...b,
+                                distanceKm: roadDistances?.[i] != null
+                                    ? parseFloat((roadDistances[i] / 1000).toFixed(1)) // meters → km
+                                    : null
+                            }));
+
+                            withDistances.sort((a: any, b: any) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity));
+                            setSearchResults(withDistances);
+                        } catch (matrixErr) {
+                            // Matrix fail hone pe haversine fallback
+                            console.warn('Matrix API failed, using haversine:', matrixErr);
+                            const withDistances = results.map((b: any) => ({
+                                ...b,
+                                distanceKm: haversineKm(searchLoc.lat, searchLoc.lng, b.gpsCoordinates.lat, b.gpsCoordinates.lng)
+                            }));
+                            withDistances.sort((a: any, b: any) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity));
+                            setSearchResults(withDistances);
+                        }
+                    } else {
+                        setSearchResults(results);
+                    }
                 }
             } catch (e) {
                 console.error("Search failed:", e);
@@ -536,11 +592,10 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
             }
         };
 
-
         const timer = setTimeout(fetchSearchResults, 300);
         return () => clearTimeout(timer);
-    // NOTE: userLocation intentionally excluded — we use canonicalLocRef.current (live ref) instead
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // NOTE: userLocation intentionally excluded — we use canonicalLocRef.current (live ref) instead
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [searchQuery, API]);
 
     useEffect(() => {
@@ -640,11 +695,11 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                 }
                 const res = await fetch(url);
                 const data = await res.json();
-                
+
                 if (data.success && data.data && data.data.length > 0) {
                     const topBiz = data.data[0];
                     setSelectedBusiness(topBiz);
-                    
+
                     // Add to local businesses list if missing to ensure marker is visible
                     setBusinesses(prev => {
                         if (!prev.some(b => b._id === topBiz._id)) {
@@ -701,11 +756,10 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                             {routeInfo.distance.toFixed(1)} KM &middot; {Math.round(routeInfo.duration)} MIN
                                         </span>
                                         {routeInfo.trafficCondition && (
-                                            <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${
-                                                routeInfo.trafficCondition === 'LOW' ? 'border-green-500/40 text-green-400 bg-green-500/10' :
+                                            <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${routeInfo.trafficCondition === 'LOW' ? 'border-green-500/40 text-green-400 bg-green-500/10' :
                                                 routeInfo.trafficCondition === 'MODERATE' ? 'border-yellow-500/40 text-yellow-400 bg-yellow-500/10' :
-                                                'border-red-500/40 text-red-400 bg-red-500/10'
-                                            }`}>
+                                                    'border-red-500/40 text-red-400 bg-red-500/10'
+                                                }`}>
                                                 {routeInfo.trafficCondition === 'LOW' ? '🟢 LOW' : routeInfo.trafficCondition === 'MODERATE' ? '🟡 MODERATE' : '🔴 HEAVY'}
                                             </span>
                                         )}
@@ -748,7 +802,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
             {/* Top Navigation Bar */}
             <AnimatePresence>
                 {!routeInfo && !isNavigating && (
-                    <motion.div 
+                    <motion.div
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
@@ -767,6 +821,8 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                 />
                                 <button
                                     onClick={toggleVoiceInput}
+                                    title="Voice Search"
+                                    suppressHydrationWarning
                                     className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all duration-500 pointer-events-auto shrink-0 relative ${isListening ? 'bg-primary text-white shadow-[0_0_20px_rgba(14,165,233,0.4)]' : 'text-primary/60 hover:text-primary hover:bg-white/10'}`}
                                 >
                                     <AnimatePresence>
@@ -801,7 +857,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                     onClick={() => {
                                                         setSelectedBusiness(biz);
                                                         setSearchQuery(''); // Clear search on select to hide dropdown
-                                                        
+
                                                         // If business is not in the current nearby list, add it so it gets a marker
                                                         if (!businesses.find(b => b._id === biz._id)) {
                                                             setBusinesses(prev => [...prev, biz]);
@@ -917,55 +973,51 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                     if (!mapRef.current) return;
 
                                     // Use the same canonical ref that search used — guaranteed same coordinate
-                                    const freshUserLoc = canonicalLocRef.current || userLocation;
-                                    if (!freshUserLoc) {
-                                        alert('Cannot get your location. Please enable location access and try again.');
-                                        return;
-                                    }
+                                    const freshUserLoc = await getFreshLocation();
 
                                     activeDestRef.current = selectedBusiness.gpsCoordinates;
                                     try {
-                                         const query = await fetch(
-                                             `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${freshUserLoc.lng},${freshUserLoc.lat};${selectedBusiness.gpsCoordinates.lng},${selectedBusiness.gpsCoordinates.lat}?steps=true&geometries=geojson&annotations=congestion&access_token=${MAPBOX_TOKEN}`,
-                                             { method: 'GET' }
-                                         );
-                                         let json = await query.json();
-                                         if (!json || !json.routes || json.routes.length === 0) {
-                                             console.warn('Traffic route failed, trying standard driving...');
-                                             const fallbackQuery = await fetch(
-                                                 `https://api.mapbox.com/directions/v5/mapbox/driving/${freshUserLoc.lng},${freshUserLoc.lat};${selectedBusiness.gpsCoordinates.lng},${selectedBusiness.gpsCoordinates.lat}?steps=true&geometries=geojson&access_token=${MAPBOX_TOKEN}`,
-                                                 { method: 'GET' }
-                                             );
-                                             json = await fallbackQuery.json();
-                                         }
+                                        const query = await fetch(
+                                            `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${freshUserLoc.lng},${freshUserLoc.lat};${selectedBusiness.gpsCoordinates.lng},${selectedBusiness.gpsCoordinates.lat}?steps=true&geometries=geojson&annotations=congestion&overview=full&access_token=${MAPBOX_TOKEN}`,
+                                            { method: 'GET' }
+                                        );
+                                        let json = await query.json();
+                                        if (!json || !json.routes || json.routes.length === 0) {
+                                            console.warn('Traffic route failed, trying standard driving...');
+                                            const fallbackQuery = await fetch(
+                                                `https://api.mapbox.com/directions/v5/mapbox/driving/${freshUserLoc.lng},${freshUserLoc.lat};${selectedBusiness.gpsCoordinates.lng},${selectedBusiness.gpsCoordinates.lat}?steps=true&geometries=geojson&annotations=congestion&overview=full&access_token=${MAPBOX_TOKEN}`,
+                                                { method: 'GET' }
+                                            );
+                                            json = await fallbackQuery.json();
+                                        }
 
-                                         if (!json || !json.routes || json.routes.length === 0) {
-                                             alert("No route found for this destination.");
-                                             console.error("Mapbox Error:", json);
-                                             return;
-                                         }
-                                         const data = json.routes[0];
-                                         const userCoord = [freshUserLoc.lng, freshUserLoc.lat] as [number, number];
-                                         const rawRoute = data.geometry.coordinates;
-                                         // Prepend exact user GPS to the snapped road route
-                                         const route = [userCoord, ...rawRoute];
+                                        if (!json || !json.routes || json.routes.length === 0) {
+                                            alert("No route found for this destination.");
+                                            console.error("Mapbox Error:", json);
+                                            return;
+                                        }
+                                        const data = json.routes[0];
+                                        const userCoord = [freshUserLoc.lng, freshUserLoc.lat] as [number, number];
+                                        const rawRoute = data.geometry.coordinates;
+                                        // Prepend exact user GPS to the snapped road route
+                                        const route = [userCoord, ...rawRoute];
 
-                                         const rawCongestion = data.legs[0].annotation?.congestion || [];
-                                         const routeDist = data.distance / 1000;
-                                         setIsNavigating(true);
-                                         setRouteInfo({
-                                             distance: routeDist,
-                                             duration: data.duration / 60,
-                                             businessName: selectedBusiness.brandName || selectedBusiness.businessName,
-                                             trafficCondition: getTrafficLevel(rawCongestion)
-                                         });
+                                        const rawCongestion = data.legs[0].annotation?.congestion || [];
+                                        const routeDist = data.distance / 1000;
+                                        setIsNavigating(true);
+                                        setRouteInfo({
+                                            distance: routeDist,
+                                            duration: data.duration / 60,
+                                            businessName: selectedBusiness.brandName || selectedBusiness.businessName,
+                                            trafficCondition: getTrafficLevel(rawCongestion)
+                                        });
 
-                                         // Sync search result distance for 100% agreement
-                                         setSearchResults(prev => prev.map(result => 
-                                            result._id === selectedBusiness._id 
-                                            ? { ...result, distanceKm: routeDist } 
-                                            : result
-                                         ));
+                                        // Sync search result distance for 100% agreement
+                                        setSearchResults(prev => prev.map(result =>
+                                            result._id === selectedBusiness._id
+                                                ? { ...result, distanceKm: routeDist }
+                                                : result
+                                        ));
 
                                         const map = mapRef.current;
                                         if (!map) return;
@@ -975,20 +1027,20 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                             if (map.getLayer(id)) map.removeLayer(id);
                                         });
                                         if (map.getSource('route')) map.removeSource('route');
-                                        
+
                                         if (startMarkerRef.current) {
                                             startMarkerRef.current.remove();
                                             startMarkerRef.current = null;
                                         }
                                         const startCoord = route[0];
-                                         const nextCoord = route[1] || route[0];
-                                         // Correct bearing math
-                                         const bearing = nextCoord ? (Math.atan2(nextCoord[0] - startCoord[0], nextCoord[1] - startCoord[1]) * 180 / Math.PI) : 0;
- 
-                                         const startEl = document.createElement("div");
-                                         startEl.className = "navigation-vehicle-marker";
-                                         startEl.style.zIndex = "1000";
-                                         startEl.innerHTML = `
+                                        const nextCoord = route[1] || route[0];
+                                        // Correct bearing math
+                                        const bearing = nextCoord ? (Math.atan2(nextCoord[0] - startCoord[0], nextCoord[1] - startCoord[1]) * 180 / Math.PI) : 0;
+
+                                        const startEl = document.createElement("div");
+                                        startEl.className = "navigation-vehicle-marker";
+                                        startEl.style.zIndex = "1000";
+                                        startEl.innerHTML = `
                                              <div style="transform: rotate(${bearing}deg); filter: drop-shadow(0 0 15px rgba(14,165,233,0.8)); transition: transform 0.3s ease-out;">
                                                  <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                      <path d="M12 2L19 21L12 17L5 21L12 2Z" fill="#0ea5e9" stroke="white" stroke-width="2" stroke-linejoin="round"/>
@@ -996,36 +1048,38 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                  </svg>
                                              </div>
                                          `;
-                                         startMarkerRef.current = new mapboxgl.Marker({ element: startEl, rotationAlignment: 'map' }).setLngLat(startCoord).addTo(map);
+                                        startMarkerRef.current = new mapboxgl.Marker({ element: startEl, rotationAlignment: 'map' }).setLngLat(startCoord).addTo(map);
 
-                                         // Prepare traffic-aware geojson
-                                         // rawCongestion already declared above; reuse it
-                                         const congestion = ['low', ...rawCongestion];
+                                        // Prepare traffic-aware geojson
+                                        // rawCongestion already declared above; reuse it
+                                        const congestion = rawCongestion;
 
-                                         
-                                         const features = [];
-                                         if (congestion && congestion.length > 0) {
-                                             for (let i = 0; i < route.length - 1; i++) {
-                                                 features.push({
-                                                     type: 'Feature',
-                                                     geometry: {
-                                                         type: 'LineString',
-                                                         coordinates: [route[i], route[i+1]]
-                                                     },
-                                                     properties: {
-                                                         congestion: congestion[i] || 'unknown'
-                                                     }
-                                                 });
-                                             }
-                                         }
- 
-                                         map.addSource('route', {
-                                             type: 'geojson',
-                                             data: {
-                                                 type: 'FeatureCollection',
-                                                 features: features as any
-                                             }
-                                         });
+
+                                        const features = [];
+                                        if (congestion && congestion.length > 0) {
+                                            for (let i = 0; i < route.length - 1; i++) {
+                                                // route[0] userCoord hai (prepended), rawRoute index i-1 se start hota hai
+                                                const segCongestion = i === 0 ? 'low' : (congestion[i - 1] || 'low');
+                                                features.push({
+                                                    type: 'Feature',
+                                                    geometry: {
+                                                        type: 'LineString',
+                                                        coordinates: [route[i], route[i + 1]]
+                                                    },
+                                                    properties: {
+                                                        congestion: segCongestion
+                                                    }
+                                                });
+                                            }
+                                        }
+
+                                        map.addSource('route', {
+                                            type: 'geojson',
+                                            data: {
+                                                type: 'FeatureCollection',
+                                                features: features as any
+                                            }
+                                        });
 
                                         // Layer 1: Outer Glow (Traffic Colored)
                                         map.addLayer({
@@ -1050,25 +1104,25 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                         });
 
                                         // Layer 2: Core Line (Traffic Colored)
-                                         map.addLayer({
-                                             id: 'route-line',
-                                             type: 'line',
-                                             source: 'route',
-                                             layout: { 'line-join': 'round', 'line-cap': 'round' },
-                                             paint: {
-                                                 'line-color': [
-                                                     'match',
-                                                     ['get', 'congestion'],
-                                                     'low', '#22c55e',
-                                                     'moderate', '#eab308',
-                                                     'heavy', '#f97316',
-                                                     'severe', '#ef4444',
-                                                     '#38bdf8' // default
-                                                 ],
-                                                 'line-width': 6,
-                                                 'line-opacity': 1
-                                             }
-                                         });
+                                        map.addLayer({
+                                            id: 'route-line',
+                                            type: 'line',
+                                            source: 'route',
+                                            layout: { 'line-join': 'round', 'line-cap': 'round' },
+                                            paint: {
+                                                'line-color': [
+                                                    'match',
+                                                    ['get', 'congestion'],
+                                                    'low', '#22c55e',
+                                                    'moderate', '#eab308',
+                                                    'heavy', '#f97316',
+                                                    'severe', '#ef4444',
+                                                    '#38bdf8' // default
+                                                ],
+                                                'line-width': 6,
+                                                'line-opacity': 1
+                                            }
+                                        });
 
                                         // Layer 3: Moving Particles (dashed line on top)
                                         map.addLayer({
@@ -1095,21 +1149,21 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                         };
                                         if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
                                         animate();
-                                        
+
                                         // Fit bounds with cinematic tilt
                                         const bounds = route.reduce((bounds: mapboxgl.LngLatBounds, coord: any) => {
                                             return bounds.extend(coord);
                                         }, new mapboxgl.LngLatBounds(route[0], route[0]));
-                                        
+
                                         map.fitBounds(bounds, {
-                                            padding: {top: 150, bottom: 350, left: 50, right: 50},
+                                            padding: { top: 150, bottom: 350, left: 50, right: 50 },
                                             duration: 2500,
                                             pitch: 62,
                                             bearing: bearing, // Align map with route start
                                             essential: true
                                         });
 
-                                        setSelectedBusiness(null); 
+                                        setSelectedBusiness(null);
                                     } catch (err) {
                                         console.error("Could not fetch directions: ", err);
                                     }
@@ -1125,32 +1179,32 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
 
             <AnimatePresence>
                 {routeInfo && !selectedBusiness && (
-                    <motion.div 
-                        initial={{ opacity: 0, y: 40 }} 
-                        animate={{ 
-                            opacity: 1, 
+                    <motion.div
+                        initial={{ opacity: 0, y: 40 }}
+                        animate={{
+                            opacity: 1,
                             y: 0,
                             bottom: isNavigating ? (window.innerWidth < 640 ? 12 : 20) : 24
-                        }} 
-                        exit={{ opacity: 0, y: 40 }} 
+                        }}
+                        exit={{ opacity: 0, y: 40 }}
                         className={`absolute z-20 px-2 sm:px-4 flex ${isNavigating ? 'justify-center sm:justify-end' : 'justify-center'} pointer-events-none transition-all duration-700 w-full left-0 right-0`}
                     >
                         <div className={`relative bg-[#020617]/95 backdrop-blur-3xl border ${isNavigating ? 'border-red-500/40' : 'border-primary/40'} shadow-[0_20px_80px_rgba(0,0,0,0.8)] pointer-events-auto overflow-hidden transition-all duration-500
-                            ${isNavigating 
-                                ? 'rounded-2xl sm:rounded-[2rem] p-2 sm:p-3 w-[min(calc(100%-1rem),400px)] sm:max-w-[180px]' 
+                            ${isNavigating
+                                ? 'rounded-2xl sm:rounded-[2rem] p-2 sm:p-3 w-[min(calc(100%-1rem),400px)] sm:max-w-[180px]'
                                 : 'rounded-[1.2rem] sm:rounded-2xl p-4 sm:p-4 w-[calc(100%-1.5rem)] sm:w-full max-w-[280px] sm:max-w-[240px]'
                             }
                         `}>
                             {/* Animated Scanner Effect */}
-                            <motion.div 
-                                animate={{ y: ['100%', '-100%'] }} 
+                            <motion.div
+                                animate={{ y: ['100%', '-100%'] }}
                                 transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
                                 className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent h-1/2 pointer-events-none"
                             />
 
                             {/* Close Button - Only show when NOT navigating */}
                             {!isNavigating && (
-                                <button 
+                                <button
                                     onClick={() => {
                                         setRouteInfo(null);
                                         if (mapRef.current) {
@@ -1184,15 +1238,15 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                             {isNavigating ? 'LIVE' : 'ROUTE READY'}
                                         </span>
                                     </div>
-                                    
+
                                     <div className={`flex flex-col ${isNavigating ? 'sm:gap-0.5' : 'gap-1 sm:gap-1.5'}`}>
                                         <div className="flex flex-col sm:mb-0.5">
                                             <span className={`text-white font-black ${isNavigating ? 'text-lg sm:text-4xl' : 'text-2xl sm:text-4xl'} tracking-tighter leading-none`}>
-                                                {routeInfo.duration > 60 ? `${Math.floor(routeInfo.duration/60)}h ${Math.round(routeInfo.duration%60)}m` : `${Math.round(routeInfo.duration)}`}
+                                                {routeInfo.duration > 60 ? `${Math.floor(routeInfo.duration / 60)}h ${Math.round(routeInfo.duration % 60)}m` : `${Math.round(routeInfo.duration)}`}
                                                 <span className={`${isNavigating ? 'text-[10px] ml-0.5' : 'text-xs ml-0.5 sm:text-lg sm:ml-1'}`}>MIN</span>
                                             </span>
                                         </div>
-                                        
+
                                         <div className={`flex flex-col ${isNavigating ? 'gap-0 sm:gap-0.5' : 'gap-0.5'}`}>
                                             <div className="flex items-center gap-1 sm:gap-1.5">
                                                 <div className={`h-1 w-1 rounded-full ${isNavigating ? 'bg-primary' : 'bg-primary/50'}`} />
@@ -1204,11 +1258,10 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                 {isNavigating ? 'ROAD ROUTE' : 'ESTIMATED ROAD ROUTE'}
                                             </span>
                                             {routeInfo.trafficCondition && (
-                                                <span className={`mt-1 self-start text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${
-                                                    routeInfo.trafficCondition === 'LOW' ? 'border-green-500/40 text-green-400 bg-green-500/10' :
+                                                <span className={`mt-1 self-start text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${routeInfo.trafficCondition === 'LOW' ? 'border-green-500/40 text-green-400 bg-green-500/10' :
                                                     routeInfo.trafficCondition === 'MODERATE' ? 'border-yellow-500/40 text-yellow-400 bg-yellow-500/10' :
-                                                    'border-red-500/40 text-red-400 bg-red-500/10'
-                                                }`}>
+                                                        'border-red-500/40 text-red-400 bg-red-500/10'
+                                                    }`}>
                                                     {routeInfo.trafficCondition === 'LOW' ? '🟢 LOW TRAFFIC' : routeInfo.trafficCondition === 'MODERATE' ? '🟡 MODERATE' : '🔴 HEAVY'}
                                                 </span>
                                             )}
@@ -1233,19 +1286,24 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                     const match = transform?.match(/rotate\((.*)deg\)/);
                                                     if (match && match[1]) bearing = parseFloat(match[1]);
                                                 }
-                                                
-                                                map.flyTo({ 
-                                                    center: [userLocation!.lng, userLocation!.lat], 
-                                                    zoom: 18, 
-                                                    pitch: 75, 
+
+                                                map.flyTo({
+                                                    center: [userLocation!.lng, userLocation!.lat],
+                                                    zoom: 18,
+                                                    pitch: 75,
                                                     bearing: bearing,
-                                                    duration: 2000 
+                                                    duration: 2000
                                                 });
 
                                                 // 45-second rerouting interval
                                                 if (rerouteTimerRef.current) clearInterval(rerouteTimerRef.current);
                                                 rerouteTimerRef.current = setInterval(async () => {
-                                                    const loc = lastLocationRef.current;
+                                                    const loc = lastLocationRef.current
+                                                        || canonicalLocRef.current
+                                                        || (mapRef.current ? {
+                                                            lat: mapRef.current.getCenter().lat,
+                                                            lng: mapRef.current.getCenter().lng
+                                                        } : null);
                                                     const dest = activeDestRef.current;
                                                     if (!loc || !dest || !mapRef.current) return;
                                                     const bName = routeInfo?.businessName || '';
@@ -1254,18 +1312,18 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                     const dLat = (dest.lat - loc.lat) * Math.PI / 180;
                                                     const dLng = (dest.lng - loc.lng) * Math.PI / 180;
                                                     const slKm = R * 2 * Math.atan2(
-                                                        Math.sqrt(Math.sin(dLat/2)**2 + Math.cos(loc.lat*Math.PI/180)*Math.cos(dest.lat*Math.PI/180)*Math.sin(dLng/2)**2),
-                                                        Math.sqrt(1 - Math.sin(dLat/2)**2 - Math.cos(loc.lat*Math.PI/180)*Math.cos(dest.lat*Math.PI/180)*Math.sin(dLng/2)**2)
+                                                        Math.sqrt(Math.sin(dLat / 2) ** 2 + Math.cos(loc.lat * Math.PI / 180) * Math.cos(dest.lat * Math.PI / 180) * Math.sin(dLng / 2) ** 2),
+                                                        Math.sqrt(1 - Math.sin(dLat / 2) ** 2 - Math.cos(loc.lat * Math.PI / 180) * Math.cos(dest.lat * Math.PI / 180) * Math.sin(dLng / 2) ** 2)
                                                     );
                                                     const profile = slKm < 1.5 ? 'walking' : 'driving-traffic';
                                                     try {
-                                                        const res = await fetch(`https://api.mapbox.com/directions/v5/mapbox/${profile}/${loc.lng},${loc.lat};${dest.lng},${dest.lat}?steps=true&geometries=geojson&annotations=congestion&access_token=${MAPBOX_TOKEN}`);
+                                                        const res = await fetch(`https://api.mapbox.com/directions/v5/mapbox/${profile}/${loc.lng},${loc.lat};${dest.lng},${dest.lat}?steps=true&geometries=geojson&annotations=congestion&overview=full&access_token=${MAPBOX_TOKEN}`);
                                                         const js = await res.json();
                                                         if (!js?.routes?.length) return;
                                                         const d = js.routes[0];
                                                         const raw = d.legs[0]?.annotation?.congestion || [];
-                                                        setRouteInfo({ distance: d.distance/1000, duration: d.duration/60, businessName: bName, trafficCondition: profile === 'walking' ? 'WALKING' : getTrafficLevel(raw) });
-                                                    } catch(e) { console.warn('Reroute error:', e); }
+                                                        setRouteInfo({ distance: d.distance / 1000, duration: d.duration / 60, businessName: bName, trafficCondition: profile === 'walking' ? 'WALKING' : getTrafficLevel(raw) });
+                                                    } catch (e) { console.warn('Reroute error:', e); }
                                                 }, 45000);
 
                                                 if (navigator.geolocation) {
@@ -1293,7 +1351,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                                 });
                                                                 setTimeout(() => { isProgrammaticMove.current = false; }, 1100);
                                                             }
-                                                            
+
                                                             if (startMarkerRef.current) {
                                                                 startMarkerRef.current.setLngLat([lng, lat]);
                                                                 const arrowDiv = startMarkerRef.current.getElement().querySelector('div');
@@ -1342,7 +1400,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                             </AnimatePresence>
                                         </div>
                                     )}
-                                    
+
                                     {!isNavigating && !isAutoCentering && (
                                         <button
                                             onClick={() => {
