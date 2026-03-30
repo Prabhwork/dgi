@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
+const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 
 const CATEGORIES = ["All", "Food & Beverage", "Healthcare", "Retail", "Education", "Technology", "Finance", "Automobile", "Beauty & Wellness", "Real Estate"];
 
@@ -18,6 +19,36 @@ function debounce<T extends (...args: any[]) => void>(fn: T, delay: number) {
         clearTimeout(timer);
         timer = setTimeout(() => fn(...args), delay);
     };
+}
+
+function decodePolyline(encoded: string): [number, number][] {
+    const points: [number, number][] = [];
+    let index = 0, len = encoded.length;
+    let lat = 0, lng = 0;
+
+    while (index < len) {
+        let b, shift = 0, result = 0;
+        do {
+            b = encoded.charCodeAt(index++) - 63;
+            result |= (b & 0x1f) << shift;
+            shift += 5;
+        } while (b >= 0x20);
+        let dlat = ((result & 1) ? ~(result >> 1) : (result >> 1));
+        lat += dlat;
+
+        shift = 0;
+        result = 0;
+        do {
+            b = encoded.charCodeAt(index++) - 63;
+            result |= (b & 0x1f) << shift;
+            shift += 5;
+        } while (b >= 0x20);
+        let dlng = ((result & 1) ? ~(result >> 1) : (result >> 1));
+        lng += dlng;
+
+        points.push([lng / 1e5, lat / 1e5]); // Mapbox expects [lng, lat]
+    }
+    return points;
 }
 
 interface Business {
@@ -79,6 +110,9 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
     // ✅ GPS ready flag — true jab real GPS mil jaaye
     const gpsReadyRef = useRef<boolean>(false);
     const [gpsReady, setGpsReady] = useState(false);
+
+    const navigationStepsRef = useRef<any[]>([]);
+    const lastInstructionSpokenRef = useRef<string>("");
 
     const API = (process.env.NEXT_PUBLIC_API_URL);
 
@@ -503,33 +537,52 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                 const res = await fetch(url);
                 const data = await res.json();
 
-                if (data.success) {
-                    const results = data.data;
-                    if (searchLoc && results.length > 0) {
-                        const destinations = results.slice(0, 10).map((b: any) => `${b.gpsCoordinates.lng},${b.gpsCoordinates.lat}`).join(';');
-                        const matrixUrl = `https://api.mapbox.com/directions-matrix/v1/mapbox/driving/${searchLoc.lng},${searchLoc.lat};${destinations}?sources=0&annotations=distance&access_token=${MAPBOX_TOKEN}`;
+                if (data.success && data.data) {
+                    let results = data.data;
 
+                    if (searchLoc) {
+                        // Priority 1: Initialize with Haversine base distance for all results
+                        results = results.map((b: any) => ({
+                            ...b,
+                            distanceKm: haversineKm(searchLoc.lat, searchLoc.lng, b.gpsCoordinates.lat, b.gpsCoordinates.lng),
+                            durationMins: null
+                        }));
+
+                        // Priority 2: Enrich first 10 with precise Google Routes Matrix API
                         try {
-                            const matrixRes = await fetch(matrixUrl);
-                            const matrixData = await matrixRes.json();
-                            const roadDistances = matrixData.distances?.[0]?.slice(1);
-                            const withDistances = results.slice(0, 10).map((b: any, i: number) => ({
-                                ...b,
-                                distanceKm: roadDistances?.[i] != null ? parseFloat((roadDistances[i] / 1000).toFixed(1)) : null
-                            }));
-                            withDistances.sort((a: any, b: any) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity));
-                            setSearchResults(withDistances);
-                        } catch {
-                            const withDistances = results.map((b: any) => ({
-                                ...b,
-                                distanceKm: haversineKm(searchLoc.lat, searchLoc.lng, b.gpsCoordinates.lat, b.gpsCoordinates.lng)
-                            }));
-                            withDistances.sort((a: any, b: any) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity));
-                            setSearchResults(withDistances);
+                            const matrixRes = await fetch('/api/distance-matrix', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    origin: searchLoc,
+                                    destinations: results.slice(0, 10).map((b: any) => b.gpsCoordinates)
+                                })
+                            });
+                            
+                            if (matrixRes.ok) {
+                                const matrixData = await matrixRes.json();
+                                // matrixData is an array of elements
+                                if (Array.isArray(matrixData)) {
+                                    results = results.map((b: any, i: number) => {
+                                        if (i >= 10) return b;
+                                        const m = matrixData.find((item: any) => item.destinationIndex === i);
+                                        if (!m || m.status?.code) return b; // Fallback to Haversine if error for this element
+                                        return {
+                                            ...b,
+                                            distanceKm: m.distanceMeters != null ? parseFloat((m.distanceMeters / 1000).toFixed(1)) : b.distanceKm,
+                                            durationMins: m.duration ? Math.round(parseInt(m.duration) / 60) : null
+                                        };
+                                    });
+                                }
+                            }
+                        } catch (e) {
+                            console.warn("Matrix enrichment failed, keeping Haversine fallback.", e);
                         }
-                    } else {
-                        setSearchResults(results);
+
+                        results.sort((a: any, b: any) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity));
                     }
+                    
+                    setSearchResults(results.slice(0, 20)); // Keep top 20 for performance
                 }
             } catch (e) {
                 console.error("Search failed:", e);
@@ -630,31 +683,68 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
         activeDestRef.current = selectedBusiness.gpsCoordinates;
 
         try {
-            const query = await fetch(
-                `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${freshUserLoc.lng},${freshUserLoc.lat};${selectedBusiness.gpsCoordinates.lng},${selectedBusiness.gpsCoordinates.lat}?steps=true&geometries=geojson&annotations=congestion&overview=full&access_token=${MAPBOX_TOKEN}`,
-                { method: 'GET' }
-            );
+            const originStr = `${freshUserLoc.lat},${freshUserLoc.lng}`;
+            const destStr = `${selectedBusiness.gpsCoordinates.lat},${selectedBusiness.gpsCoordinates.lng}`;
+            const url = `/api/directions?origin=${originStr}&destination=${destStr}`;
+
+            const query = await fetch(url);
             let json = await query.json();
 
-            if (!json?.routes?.length) {
-                const fallbackQuery = await fetch(
-                    `https://api.mapbox.com/directions/v5/mapbox/driving/${freshUserLoc.lng},${freshUserLoc.lat};${selectedBusiness.gpsCoordinates.lng},${selectedBusiness.gpsCoordinates.lat}?steps=true&geometries=geojson&annotations=congestion&overview=full&access_token=${MAPBOX_TOKEN}`,
-                    { method: 'GET' }
-                );
-                json = await fallbackQuery.json();
-            }
+            // v2 response uses routes array without a status wrapper
+            if (!json.routes?.length) {
+                console.error("Google Maps API Route Error Payload:", json);
 
-            if (!json?.routes?.length) {
-                alert("No route found for this destination.");
+                // Show a helpful error if it's an API permission issue
+                if (json.error) {
+                    alert(`Google API Error: ${json.error.message}\nMake sure Routes API is enabled in your Google Cloud Console.`);
+                } else {
+                    alert("No route found for this destination via Google Maps.");
+                }
                 return;
             }
 
             const data = json.routes[0];
             const userCoord = [freshUserLoc.lng, freshUserLoc.lat] as [number, number];
-            const rawRoute = data.geometry.coordinates;
+
+            const polylinePoints = data.polyline?.encodedPolyline || "";
+            const rawRoute = decodePolyline(polylinePoints);
             const route = [userCoord, ...rawRoute];
-            const rawCongestion = data.legs[0].annotation?.congestion || [];
-            const routeDist = data.distance / 1000;
+
+            const routeDist = (data.distanceMeters || 0) / 1000;
+            const durationMins = parseInt(data.duration || "0") / 60;
+
+            // Build segment traffic array from speedReadingIntervals
+            const intervals = data.travelAdvisory?.speedReadingIntervals || [];
+            const pointTraffic = new Array(route.length).fill('low');
+            let severeCount = 0;
+            let moderateCount = 0;
+
+            intervals.forEach((interval: any) => {
+                const sIdx = interval.startPolylinePointIndex || 0;
+                const eIdx = interval.endPolylinePointIndex || route.length - 1;
+                let level = 'low';
+                if (interval.speed === 'TRAFFIC_JAM') { level = 'severe'; severeCount += (eIdx - sIdx); }
+                else if (interval.speed === 'SLOW') { level = 'moderate'; moderateCount += (eIdx - sIdx); }
+
+                for (let j = sIdx; j <= eIdx && j + 1 < route.length; j++) {
+                    pointTraffic[j + 1] = level;
+                }
+            });
+
+            let overallCongestion = "LOW";
+            const totalPoints = Math.max(1, route.length);
+            if (severeCount / totalPoints > 0.25) overallCongestion = "HEAVY";
+            else if (severeCount > 0 || moderateCount / totalPoints > 0.3) overallCongestion = "MODERATE";
+
+            // Extract voice navigation instructions
+            const processedSteps = (data.legs?.[0]?.steps || []).map((s: any) => ({
+                lat: s.startLocation?.latLng?.latitude,
+                lng: s.startLocation?.latLng?.longitude,
+                instruction: s.navigationInstruction?.instructions?.replace(/<[^>]*>?/gm, '') || ""
+            })).filter((s: any) => s.instruction);
+
+            navigationStepsRef.current = processedSteps;
+            lastInstructionSpokenRef.current = "";
 
             // ✅ CRITICAL: Route draw karne ka exact GPS save karo — START NAVIGATION isi se flyTo karega
             routeOriginRef.current = freshUserLoc;
@@ -666,9 +756,9 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
             setIsNavigating(false);
             setRouteInfo({
                 distance: routeDist,
-                duration: data.duration / 60,
+                duration: durationMins,
                 businessName: selectedBusiness.brandName || selectedBusiness.businessName,
-                trafficCondition: getTrafficLevel(rawCongestion)
+                trafficCondition: overallCongestion
             });
 
             const map = mapRef.current;
@@ -701,7 +791,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
 
             const features = [];
             for (let i = 0; i < route.length - 1; i++) {
-                const segCongestion = i === 0 ? 'low' : (rawCongestion[i - 1] || 'low');
+                const segCongestion = pointTraffic[i + 1] || 'low';
                 features.push({
                     type: 'Feature',
                     geometry: { type: 'LineString', coordinates: [route[i], route[i + 1]] },
@@ -783,30 +873,16 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
             {/* Active Navigation Header */}
             <AnimatePresence>
                 {isNavigating && (
-                    <motion.div initial={{ y: -100 }} animate={{ y: 0 }} exit={{ y: -100 }} className="absolute top-0 left-0 right-0 z-40 bg-black/40 backdrop-blur-2xl p-4 flex items-center justify-between shadow-[0_10px_40px_rgba(0,0,0,0.5)] border-b border-primary/30">
-                        <div className="flex items-center gap-3">
+                    <motion.div initial={{ y: -100 }} animate={{ y: 0 }} exit={{ y: -100 }} className="absolute top-0 left-0 right-0 z-40 bg-black/40 backdrop-blur-2xl p-2.5 sm:p-4 flex items-center justify-between shadow-[0_10px_40px_rgba(0,0,0,0.5)] border-b border-primary/30">
+                        <div className="flex items-center gap-2 sm:gap-3">
                             <div className="relative">
                                 <div className="absolute inset-0 bg-primary/20 blur-lg rounded-full animate-pulse" />
-                                <NavigationIcon size={24} className="text-primary relative z-10 animate-bounce" />
+                                <NavigationIcon size={18} className="text-primary relative z-10 animate-bounce" />
                             </div>
                             <div>
-                                <h2 className="text-white font-black text-xl tracking-tighter leading-tight flex items-center gap-2">
-                                    NAVIGATING <span className="w-2 h-2 rounded-full bg-primary animate-ping" />
+                                <h2 className="text-white font-black text-lg sm:text-xl tracking-tighter leading-tight flex items-center gap-2">
+                                    NAVIGATING
                                 </h2>
-                                {routeInfo ? (
-                                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                                        <span className="text-primary font-black text-[11px] uppercase tracking-widest">
-                                            {routeInfo.distance.toFixed(1)} KM &middot; {Math.round(routeInfo.duration)} MIN
-                                        </span>
-                                        {routeInfo.trafficCondition && (
-                                            <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${routeInfo.trafficCondition === 'LOW' ? 'border-green-500/40 text-green-400 bg-green-500/10' : routeInfo.trafficCondition === 'MODERATE' ? 'border-yellow-500/40 text-yellow-400 bg-yellow-500/10' : 'border-red-500/40 text-red-400 bg-red-500/10'}`}>
-                                                {routeInfo.trafficCondition === 'LOW' ? '🟢 LOW' : routeInfo.trafficCondition === 'MODERATE' ? '🟡 MODERATE' : '🔴 HEAVY'}
-                                            </span>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <p className="text-primary/60 font-bold text-[10px] uppercase tracking-[0.2em]">Live Traffic Feed Active</p>
-                                )}
                             </div>
                         </div>
                         <button
@@ -817,10 +893,10 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                 if (startMarkerRef.current) { startMarkerRef.current.remove(); startMarkerRef.current = null; }
                                 mapRef.current?.easeTo({ pitch: 45, zoom: 15, duration: 1500 });
                             }}
-                            className="bg-red-500 text-white font-black py-2 px-5 rounded-xl shadow-[0_0_20px_rgba(239,68,68,0.4)] border border-red-400 hover:bg-red-600 transition-all flex items-center gap-2 group"
+                            className="bg-red-500 text-white font-black py-1.5 px-4 rounded-xl shadow-[0_0_20px_rgba(239,68,68,0.4)] border border-red-400 hover:bg-red-600 transition-all flex items-center gap-2 group"
                         >
-                            <Octagon size={14} className="fill-white/20" />
-                            <span className="text-xs tracking-widest">STOP</span>
+                            <Octagon size={12} className="fill-white/20" />
+                            <span className="text-[10px] sm:text-xs tracking-widest uppercase">EXIT</span>
                         </button>
                     </motion.div>
                 )}
@@ -879,9 +955,11 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                         <h4 className="text-white font-bold text-sm truncate">{biz.brandName || biz.businessName}</h4>
                                                         <p className="text-white/50 text-xs truncate">{biz.registeredOfficeAddress}</p>
                                                     </div>
-                                                    {biz.distanceKm && (
-                                                        <span className="text-primary font-black whitespace-nowrap bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/30 text-[11px]">
-                                                            {biz.distanceKm.toFixed(1)} KM
+                                                    {(biz.distanceKm != null || biz.durationMins != null) && (
+                                                        <span className="flex items-center gap-1 sm:gap-1.5 text-primary font-black whitespace-nowrap bg-primary/10 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-primary/30 text-[10px] sm:text-[11px]">
+                                                            {biz.distanceKm != null ? `${biz.distanceKm.toFixed(1)} KM` : ''}
+                                                            {biz.distanceKm != null && biz.durationMins != null && <span className="opacity-40 text-[8px] sm:text-[9px]">•</span>}
+                                                            {biz.durationMins != null ? <span className="text-white">{biz.durationMins} MIN</span> : null}
                                                         </span>
                                                     )}
                                                 </button>
@@ -965,15 +1043,15 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                         initial={{ opacity: 0, y: 40 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 40 }}
-                        className={`absolute z-20 px-2 sm:px-4 flex ${isNavigating ? 'justify-center sm:justify-end' : 'justify-center'} pointer-events-none transition-all duration-700 w-full left-0 right-0 bottom-6`}
+                        className={`absolute z-20 px-2 sm:px-12 flex justify-center sm:justify-end pointer-events-auto transition-all duration-700 w-full left-0 right-0 bottom-4 sm:bottom-12 h-min`}
                     >
-                        <div className={`relative bg-[#020617]/95 backdrop-blur-3xl border ${isNavigating ? 'border-red-500/40' : 'border-primary/40'} shadow-[0_20px_80px_rgba(0,0,0,0.8)] pointer-events-auto overflow-hidden transition-all duration-500
-                            ${isNavigating ? 'rounded-2xl sm:rounded-[2rem] p-2 sm:p-3 w-[min(calc(100%-1rem),400px)] sm:max-w-[180px]' : 'rounded-[1.2rem] sm:rounded-2xl p-4 sm:p-4 w-[calc(100%-1.5rem)] sm:w-full max-w-[280px] sm:max-w-[240px]'}
+                        <div className={`relative bg-[#020617]/95 backdrop-blur-3xl border ${isNavigating ? 'border-primary/40' : 'border-primary/20'} shadow-[0_20px_90px_rgba(0,0,0,0.9)] overflow-hidden transition-all duration-500
+                            ${isNavigating ? 'rounded-[1rem] sm:rounded-[1.2rem] p-2.5 sm:p-3.5 w-[min(calc(100%-2.5rem),380px)]' : 'rounded-[1.2rem] sm:rounded-2xl p-4 sm:p-5 w-[calc(100%-2rem)] sm:w-full max-w-[280px] sm:max-w-[260px]'}
                         `}>
                             <motion.div
                                 animate={{ y: ['100%', '-100%'] }}
                                 transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                                className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-transparent h-1/2 pointer-events-none"
+                                className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/10 to-transparent h-1/2 pointer-events-none opacity-40"
                             />
 
                             {!isNavigating && (
@@ -989,66 +1067,85 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                         }
                                         if (userLocation) mapRef.current?.flyTo({ center: [userLocation.lng, userLocation.lat], zoom: 15, pitch: 45, duration: 2000 });
                                     }}
-                                    className="absolute top-2 right-2 sm:top-3 sm:right-3 w-8 h-8 rounded-full bg-white/5 border border-white/10 text-white flex items-center justify-center z-20"
+                                    className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/5 border border-white/10 text-white flex items-center justify-center z-20 hover:bg-white/10 transition-colors"
                                 >
                                     <X size={14} />
                                 </button>
                             )}
 
-                            <div className={`flex relative z-10 w-full ${isNavigating ? 'flex-row items-center justify-between sm:flex-col sm:items-stretch' : 'flex-col'}`}>
-                                <div className={`${isNavigating ? 'mb-0 sm:mb-2' : 'mb-1 sm:mb-2'}`}>
-                                    <div className="flex items-center gap-1.5 mb-1">
-                                        <div className={`w-1 h-1 rounded-full bg-primary ${isNavigating ? 'animate-pulse' : 'animate-ping'}`} />
-                                        <span className="text-primary text-[10px] font-black uppercase tracking-[0.2em]">{isNavigating ? 'LIVE' : 'ROUTE READY'}</span>
+                            <div className={`flex relative z-10 w-full ${isNavigating ? 'flex-row items-center justify-between gap-3' : 'flex-col'}`}>
+                                <div className="flex flex-col">
+                                    <div className="flex items-center gap-2 mb-1.5 font-black uppercase tracking-[0.2em] text-[10px] sm:text-[12px]">
+                                        <div className={`w-1.5 h-1.5 rounded-full bg-primary ${isNavigating ? 'animate-pulse' : 'animate-ping'}`} />
+                                        <span className="text-primary">{isNavigating ? 'LIVE' : 'ROUTE READY'}</span>
                                     </div>
-                                    <div className="flex flex-col gap-1">
-                                        <span className={`text-white font-black tracking-tighter leading-none ${isNavigating ? 'text-lg sm:text-4xl' : 'text-2xl sm:text-4xl'}`}>
+                                    <div className="flex flex-col">
+                                        <span className={`text-white font-black tracking-tighter leading-none ${isNavigating ? 'text-xl sm:text-2xl' : 'text-3xl sm:text-5xl'}`}>
                                             {routeInfo.duration > 60 ? `${Math.floor(routeInfo.duration / 60)}h ${Math.round(routeInfo.duration % 60)}m` : `${Math.round(routeInfo.duration)}`}
-                                            <span className="text-xs ml-1">MIN</span>
+                                            <span className="text-[9px] sm:text-[10px] ml-0.5 font-bold opacity-60 uppercase">MIN</span>
                                         </span>
-                                        <span className={`text-primary font-black uppercase tracking-widest ${isNavigating ? 'text-xs sm:text-lg' : 'text-base sm:text-lg'}`}>
-                                            {routeInfo.distance.toFixed(1)} <span className="text-[10px]">KM</span>
+                                        <span className={`text-primary font-black uppercase tracking-[0.1em] ${isNavigating ? 'text-[10px] sm:text-xs' : 'text-xs sm:text-base'}`}>
+                                            {routeInfo.distance.toFixed(1)} <span className="text-[8px] sm:text-[9px]">KM</span>
                                         </span>
-                                        {routeInfo.trafficCondition && (
-                                            <span className={`mt-1 self-start text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${routeInfo.trafficCondition === 'LOW' ? 'border-green-500/40 text-green-400 bg-green-500/10' : routeInfo.trafficCondition === 'MODERATE' ? 'border-yellow-500/40 text-yellow-400 bg-yellow-500/10' : 'border-red-500/40 text-red-400 bg-red-500/10'}`}>
-                                                {routeInfo.trafficCondition === 'LOW' ? '🟢 LOW TRAFFIC' : routeInfo.trafficCondition === 'MODERATE' ? '🟡 MODERATE' : '🔴 HEAVY'}
-                                            </span>
-                                        )}
                                     </div>
                                 </div>
 
-                                <div className="w-full h-px bg-white/5 my-2" />
-
-                                <div className="space-y-2">
+                                <div className={`flex items-center ${isNavigating ? 'flex-shrink-0' : 'w-full mt-4 pt-4 border-t border-white/5'}`}>
                                     {!isNavigating ? (
                                         <button
                                             onClick={() => {
                                                 setIsNavigating(true);
                                                 setIsAutoCentering(true);
                                                 const map = mapRef.current!;
-
-                                                // ✅ FIX: routeOriginRef use karo — yahi exact GPS tha jab route draw hua tha
-                                                // canonicalLocRef current position hai, routeOriginRef route ka start point hai
                                                 const navLoc = routeOriginRef.current || canonicalLocRef.current;
                                                 if (navLoc) {
                                                     map.flyTo({ center: [navLoc.lng, navLoc.lat], zoom: 18, pitch: 75, duration: 2000 });
                                                 }
 
                                                 if (rerouteTimerRef.current) clearInterval(rerouteTimerRef.current);
-                                                rerouteTimerRef.current = setInterval(async () => {
-                                                    const loc = lastLocationRef.current || canonicalLocRef.current;
+
+                                                const fetchRouteData = async (locToUse: any) => {
                                                     const dest = activeDestRef.current;
-                                                    if (!loc || !dest || !mapRef.current) return;
+                                                    if (!locToUse || !dest || !mapRef.current) return;
                                                     const bName = routeInfo?.businessName || '';
                                                     try {
-                                                        const res = await fetch(`https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${loc.lng},${loc.lat};${dest.lng},${dest.lat}?steps=true&geometries=geojson&annotations=congestion&overview=full&access_token=${MAPBOX_TOKEN}`);
+                                                        const originStr = `${locToUse.lat},${locToUse.lng}`;
+                                                        const destStr = `${dest.lat},${dest.lng}`;
+                                                        const url = `/api/directions?origin=${originStr}&destination=${destStr}`;
+                                                        const res = await fetch(url);
                                                         const js = await res.json();
-                                                        if (!js?.routes?.length) return;
+                                                        if (!js.routes?.length) return;
+
                                                         const d = js.routes[0];
-                                                        const raw = d.legs[0]?.annotation?.congestion || [];
-                                                        setRouteInfo({ distance: d.distance / 1000, duration: d.duration / 60, businessName: bName, trafficCondition: getTrafficLevel(raw) });
+                                                        const dist = (d.distanceMeters || 0) / 1000;
+                                                        const dMins = parseInt(d.duration || "0") / 60;
+
+                                                        const intervals = d.travelAdvisory?.speedReadingIntervals || [];
+                                                        let sCount = 0; let mCount = 0;
+                                                        intervals.forEach((i: any) => {
+                                                            const diff = (i.endPolylinePointIndex || 0) - (i.startPolylinePointIndex || 0);
+                                                            if (i.speed === 'TRAFFIC_JAM') sCount += diff;
+                                                            else if (i.speed === 'SLOW') mCount += diff;
+                                                        });
+
+                                                        let tCond = "LOW";
+                                                        const poly = decodePolyline(d.polyline?.encodedPolyline || "");
+                                                        const tPts = Math.max(1, poly.length);
+                                                        if (sCount / tPts > 0.25) tCond = "HEAVY";
+                                                        else if (sCount > 0 || mCount / tPts > 0.3) tCond = "MODERATE";
+
+                                                        setRouteInfo({ distance: dist, duration: dMins, businessName: bName, trafficCondition: tCond });
+
+                                                        const newSteps = (d.legs?.[0]?.steps || []).map((s: any) => ({
+                                                            lat: s.startLocation?.latLng?.latitude,
+                                                            lng: s.startLocation?.latLng?.longitude,
+                                                            instruction: s.navigationInstruction?.instructions?.replace(/<[^>]*>?/gm, '') || ""
+                                                        })).filter((s: any) => s.instruction);
+                                                        if (newSteps.length > 0) navigationStepsRef.current = newSteps;
                                                     } catch (e) { console.warn('Reroute error:', e); }
-                                                }, 5000); // ✅ har 5 sec mein distance/time update
+                                                };
+
+                                                fetchRouteData(navLoc);
 
                                                 if (navigator.geolocation) {
                                                     if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
@@ -1057,26 +1154,32 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                             const lat = pos.coords.latitude;
                                                             const lng = pos.coords.longitude;
                                                             const heading = pos.coords.heading;
-                                                            const speed = pos.coords.speed; // m/s
                                                             const newLoc = { lat, lng };
 
-                                                            // ✅ FIX: Threshold 5m kar diya — chhoti movement bhi catch hogi
-                                                            // Aur agar lastLocation null hai toh bhi update karo
                                                             if (lastLocationRef.current && !hasMoved(lastLocationRef.current, newLoc, 5)) return;
 
                                                             lastLocationRef.current = newLoc;
                                                             canonicalLocRef.current = newLoc;
                                                             setUserLocation(newLoc);
+                                                            fetchRouteData(newLoc);
 
-                                                            // ✅ autoCentering sirf tabhi true rahega jab user ne RE-CENTER dabaya ho
-                                                            // Force true NAHI karo — user ka choice respect karo
+                                                            if (navigationStepsRef.current.length > 0) {
+                                                                const nextStep = navigationStepsRef.current[0];
+                                                                const distToManhattan = Math.abs(lat - nextStep.lat) + Math.abs(lng - nextStep.lng);
+                                                                if (distToManhattan < 0.002 && lastInstructionSpokenRef.current !== nextStep.instruction) {
+                                                                    const utterance = new SpeechSynthesisUtterance(nextStep.instruction);
+                                                                    utterance.rate = 0.95;
+                                                                    utterance.pitch = 1.05;
+                                                                    window.speechSynthesis.speak(utterance);
+                                                                    lastInstructionSpokenRef.current = nextStep.instruction;
+                                                                    navigationStepsRef.current.shift();
+                                                                }
+                                                            }
 
-                                                            // ✅ FIX: Bearing — heading mile toh use karo, warna movement direction calculate karo
                                                             let mapBearing = mapRef.current?.getBearing() ?? 0;
                                                             if (heading !== null && heading !== undefined && !isNaN(heading)) {
                                                                 mapBearing = heading;
                                                             } else if (lastLocationRef.current) {
-                                                                // Manually calculate bearing from last→current position
                                                                 const dLng = newLoc.lng - lastLocationRef.current.lng;
                                                                 const dLat = newLoc.lat - lastLocationRef.current.lat;
                                                                 if (Math.abs(dLng) > 0.00001 || Math.abs(dLat) > 0.00001) {
@@ -1084,7 +1187,6 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                                 }
                                                             }
 
-                                                            // ✅ Map sirf tab move karo jab user ne RE-CENTER dabaya ho
                                                             if (autoCenteringRef.current) {
                                                                 isProgrammaticMove.current = true;
                                                                 mapRef.current?.easeTo({
@@ -1098,7 +1200,6 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                                 setTimeout(() => { isProgrammaticMove.current = false; }, 900);
                                                             }
 
-                                                            // ✅ Vehicle marker HAMESHA update hoga — chahe map move ho ya na ho
                                                             if (startMarkerRef.current) {
                                                                 startMarkerRef.current.setLngLat([lng, lat]);
                                                                 const arrowDiv = startMarkerRef.current.getElement().querySelector('div');
@@ -1108,26 +1209,22 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                             }
                                                         },
                                                         (err) => console.warn("Watch pos err:", err),
-                                                        {
-                                                            enableHighAccuracy: true,
-                                                            maximumAge: 0,    // ✅ har baar fresh GPS — no cache
-                                                            timeout: 15000
-                                                        }
+                                                        { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
                                                     );
                                                 }
                                             }}
-                                            className="bg-primary text-white font-black py-2 sm:py-2.5 px-4 rounded-xl hover:bg-primary/90 transition-all flex items-center justify-center gap-2 shadow-[0_6px_20px_rgba(59,130,246,0.3)] w-full text-[10px] sm:text-xs uppercase tracking-widest"
+                                            className="bg-primary text-white font-black py-3 px-6 rounded-2xl hover:bg-primary/90 transition-all flex items-center justify-center gap-2 shadow-[0_8px_30px_rgba(59,130,246,0.5)] w-full text-xs uppercase tracking-widest border border-white/10"
                                         >
-                                            <NavigationIcon size={14} fill="currentColor" /> START NAVIGATION
+                                            <NavigationIcon size={16} fill="currentColor" /> START NAVIGATION
                                         </button>
                                     ) : (
                                         <AnimatePresence mode="wait">
                                             {!isAutoCentering && (
                                                 <motion.button
                                                     key="recenter"
-                                                    initial={{ opacity: 0, scale: 0.95 }}
-                                                    animate={{ opacity: 1, scale: 1 }}
-                                                    exit={{ opacity: 0, scale: 0.95 }}
+                                                    initial={{ opacity: 0, x: 20 }}
+                                                    animate={{ opacity: 1, x: 0 }}
+                                                    exit={{ opacity: 0, x: 20 }}
                                                     onClick={() => {
                                                         setIsAutoCentering(true);
                                                         const loc = canonicalLocRef.current;
@@ -1137,9 +1234,9 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                             setTimeout(() => { isProgrammaticMove.current = false; }, 1600);
                                                         }
                                                     }}
-                                                    className="bg-primary text-white font-black py-1.5 px-3 rounded-xl hover:bg-primary/90 transition-all flex items-center justify-center gap-1.5 w-full text-[9px] uppercase tracking-widest border border-white/20"
+                                                    className="bg-primary text-white font-black py-2 px-4 rounded-lg sm:rounded-xl hover:bg-primary/90 transition-all flex items-center justify-center gap-1.5 text-[9px] sm:text-[10px] uppercase tracking-wider shadow-[0_4px_15px_rgba(59,130,246,0.2)] border border-primary/40 active:scale-95"
                                                 >
-                                                    <NavigationIcon size={10} className="rotate-45" /> RE-CENTER
+                                                    <NavigationIcon size={12} fill="currentColor" className="rotate-45" /> RE-CENTER
                                                 </motion.button>
                                             )}
                                         </AnimatePresence>
