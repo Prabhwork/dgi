@@ -101,6 +101,8 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
     const rerouteTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const lastLocationRef = useRef<{ lat: number; lng: number } | null>(null);
     const activeDestRef = useRef<{ lat: number; lng: number } | null>(null);
+    const [isMuted, setIsMuted] = useState(false);
+    const isMutedRef = useRef(false);
 
     // ✅ Single canonical GPS ref — continuously updated
     const canonicalLocRef = useRef<{ lat: number; lng: number } | null>(null);
@@ -559,7 +561,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                     destinations: results.slice(0, 10).map((b: any) => b.gpsCoordinates)
                                 })
                             });
-                            
+
                             if (matrixRes.ok) {
                                 const matrixData = await matrixRes.json();
                                 // matrixData is an array of elements
@@ -582,7 +584,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
 
                         results.sort((a: any, b: any) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity));
                     }
-                    
+
                     setSearchResults(results.slice(0, 20)); // Keep top 20 for performance
                 }
             } catch (e) {
@@ -677,8 +679,13 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
         // ✅ Validate: agar user aur destination same hain toh warn karo
         const distCheck = Math.abs(freshUserLoc.lat - selectedBusiness.gpsCoordinates.lat) + Math.abs(freshUserLoc.lng - selectedBusiness.gpsCoordinates.lng);
         if (distCheck < 0.0001) {
-            alert("You appear to be at this location already!");
-            return;
+            if (!gpsReadyRef.current) {
+                alert("Please enable GPS/Location access to get turn-by-turn directions.");
+                return;
+            } else {
+                alert("You appear to be at this location already!");
+                return;
+            }
         }
 
         activeDestRef.current = selectedBusiness.gpsCoordinates;
@@ -1114,7 +1121,9 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                     const utterance = new SpeechSynthesisUtterance("Starting navigation. " + firstStep.instruction);
                                                     utterance.rate = 0.95;
                                                     utterance.pitch = 1.05;
-                                                    window.speechSynthesis.speak(utterance);
+                                                    if (!isMutedRef.current) {
+                                                        window.speechSynthesis.speak(utterance);
+                                                    }
                                                     lastInstructionSpokenRef.current = firstStep.instruction;
                                                 }
 
@@ -1193,7 +1202,9 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                                         const utterance = new SpeechSynthesisUtterance(nextStep.instruction);
                                                                         utterance.rate = 0.95;
                                                                         utterance.pitch = 1.05;
-                                                                        window.speechSynthesis.speak(utterance);
+                                                                        if (!isMutedRef.current) {
+                                                                            window.speechSynthesis.speak(utterance);
+                                                                        }
                                                                         lastInstructionSpokenRef.current = nextStep.instruction;
                                                                     }
                                                                     navigationStepsRef.current.shift();
@@ -1242,28 +1253,44 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                             <NavigationIcon size={16} fill="currentColor" /> START NAVIGATION
                                         </button>
                                     ) : (
-                                        <AnimatePresence mode="wait">
-                                            {!isAutoCentering && (
-                                                <motion.button
-                                                    key="recenter"
-                                                    initial={{ opacity: 0, x: 20 }}
-                                                    animate={{ opacity: 1, x: 0 }}
-                                                    exit={{ opacity: 0, x: 20 }}
-                                                    onClick={() => {
-                                                        setIsAutoCentering(true);
-                                                        const loc = canonicalLocRef.current;
-                                                        if (loc) {
-                                                            isProgrammaticMove.current = true;
-                                                            mapRef.current?.flyTo({ center: [loc.lng, loc.lat], zoom: 18, pitch: 75, duration: 1500, essential: true });
-                                                            setTimeout(() => { isProgrammaticMove.current = false; }, 1600);
-                                                        }
-                                                    }}
-                                                    className="bg-primary text-white font-black py-2 px-4 rounded-lg sm:rounded-xl hover:bg-primary/90 transition-all flex items-center justify-center gap-1.5 text-[9px] sm:text-[10px] uppercase tracking-wider shadow-[0_4px_15px_rgba(59,130,246,0.2)] border border-primary/40 active:scale-95"
-                                                >
-                                                    <NavigationIcon size={12} fill="currentColor" className="rotate-45" /> RE-CENTER
-                                                </motion.button>
-                                            )}
-                                        </AnimatePresence>
+                                        <div className="flex items-center gap-3 w-full">
+                                            <button
+                                                onClick={() => {
+                                                    const nextMuted = !isMuted;
+                                                    setIsMuted(nextMuted);
+                                                    isMutedRef.current = nextMuted;
+                                                    if (nextMuted) {
+                                                        window.speechSynthesis.cancel();
+                                                    }
+                                                }}
+                                                className={`p-2.5 rounded-xl border transition-all flex items-center justify-center ${isMuted ? 'bg-red-500/10 border-red-500/20 text-red-500' : 'bg-white/5 border-white/10 text-white hover:bg-white/10'}`}
+                                            >
+                                                {isMuted ? <MicOff size={18} /> : <Mic size={18} className="text-primary" />}
+                                            </button>
+                                            
+                                            <AnimatePresence mode="wait">
+                                                {!isAutoCentering && (
+                                                    <motion.button
+                                                        key="recenter"
+                                                        initial={{ opacity: 0, x: 20 }}
+                                                        animate={{ opacity: 1, x: 0 }}
+                                                        exit={{ opacity: 0, x: 20 }}
+                                                        onClick={() => {
+                                                            setIsAutoCentering(true);
+                                                            const loc = canonicalLocRef.current;
+                                                            if (loc) {
+                                                                isProgrammaticMove.current = true;
+                                                                mapRef.current?.flyTo({ center: [loc.lng, loc.lat], zoom: 18, pitch: 75, duration: 1500, essential: true });
+                                                                setTimeout(() => { isProgrammaticMove.current = false; }, 1600);
+                                                            }
+                                                        }}
+                                                        className="flex-1 bg-primary text-white font-black py-2.5 px-4 rounded-xl hover:bg-primary/90 transition-all flex items-center justify-center gap-1.5 text-[9px] sm:text-[10px] uppercase tracking-wider shadow-[0_4px_15px_rgba(59,130,246,0.2)] border border-primary/40 active:scale-95"
+                                                    >
+                                                        <NavigationIcon size={12} fill="currentColor" className="rotate-45" /> RE-CENTER
+                                                    </motion.button>
+                                                )}
+                                            </AnimatePresence>
+                                        </div>
                                     )}
                                 </div>
                             </div>
