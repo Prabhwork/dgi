@@ -45,40 +45,31 @@ export default function HeroSection() {
     const recognitionRef = useRef<any>(null);
     const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    // Overall listings counter — starts at 4200, grows to ~5000 range
-    const LISTING_BASE = 3842;
-    const LISTING_CAP = 15000;
-    const [listingCount, setListingCount] = useState(LISTING_BASE);
-    const [listingDisplay, setListingDisplay] = useState(LISTING_BASE);
+    // Overall listings counter - Synced with Backend
+    const [listingCount, setListingCount] = useState(3842);
+    const [listingDisplay, setListingDisplay] = useState(3842);
 
     useEffect(() => {
-        const storageKey = 'dgi_overall_listings';
-        const saved = localStorage.getItem(storageKey);
-        const baseDate = new Date('2026-03-30T12:00:00').getTime();
-        const elapsed = (Date.now() - baseDate) / (1000 * 60); // minutes
-        const grown = Math.min(Math.floor(LISTING_BASE + elapsed * 0.3), LISTING_CAP);
-        const final = saved ? Math.min(parseInt(saved), LISTING_CAP) : grown;
-        
-        // If saved is extremely higher than current base (e.g. from previous run), reset it to grown
-        const startingVal = (saved && parseInt(saved) > grown + 100) ? grown : final;
-        
-        setListingCount(startingVal);
-        setListingDisplay(startingVal);
+        const fetchLiveListing = async () => {
+            try {
+                const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+                const res = await fetch(`${API_URL}/global-settings/live-listing`);
+                const data = await res.json();
+                if (data.success) {
+                    setListingCount(data.count);
+                }
+            } catch (err) {
+                console.error('Failed to fetch live listing count:', err);
+            }
+        };
 
-        const interval = setInterval(() => {
-            // Office Hours: 10 AM to 7 PM (inclusive of 10:00, stop at 19:00)
-            const now = new Date();
-            const hours = now.getHours();
-            if (hours < 10 || hours >= 19) return; 
+        // Initial fetch
+        fetchLiveListing();
 
-            setListingCount(prev => {
-                if (prev >= LISTING_CAP) return prev;
-                const next = Math.min(prev + 1, LISTING_CAP);
-                localStorage.setItem(storageKey, next.toString());
-                return next;
-            });
-        }, 3000);
-        return () => clearInterval(interval);
+        // Poll every 5 seconds to stay in sync with backend worker
+        const syncInterval = setInterval(fetchLiveListing, 5000);
+        
+        return () => clearInterval(syncInterval);
     }, []);
 
     useEffect(() => {

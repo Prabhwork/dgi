@@ -54,6 +54,8 @@ const testimonials = require('./routes/testimonialRoutes');
 const existingCustomers = require('./routes/existingCustomers');
 const mainSubcategories = require('./routes/mainSubcategoryRoutes');
 const googleCategories = require('./routes/googleCategoryRoutes');
+const globalSettings = require('./routes/globalSettingsRoutes');
+const { startLiveListingWorker } = require('./utils/liveListingWorker');
 
 
 // Re-route into other resource routers
@@ -78,6 +80,7 @@ app.use('/api/upcoming-categories', upcomingCategories);
 app.use('/api/testimonials', testimonials);
 app.use('/api/existing-customers', existingCustomers);
 app.use('/api/google-categories', googleCategories);
+app.use('/api/global-settings', globalSettings);
 
 app.get('/', (req, res) => {
     res.send('Digital Book of India Admin API');
@@ -85,4 +88,7 @@ app.get('/', (req, res) => {
 
 const PORT = process.env.PORT || 5001;
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    startLiveListingWorker();
+});
