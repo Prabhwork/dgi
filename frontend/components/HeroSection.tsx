@@ -42,6 +42,7 @@ export default function HeroSection() {
     const suggestionRef = useRef<HTMLDivElement>(null);
     const [isListening, setIsListening] = useState(false);
     const recognitionRef = useRef<any>(null);
+    const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Overall listings counter — starts at 4200, grows to ~5000 range
     const LISTING_BASE = 3842;
@@ -790,11 +791,21 @@ export default function HeroSection() {
                         >
                             <div
                                 ref={mobileScrollRef}
-                                onTouchStart={() => setIsInteractingMobile(true)}
-                                onTouchEnd={() => setTimeout(() => setIsInteractingMobile(false), 3000)}
-                                onPointerDown={() => setIsInteractingMobile(true)}
-                                onPointerUp={() => setTimeout(() => setIsInteractingMobile(false), 3000)}
-                                className="flex w-full overflow-x-auto scrollbar-hide px-6 gap-4 select-none cursor-grab active:cursor-grabbing"
+                                onTouchStart={() => {
+                                    setIsInteractingMobile(true);
+                                    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+                                }}
+                                onScroll={() => {
+                                    setIsInteractingMobile(true);
+                                    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+                                    scrollTimeoutRef.current = setTimeout(() => setIsInteractingMobile(false), 2000);
+                                }}
+                                onTouchEnd={() => {
+                                    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+                                    scrollTimeoutRef.current = setTimeout(() => setIsInteractingMobile(false), 2000);
+                                }}
+                                style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }}
+                                className="flex w-full overflow-x-auto scrollbar-hide px-6 gap-4 select-none cursor-grab active:cursor-grabbing touch-pan-x"
                             >
                                 {mobilePool.map((cat, i) => (
                                     <div
