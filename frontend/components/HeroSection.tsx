@@ -34,6 +34,7 @@ export default function HeroSection() {
     const [allCategories, setAllCategories] = useState<any[]>([]);
     const [currentSet, setCurrentSet] = useState(0);
     const mobileScrollRef = useRef<HTMLDivElement>(null);
+    const scrollPosRef = useRef<number>(0);
     const [isInteractingMobile, setIsInteractingMobile] = useState(false);
     const [suggestions, setSuggestions] = useState<any[]>([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
@@ -136,13 +137,17 @@ export default function HeroSection() {
         if (!scrollContainer || isInteractingMobile || allCategories.length === 0) return;
 
         let animationFrameId: number;
+        // Sync our float ref with the native scroll in case user swiped
+        scrollPosRef.current = scrollContainer.scrollLeft;
+
         const scroll = () => {
             if (scrollContainer) {
-                if (scrollContainer.scrollLeft >= (scrollContainer.scrollWidth / 2)) {
-                    scrollContainer.scrollLeft = 0;
+                if (scrollPosRef.current >= (scrollContainer.scrollWidth / 2)) {
+                    scrollPosRef.current = 0;
                 } else {
-                    scrollContainer.scrollLeft += 0.8; // Smooth slow glide
+                    scrollPosRef.current += 1.2; // Smooth glide using explicit float tracking
                 }
+                scrollContainer.scrollLeft = scrollPosRef.current;
             }
             animationFrameId = requestAnimationFrame(scroll);
         };
