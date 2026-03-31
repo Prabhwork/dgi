@@ -688,7 +688,7 @@ exports.getNearbyBusinesses = async (req, res, next) => {
         if (category) query.businessCategory = new RegExp(category, 'i');
 
         let businesses = await Business.find(query)
-            .select('businessName brandName businessCategory description registeredOfficeAddress gpsCoordinates primaryContactNumber officialWhatsAppNumber website openingTime closingTime coverImage aadhaarVerified approvalStatus')
+            .select('businessName brandName businessCategory description registeredOfficeAddress state city pincode landmark fullAddress gpsCoordinates primaryContactNumber secondaryContactNumber officialWhatsAppNumber website openingTime closingTime coverImage aadhaarVerified approvalStatus')
             .limit(200);
 
         // Calculate exact distance and filter
@@ -1060,7 +1060,27 @@ exports.getSearchSuggestions = async (req, res, next) => {
 
         // Apply Pagination
         const paginatedData = allPotentialSuggestions.slice(skip, skip + maxLimit);
-        const hasMore = allPotentialSuggestions.length > (skip + maxLimit);
+        let hasMore = allPotentialSuggestions.length > (skip + maxLimit);
+
+        // --- Wikipedia Fallback ---
+        if (paginatedData.length < 5 && q && q.length > 1) {
+            try {
+                const axios = require('axios'); // Ensure axios is available locally if not globally defined
+                const wikiUrl = `https://en.wikipedia.org/w/api.php?action=opensearch&search=${encodeURIComponent(q)}&limit=${10 - paginatedData.length}&namespace=0&format=json`;
+                const wikiRes = await axios.get(wikiUrl);
+                if (wikiRes.data && wikiRes.data[1]) {
+                    const wikiSuggestions = wikiRes.data[1].map(w => ({ text: w, type: 'keyword' }));
+                    
+                    // Filter out exact duplicates from DB/local existing
+                    const existingTexts = paginatedData.map(p => p.text.toLowerCase());
+                    const uniqueWiki = wikiSuggestions.filter(w => !existingTexts.includes(w.text.toLowerCase()));
+
+                    paginatedData.push(...uniqueWiki);
+                }
+            } catch (wikiErr) {
+                console.error("Wikipedia suggestion fetch error:", wikiErr.message);
+            }
+        }
 
         res.status(200).json({ 
             success: true, 

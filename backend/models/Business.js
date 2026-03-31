@@ -16,6 +16,12 @@ const BusinessSchema = new mongoose.Schema({
     },
     subcategory: [String],
     description: String,
+    establishmentYear: String,
+    businessType: {
+        type: String,
+        enum: ['Service Based', 'Product Based', 'Both'],
+        default: 'Service Based'
+    },
     keywords: [String],
 
     // Step 2: Location & Contact
@@ -24,6 +30,11 @@ const BusinessSchema = new mongoose.Schema({
         lng: Number,
         address: String
     },
+    state: String,
+    city: String,
+    pincode: String,
+    landmark: String,
+    fullAddress: String,
     registeredOfficeAddress: {
         type: String,
         required: [true, 'Please add a registered office address']
@@ -33,6 +44,7 @@ const BusinessSchema = new mongoose.Schema({
         required: [true, 'Please add a primary contact number'],
         unique: true
     },
+    secondaryContactNumber: String,
     password: {
         type: String,
         required: [true, 'Please add a password'],

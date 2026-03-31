@@ -3,7 +3,7 @@ import "./globals.css";
 import Providers from "./providers";
 
 export const metadata: Metadata = {
-    title: "Digital Book of India | India's #1 Digital Directory",
+    title: "Digital Book of India",
     description:
         "Digital Book of India is a comprehensive digital directory connecting local businesses with customers across India through interactive maps and detailed listings. Boost your online presence and discover local sellers effortlessly.",
     icons: {

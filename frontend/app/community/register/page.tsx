@@ -82,7 +82,13 @@ const TRANSLATIONS = {
             keywords: "Keywords / Tags",
             gpsCoordinates: "Exact GPS Coordinates",
             officeAddress: "Registered Office Address",
+            fullAddress: "Full Address",
+            state: "State",
+            city: "City",
+            pincode: "Pincode",
+            landmark: "Nearby Landmark",
             primaryContact: "Primary Contact Number",
+            secondaryContact: "Secondary Contact Number (Optional)",
             whatsappNumber: "Official WhatsApp Number",
             emailAddress: "Official Email Address",
             password: "Password",
@@ -94,12 +100,18 @@ const TRANSLATIONS = {
             uploadAadhaar: "Upload Aadhaar Card",
             website: "Website Name / URL",
             panCard: "Owner's PAN Card",
+            establishmentYear: "Establishment Year",
+            businessType: "Business Type",
             establishmentProof: "Shop/Establishment Proof",
-            coverImage: "Cover Image",
-            galleryUploads: "Gallery Uploads (Max 10)",
-            catalog: "Pricing/Menu/Catalog",
-            bulkBuying: "I would like to join for Bulk Buying.",
-            fraudAlerts: "I would like to receive Fraud Alerts."
+            coverImage: "Cover Image (Optional)",
+            galleryUploads: "Gallery Uploads (Max 10) (Optional)",
+            catalog: "Pricing/Menu/Catalog (Optional)",
+            bulkBuying: "I would like to join for Bulk Buying. (Optional)",
+            fraudAlerts: "I would like to receive Fraud Alerts. (Optional)",
+            acceptTerms: "I accept the Terms and Conditions & Privacy Policy",
+            serviceBased: "Service Based",
+            productBased: "Product Based",
+            bothType: "Both (Service & Product)"
         },
         placeholders: {
             legalName: "Legal name (GST/License)",
@@ -178,7 +190,13 @@ const TRANSLATIONS = {
             keywords: "कीवर्ड / टैग",
             gpsCoordinates: "सटीक GPS निर्देशांक",
             officeAddress: "पंजीकृत कार्यालय का पता",
+            fullAddress: "पूरा पता",
+            state: "राज्य",
+            city: "शहर",
+            pincode: "पिनकोड",
+            landmark: "निकटवर्ती लैंडमार्क",
             primaryContact: "प्राथमिक संपर्क नंबर",
+            secondaryContact: "द्वितीयक संपर्क नंबर (वैकल्पिक)",
             whatsappNumber: "आधिकारिक व्हाट्सएप नंबर",
             emailAddress: "आधिकारिक ईमेल पता",
             password: "पासवर्ड",
@@ -190,12 +208,18 @@ const TRANSLATIONS = {
             uploadAadhaar: "आधार कार्ड अपलोड करें",
             website: "वेबसाइट का नाम / URL",
             panCard: "मालिक का पैन कार्ड",
+            establishmentYear: "स्थापना वर्ष",
+            businessType: "व्यवसाय का प्रकार",
             establishmentProof: "दुकान/प्रतिष्ठान का प्रमाण",
-            coverImage: "कवर इमेज",
-            galleryUploads: "गैलरी अपलोड (अधिकतम 10)",
-            catalog: "मूल्य निर्धारण/मेन्यू/कैटलॉग",
-            bulkBuying: "मैं थोक खरीदारी (Bulk Buying) के लिए शामिल होना चाहता हूँ।",
-            fraudAlerts: "मैं धोखाधड़ी अलर्ट (Fraud Alerts) प्राप्त करना चाहता हूँ।"
+            coverImage: "कवर इमेज (वैकल्पिक)",
+            galleryUploads: "गैलरी अपलोड (अधिकतम 10) (वैकल्पिक)",
+            catalog: "मूल्य निर्धारण/मेन्यू/कैटलॉग (वैकल्पिक)",
+            bulkBuying: "मैं थोक खरीदारी (Bulk Buying) के लिए शामिल होना चाहता हूँ। (वैकल्पिक)",
+            fraudAlerts: "मैं धोखाधड़ी अलर्ट (Fraud Alerts) प्राप्त करना चाहता हूँ। (वैकल्पिक)",
+            acceptTerms: "मैं नियम और शर्तें तथा गोपनीयता नीति स्वीकार करता हूँ",
+            serviceBased: "सेवा आधारित",
+            productBased: "उत्पाद आधारित",
+            bothType: "दोनों (सेवा और उत्पाद)"
         },
         placeholders: {
             legalName: "कानूनी नाम (GST/लाइसेंस)",
@@ -442,13 +466,21 @@ function RegisterPageContent() {
     const [formData, setFormData] = useState({
         businessName: "",
         brandName: "",
+        establishmentYear: "",
+        businessType: "Service Based",
         businessCategory: "Automobile",
         subcategory: [] as string[],
         description: "",
         keywords: "",
         gpsCoordinates: { lat: 0, lng: 0, address: "" },
         registeredOfficeAddress: "",
+        state: "",
+        city: "",
+        pincode: "",
+        landmark: "",
+        fullAddress: "",
         primaryContactNumber: "",
+        secondaryContactNumber: "",
         password: "",
         confirmPassword: "",
         officialWhatsAppNumber: "",
@@ -461,7 +493,8 @@ function RegisterPageContent() {
         isCustomCategory: false,
         customCategory: "",
         isCustomSubcategory: false,
-        customSubcategory: ""
+        customSubcategory: "",
+        acceptTerms: false
     });
 
     // OTP State
@@ -718,14 +751,63 @@ function RegisterPageContent() {
             }
 
             const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+            let combinedSubs: any[] = [];
+
             try {
                 const cat = mainCategories.find(c => c.name === formData.businessCategory);
-                if (!cat) return;
+                if (cat) {
+                    const res = await fetch(`${API_URL}/main-categories/${cat._id}/main-subcategories?limit=30`);
+                    const data = await res.json();
+                    if (data.success) {
+                        combinedSubs = [...data.data];
+                    }
+                }
+            } catch (err) { console.error(err); }
 
-                const res = await fetch(`${API_URL}/main-categories/${cat._id}/main-subcategories?limit=100`);
-                const data = await res.json();
-                if (data.success) setMainSubcategories(data.data);
-            } catch (err) { }
+            // Wikipedia Fetch for extra rich keywords (for both DB and Google Categories)
+            try {
+                // Fetch using OpenSearch (exact prefixes) AND Query Search (related topics) to guarantee abundant results
+                const searchStr = encodeURIComponent(formData.businessCategory);
+                const [wikiOpenRes, wikiQueryRes] = await Promise.all([
+                    fetch(`https://en.wikipedia.org/w/api.php?action=opensearch&search=${searchStr}&limit=30&namespace=0&format=json&origin=*`),
+                    fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${searchStr}&srlimit=30&format=json&origin=*`)
+                ]);
+                
+                const wikiOpenData = await wikiOpenRes.json();
+                const wikiQueryData = await wikiQueryRes.json();
+                
+                let collectedWikiTerms: string[] = [];
+
+                if (wikiOpenData && wikiOpenData[1] && Array.isArray(wikiOpenData[1])) {
+                    collectedWikiTerms = [...collectedWikiTerms, ...wikiOpenData[1]];
+                }
+
+                if (wikiQueryData && wikiQueryData.query && wikiQueryData.query.search) {
+                    const relatedTitles = wikiQueryData.query.search.map((item: any) => item.title);
+                    collectedWikiTerms = [...collectedWikiTerms, ...relatedTitles];
+                }
+
+                // Deduplicate and filter out the exact category name
+                const uniqueTerms = Array.from(new Set(collectedWikiTerms)).filter(w => w.toLowerCase() !== formData.businessCategory.toLowerCase());
+                
+                const wikiKeywords = uniqueTerms.map((term: string, idx: number) => ({
+                    _id: `wiki_${idx}`,
+                    name: term
+                }));
+                
+                // Filter out any that exactly match local DB names
+                const existingNames = combinedSubs.map(s => s.name.toLowerCase());
+                const uniqueWiki = wikiKeywords.filter((w: any) => !existingNames.includes(w.name.toLowerCase()));
+                
+                combinedSubs = [...combinedSubs, ...uniqueWiki];
+                
+                // If it's still way too massive, cap at 60 to prevent browser lag, but ensure at least 30 if possible
+                if (combinedSubs.length > 60) {
+                    combinedSubs = combinedSubs.slice(0, 60);
+                }
+            } catch (err) { console.error("Wiki fetch error on frontend:", err); }
+
+            setMainSubcategories(combinedSubs);
         };
         fetchSubCats();
     }, [formData.businessCategory, formData.isCustomCategory, mainCategories]);
@@ -831,9 +913,9 @@ function RegisterPageContent() {
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        
+
         // --- MOBILE NUMBER VALIDATION (+91 Logic) ---
-        if (name === "primaryContactNumber" || name === "officialWhatsAppNumber") {
+        if (name === "primaryContactNumber" || name === "secondaryContactNumber" || name === "officialWhatsAppNumber") {
             const digits = value.replace(/\D/g, "").slice(0, 10);
             // Must start with 6, 7, 8, or 9
             if (digits.length > 0 && !["6", "7", "8", "9"].includes(digits[0])) {
@@ -949,16 +1031,25 @@ function RegisterPageContent() {
                     const data = await res.json();
                     if (data.success) {
                         const b = data.data;
-                        setFormData({
+                        setFormData(prev => ({
+                            ...prev,
                             businessName: b.businessName || "",
                             brandName: b.brandName || "",
-                            businessCategory: b.businessCategory || "Automobile",
+                            establishmentYear: b.establishmentYear || "",
+                            businessType: b.businessType || "Service Based",
+                            businessCategory: b.businessCategory || "Automotive",
                             subcategory: b.subcategory || [],
                             description: b.description || "",
                             keywords: (b.keywords || []).join(", "),
                             gpsCoordinates: b.gpsCoordinates || { lat: 0, lng: 0, address: "" },
                             registeredOfficeAddress: b.registeredOfficeAddress || "",
+                            state: b.state || "",
+                            city: b.city || "",
+                            pincode: b.pincode || "",
+                            landmark: b.landmark || "",
+                            fullAddress: b.fullAddress || "",
                             primaryContactNumber: b.primaryContactNumber || "",
+                            secondaryContactNumber: b.secondaryContactNumber || "",
                             password: "",
                             confirmPassword: "",
                             officialWhatsAppNumber: b.officialWhatsAppNumber || "",
@@ -971,8 +1062,9 @@ function RegisterPageContent() {
                             isCustomCategory: false,
                             customCategory: "",
                             isCustomSubcategory: false,
-                            customSubcategory: ""
-                        });
+                            customSubcategory: "",
+                            acceptTerms: false
+                        }));
 
                         setIsEmailVerified(true);
                         if (b.rejectionReason) setRejectionReason(b.rejectionReason);
@@ -1006,13 +1098,43 @@ function RegisterPageContent() {
 
                 try {
                     const response = await fetch(
-                        `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}&types=address,place,locality`
+                        `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}`
                     );
                     const data = await response.json();
-                    const readableAddress = data.features && data.features[0] ? data.features[0].place_name : `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+                    
+                    let city = "";
+                    let state = "";
+                    let pincode = "";
+                    const fullAddressObj = data.features && data.features[0];
+                    const readableAddress = fullAddressObj ? fullAddressObj.place_name : `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+
+                    if (data.features) {
+                        data.features.forEach((f: any) => {
+                            if (f.place_type.includes('place') || f.place_type.includes('locality')) {
+                                city = city || f.text;
+                            }
+                            if (f.place_type.includes('region')) {
+                                state = state || f.text;
+                            }
+                            if (f.place_type.includes('postcode')) {
+                                pincode = pincode || f.text;
+                            }
+                            if (f.context) {
+                                f.context.forEach((c: any) => {
+                                    if (c.id.startsWith('place') || c.id.startsWith('locality')) city = city || c.text;
+                                    if (c.id.startsWith('region')) state = state || c.text;
+                                    if (c.id.startsWith('postcode')) pincode = pincode || c.text;
+                                });
+                            }
+                        });
+                    }
 
                     setFormData(prev => ({
                         ...prev,
+                        city: city || prev.city,
+                        state: state || prev.state,
+                        pincode: pincode || prev.pincode,
+                        fullAddress: readableAddress || prev.fullAddress,
                         gpsCoordinates: {
                             ...prev.gpsCoordinates,
                             lat: latitude,
@@ -1050,6 +1172,12 @@ function RegisterPageContent() {
 
     const nextStep = () => {
         if (!isUpdateMode) {
+            if (currentStep === 1) {
+                if (!formData.establishmentYear) {
+                    setError(language === 'hi' ? "कृपया स्थापना वर्ष दर्ज करें" : "Please enter establishment year");
+                    return;
+                }
+            }
             if (currentStep === 2 && !isEmailVerified) {
                 setError("Please verify your email address to continue");
                 return;
@@ -1091,8 +1219,8 @@ function RegisterPageContent() {
         setLoading(true);
         setError(null);
 
-        if (!isUpdateMode && (!formData.joinBulkBuying || !formData.joinFraudAlerts)) {
-            setError("You must agree to join Bulk Buying and receive Fraud Alerts to proceed with registration.");
+        if (!isUpdateMode && (!formData.acceptTerms)) {
+            setError(language === 'hi' ? "पंजीकरण के साथ आगे बढ़ने के लिए आपको नियम और शर्तें तथा गोपनीयता नीति स्वीकार करनी होगी।" : "You must accept the Terms and Conditions & Privacy Policy to proceed with registration.");
             setLoading(false);
             return;
         }
@@ -1282,6 +1410,37 @@ function RegisterPageContent() {
                                     </button>
                                 </div>
                             </div>
+                            
+                            <div className="grid md:grid-cols-2 gap-4">
+                                <div className="grid gap-2">
+                                    <Label className="text-white/70">{t('labels.establishmentYear')} <span className="text-red-500">*</span></Label>
+                                    <Input 
+                                        name="establishmentYear" 
+                                        type="number"
+                                        value={formData.establishmentYear} 
+                                        onChange={handleInputChange} 
+                                        placeholder="e.g. 2015" 
+                                        className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50 h-14" 
+                                        required 
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label className="text-white/70">{t('labels.businessType')} <span className="text-red-500">*</span></Label>
+                                    <Select 
+                                        value={formData.businessType} 
+                                        onValueChange={(val) => setFormData(prev => ({ ...prev, businessType: val }))}
+                                    >
+                                        <SelectTrigger className="bg-slate-900/60 border-white/10 text-white focus:ring-primary/50 h-14 rounded-md">
+                                            <SelectValue placeholder="Select type" />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-slate-900 border-white/10 text-white z-[110]">
+                                            <SelectItem value="Service Based">{t('labels.serviceBased')}</SelectItem>
+                                            <SelectItem value="Product Based">{t('labels.productBased')}</SelectItem>
+                                            <SelectItem value="Both">{t('labels.bothType')}</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
                             <div className="grid gap-2">
                                 <Label className="text-white/70">{t('labels.businessCategory')} <span className="text-red-500">*</span></Label>
 
@@ -1352,11 +1511,12 @@ function RegisterPageContent() {
                                                 {/* Popular / Main Categories Section */}
                                                 {(catSearchTerm === "" || mainCategories.some(c => c.name.toLowerCase().includes(catSearchTerm.toLowerCase()))) && (
                                                     <div className="p-2">
-                                                        <div className="px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white/40">
-                                                            {language === 'hi' ? 'लोकप्रिय श्रेणियां' : 'Popular Categories'}
+                                                        <div className="px-3 py-1 text-[10px] font-black uppercase tracking-widest text-primary flex justify-between items-center">
+                                                            <span>{language === 'hi' ? 'मुख्य श्रेणियां' : 'MAIN CATEGORIES'}</span>
                                                         </div>
                                                         {mainCategories
                                                             .filter(c => c.name.toLowerCase().includes(catSearchTerm.toLowerCase()))
+                                                            .slice(0, 20) // Show up to 20
                                                             .map((cat) => (
                                                                 <div
                                                                     key={cat._id}
@@ -1367,10 +1527,10 @@ function RegisterPageContent() {
                                                                     }}
                                                                     className={`px-4 py-3 hover:bg-white/5 transition-colors cursor-pointer flex items-center gap-3 rounded-lg group ${formData.businessCategory === cat.name ? 'bg-white/5' : ''}`}
                                                                 >
-                                                                    <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/40">
-                                                                        <CheckCircle className="w-4 h-4" />
+                                                                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-all">
+                                                                        <Plus className="w-4 h-4" />
                                                                     </div>
-                                                                    <span className="text-white/80">{tc(cat.name)}</span>
+                                                                    <span className="text-white/90 font-medium">{tc(cat.name)}</span>
                                                                 </div>
                                                             ))}
                                                     </div>
@@ -1396,111 +1556,7 @@ function RegisterPageContent() {
                                 </div>
                             </div>
 
-                            <div className="space-y-4">
-                                <Label className="text-white/70 text-xs font-bold uppercase tracking-widest flex items-center gap-2">
-                                    <Building2 className="w-3 h-3 text-primary" />
-                                    {t('labels.selectedSubcategories')} *
-                                </Label>
 
-                                {/* Selected Subcategories Tags */}
-                                <div className="flex flex-wrap gap-2 mb-3">
-                                    {formData.subcategory.map((sub, idx) => (
-                                        <motion.div
-                                            initial={{ scale: 0.8, opacity: 0 }}
-                                            animate={{ scale: 1, opacity: 1 }}
-                                            key={idx}
-                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 border border-primary/20 rounded-full text-xs font-bold text-primary group"
-                                        >
-                                            {tc(sub)}
-                                            <button
-                                                type="button"
-                                                onClick={() => removeSubcategory(sub)}
-                                                className="hover:bg-primary/20 rounded-full p-0.5 transition-colors"
-                                            >
-                                                <X className="w-3 h-3" />
-                                            </button>
-                                        </motion.div>
-                                    ))}
-                                </div>
-
-                                <Select
-                                    value=""
-                                    onValueChange={(val) => {
-                                        if (val === "add-new") {
-                                            setFormData(prev => ({ ...prev, isCustomSubcategory: true }));
-                                        } else {
-                                            addSubcategory(val);
-                                        }
-                                    }}
-                                >
-                                    <SelectTrigger className="w-full bg-white/5 border-white/10 text-white rounded-xl h-14 focus:ring-primary focus:border-primary transition-all">
-                                        <SelectValue placeholder={formData.subcategory.length > 0 ? t('placeholders.addSubcategories') : t('placeholders.selectSubcategories')} />
-                                    </SelectTrigger>
-                                    <SelectContent className="bg-slate-900 border-white/10 text-white !z-[9999] max-h-[300px]" position="popper" sideOffset={5}>
-                                        {mainSubcategories.map((sub) => (
-                                            <SelectItem
-                                                key={sub._id}
-                                                value={sub.name}
-                                                disabled={formData.subcategory.includes(sub.name)}
-                                            >
-                                                {tc(sub.name)} {formData.subcategory.includes(sub.name) && `(${language === 'hi' ? 'चयनित' : 'Selected'})`}
-                                            </SelectItem>
-                                        ))}
-                                        <SelectItem value="add-new" className="text-primary font-bold border-t border-white/5 mt-2">
-                                            + {language === 'hi' ? 'अपनी विशेषज्ञता जोड़ें' : 'Add Your Own Specialty'}
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-
-                                {formData.isCustomSubcategory && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: -10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        className="space-y-3 p-4 bg-primary/5 rounded-xl border border-primary/10 relative"
-                                    >
-                                        <button
-                                            type="button"
-                                            onClick={() => setFormData(prev => ({ ...prev, isCustomSubcategory: false }))}
-                                            className="absolute top-2 right-2 text-white/40 hover:text-white"
-                                        >
-                                            <X size={14} />
-                                        </button>
-                                        <Label className="text-white/60 text-[10px] font-bold uppercase tracking-wider block mb-1">{language === 'hi' ? 'अपनी अनूठी विशेषज्ञता दर्ज करें' : 'Enter Your Unique Specialty'}</Label>
-                                        <div className="flex gap-2">
-                                            <div className="relative flex-1 group/mic">
-                                                <Input
-                                                    placeholder={t('placeholders.uniqueSpecialty')}
-                                                    value={formData.customSubcategory}
-                                                    name="customSubcategory"
-                                                    onChange={(e) => setFormData(prev => ({ ...prev, customSubcategory: e.target.value }))}
-                                                    onKeyUp={handleKeyUp}
-                                                    onBlur={handleBlur}
-                                                    className="bg-white/5 border-white/10 text-white h-12 pr-10"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => toggleVoiceInput('customSubcategory')}
-                                                    className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${isListening && listeningField === 'customSubcategory' ? 'text-primary animate-pulse' : 'text-white/20 hover:text-primary'}`}
-                                                >
-                                                    <Mic size={16} />
-                                                </button>
-                                            </div>
-                                            <Button
-                                                type="button"
-                                                onClick={() => {
-                                                    if (formData.customSubcategory.trim()) {
-                                                        addSubcategory(formData.customSubcategory);
-                                                        setFormData(prev => ({ ...prev, isCustomSubcategory: false, customSubcategory: "" }));
-                                                    }
-                                                }}
-                                                className="h-12 px-4 whitespace-nowrap"
-                                            >
-                                                {language === 'hi' ? 'जोड़ें' : 'Add'}
-                                            </Button>
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </div>
                             <div className="grid gap-2">
                                 <Label className="text-white/70">{t('labels.businessDescription')}</Label>
                                 <div className="relative group/mic">
@@ -1538,6 +1594,31 @@ function RegisterPageContent() {
                                         )}
                                     </div>
 
+                                    {/* Recommended Keywords (from Main Subcategories) */}
+                                    {mainSubcategories.length > 0 && (
+                                        <div className="space-y-2 mt-2">
+                                            <Label className="text-primary/70 text-[10px] uppercase font-bold tracking-widest">{language === 'hi' ? 'अनुशंसित कीवर्ड' : 'Recommended Keywords'}</Label>
+                                            <div className="flex flex-wrap gap-2 max-h-[150px] overflow-y-auto custom-scrollbar pr-2">
+                                                {mainSubcategories.map((sub: any, idx) => {
+                                                    const existing = formData.keywords ? formData.keywords.toLowerCase() : "";
+                                                    if (existing.includes(sub.name.toLowerCase())) return null;
+
+                                                    return (
+                                                        <Badge
+                                                            key={idx}
+                                                            variant="outline"
+                                                            className="border-white/10 bg-white/5 text-white/70 hover:bg-primary/20 hover:text-primary hover:border-primary/30 cursor-pointer transition-colors py-1 px-3"
+                                                            onClick={() => addKeyword(sub.name)}
+                                                        >
+                                                            <Plus className="w-3 h-3 mr-1 opacity-50" />
+                                                            {tc(sub.name)}
+                                                        </Badge>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* Keyword Input with Autocomplete */}
                                     <div className="relative" ref={suggestionRef}>
                                         <div className="relative group/mic">
@@ -1571,7 +1652,7 @@ function RegisterPageContent() {
 
                                         {/* Keyword Suggestions Dropdown */}
                                         <AnimatePresence>
-                                            {showKeywordSuggestions && keywordSuggestions.length > 0 && (
+                                            {showKeywordSuggestions && (keywordInput.trim().length > 0 || keywordSuggestions.length > 0) && (
                                                 <motion.div
                                                     initial={{ opacity: 0, y: -10 }}
                                                     animate={{ opacity: 1, y: 0 }}
@@ -1580,7 +1661,21 @@ function RegisterPageContent() {
                                                     onScroll={handleKeywordScroll}
                                                 >
                                                     <div className="p-2 space-y-1">
-                                                        {keywordSuggestions.map((suggestion, idx) => (
+                                                        {keywordInput.trim() && !keywordSuggestions.some(s => s.text.toLowerCase() === keywordInput.trim().toLowerCase()) && (
+                                                            <div
+                                                                onClick={() => addKeyword(keywordInput)}
+                                                                className="px-4 py-2 hover:bg-primary/10 rounded-lg cursor-pointer flex items-center justify-between group transition-colors border-b border-white/5 pb-2 mb-1"
+                                                            >
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="bg-primary/20 p-1 rounded-full group-hover:scale-110 transition-transform">
+                                                                        <Plus size={12} className="text-primary" />
+                                                                    </div>
+                                                                    <span className="text-sm font-bold text-white">Add "{keywordInput.trim()}"</span>
+                                                                </div>
+                                                                <span className="text-[10px] uppercase tracking-widest text-primary font-bold">Custom</span>
+                                                            </div>
+                                                        )}
+                                                        {keywordSuggestions.filter(s => s.text.toLowerCase() !== keywordInput.trim().toLowerCase()).map((suggestion, idx) => (
                                                             <div
                                                                 key={idx}
                                                                 onClick={() => addKeyword(suggestion.text)}
@@ -1622,11 +1717,10 @@ function RegisterPageContent() {
                                     <Input value={formData.gpsCoordinates.address} readOnly placeholder={t('placeholders.locateHelp')} className="bg-white/5 border-white/10 text-white flex-1" />
                                     <Button
                                         type="button"
-                                        variant="glow"
                                         size="sm"
                                         onClick={handleLocateMe}
                                         disabled={isLocating}
-                                        className="shrink-0 gap-2"
+                                        className="shrink-0 gap-2 font-bold border-none transition-all duration-300 rounded-xl px-5 h-10 shadow-lg bg-primary text-white hover:bg-primary/90 shadow-primary/20"
                                         suppressHydrationWarning
                                     >
                                         {isLocating ? (
@@ -1638,10 +1732,52 @@ function RegisterPageContent() {
                                     </Button>
                                 </div>
                             </div>
+                            <div className="grid md:grid-cols-2 gap-4">
+                                <div className="grid gap-2">
+                                    <Label className="text-white/70">{t('labels.state')} <span className="text-red-500">*</span></Label>
+                                    <div className="relative group/mic">
+                                        <Input name="state" value={formData.state} onChange={handleInputChange} onKeyUp={handleKeyUp} onBlur={handleBlur} className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50 pr-10" required />
+                                        <button type="button" onClick={() => toggleVoiceInput('state')} className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${isListening && listeningField === 'state' ? 'text-primary animate-pulse' : 'text-white/20 hover:text-primary'}`}><Mic size={16} /></button>
+                                    </div>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label className="text-white/70">{t('labels.city')} <span className="text-red-500">*</span></Label>
+                                    <div className="relative group/mic">
+                                        <Input name="city" value={formData.city} onChange={handleInputChange} onKeyUp={handleKeyUp} onBlur={handleBlur} className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50 pr-10" required />
+                                        <button type="button" onClick={() => toggleVoiceInput('city')} className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${isListening && listeningField === 'city' ? 'text-primary animate-pulse' : 'text-white/20 hover:text-primary'}`}><Mic size={16} /></button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="grid md:grid-cols-2 gap-4">
+                                <div className="grid gap-2">
+                                    <Label className="text-white/70">{t('labels.pincode')} <span className="text-red-500">*</span></Label>
+                                    <Input name="pincode" value={formData.pincode} onChange={handleInputChange} maxLength={6} className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50" required />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label className="text-white/70">{t('labels.landmark')}</Label>
+                                    <div className="relative group/mic">
+                                        <Input name="landmark" value={formData.landmark} onChange={handleInputChange} onKeyUp={handleKeyUp} onBlur={handleBlur} className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50 pr-10" />
+                                        <button type="button" onClick={() => toggleVoiceInput('landmark')} className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${isListening && listeningField === 'landmark' ? 'text-primary animate-pulse' : 'text-white/20 hover:text-primary'}`}><Mic size={16} /></button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="grid gap-2">
+                                <Label className="text-white/70">{t('labels.fullAddress')} <span className="text-red-500">*</span></Label>
+                                <div className="relative group/mic">
+                                    <Textarea name="fullAddress" value={formData.fullAddress} onChange={handleInputChange} onKeyUp={handleKeyUp} onBlur={handleBlur} className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50 min-h-[80px] pr-10" required />
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleVoiceInput('fullAddress')}
+                                        className={`absolute right-3 top-4 transition-colors ${isListening && listeningField === 'fullAddress' ? 'text-primary animate-pulse' : 'text-white/20 hover:text-primary'}`}
+                                    >
+                                        <Mic size={18} />
+                                    </button>
+                                </div>
+                            </div>
                             <div className="grid gap-2">
                                 <Label className="text-white/70">{t('labels.officeAddress')} <span className="text-red-500">*</span></Label>
                                 <div className="relative group/mic">
-                                    <Textarea name="registeredOfficeAddress" value={formData.registeredOfficeAddress} onChange={handleInputChange} onKeyUp={handleKeyUp} onBlur={handleBlur} className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50 min-h-[100px] pr-10" required />
+                                    <Textarea name="registeredOfficeAddress" value={formData.registeredOfficeAddress} onChange={handleInputChange} onKeyUp={handleKeyUp} onBlur={handleBlur} className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50 min-h-[80px] pr-10" required />
                                     <button
                                         type="button"
                                         onClick={() => toggleVoiceInput('registeredOfficeAddress')}
@@ -1660,11 +1796,18 @@ function RegisterPageContent() {
                                     </div>
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label className="text-white/70">{t('labels.whatsappNumber')}</Label>
+                                    <Label className="text-white/70">{t('labels.secondaryContact')}</Label>
                                     <div className="relative">
                                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 font-bold text-sm tracking-tighter">+91</span>
-                                        <Input name="officialWhatsAppNumber" value={formData.officialWhatsAppNumber} onChange={handleInputChange} className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50 pl-12" placeholder="9876543210" />
+                                        <Input name="secondaryContactNumber" value={formData.secondaryContactNumber} onChange={handleInputChange} className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50 pl-12" placeholder="9876543210" />
                                     </div>
+                                </div>
+                            </div>
+                            <div className="grid gap-2">
+                                <Label className="text-white/70">{t('labels.whatsappNumber')}</Label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 font-bold text-sm tracking-tighter">+91</span>
+                                    <Input name="officialWhatsAppNumber" value={formData.officialWhatsAppNumber} onChange={handleInputChange} className="bg-slate-900/60 border-white/10 text-white focus-visible:ring-primary/50 pl-12" placeholder="9876543210" />
                                 </div>
                             </div>
                             <div className="grid gap-2">
@@ -1682,11 +1825,10 @@ function RegisterPageContent() {
                                     {!isEmailVerified && (
                                         <Button
                                             type="button"
-                                            variant="glow"
                                             size="sm"
                                             onClick={handleSendOTP}
                                             disabled={otpLoading || !formData.officialEmailAddress}
-                                            className="shrink-0 gap-2"
+                                            className="shrink-0 gap-2 font-bold border-none transition-all duration-300 rounded-xl px-5 h-10 shadow-lg bg-primary text-white hover:bg-primary/90 shadow-primary/20"
                                         >
                                             {otpLoading ? (
                                                 <>
@@ -1744,10 +1886,9 @@ function RegisterPageContent() {
                                     <div className="flex justify-center mt-4">
                                         <Button
                                             type="button"
-                                            variant="glow"
                                             onClick={handleVerifyOTP}
                                             disabled={otpLoading || otp.length !== 6}
-                                            className="rounded-xl px-12 font-display uppercase tracking-widest text-xs h-12 gap-2"
+                                            className="font-bold border-none transition-all duration-300 rounded-xl px-12 h-12 shadow-lg bg-primary text-white hover:bg-primary/90 shadow-primary/20 font-display uppercase tracking-widest text-xs gap-2"
                                         >
                                             {otpLoading ? (
                                                 <>
@@ -1963,6 +2104,16 @@ function RegisterPageContent() {
                                 />
                                 <Label htmlFor="fraudAlerts" className="text-white cursor-pointer">{t('labels.fraudAlerts')}</Label>
                             </div>
+                            <div className="flex items-center space-x-3 p-4 glass rounded-xl border border-white/10">
+                                <input
+                                    type="checkbox"
+                                    id="acceptTerms"
+                                    checked={formData.acceptTerms}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, acceptTerms: e.target.checked }))}
+                                    className="w-5 h-5 rounded border-primary bg-transparent text-primary focus:ring-primary"
+                                />
+                                <Label htmlFor="acceptTerms" className="text-white cursor-pointer">{t('labels.acceptTerms')} <span className="text-red-500">*</span></Label>
+                            </div>
                         </div>
                         <p className="text-sm text-white/50 italic text-center">{t('messages.agreeNote')}</p>
                     </motion.div>
@@ -2141,18 +2292,16 @@ function RegisterPageContent() {
                             {currentStep < 6 ? (
                                 <Button
                                     type="button"
-                                    variant="glow"
                                     onClick={nextStep}
-                                    className="rounded-xl px-8 sm:px-12 font-display uppercase tracking-widest text-[10px] sm:text-xs h-10 sm:h-12"
+                                    className="font-bold border-none transition-all duration-300 rounded-xl px-8 sm:px-12 h-10 sm:h-12 shadow-lg bg-primary text-white hover:bg-primary/90 shadow-primary/20 font-display uppercase tracking-widest text-[10px] sm:text-xs"
                                 >
                                     {t('next')} <ChevronRight className="ml-1 sm:ml-2 w-3 h-3 sm:w-4 h-4" />
                                 </Button>
                             ) : (
                                 <Button
                                     type="submit"
-                                    variant="glow"
                                     disabled={loading}
-                                    className="rounded-xl px-8 sm:px-12 font-display uppercase tracking-widest text-[10px] sm:text-xs h-10 sm:h-12 bg-primary text-white"
+                                    className="font-bold border-none transition-all duration-300 rounded-xl px-8 sm:px-12 h-10 sm:h-12 shadow-lg bg-primary text-white hover:bg-primary/90 shadow-primary/20 font-display uppercase tracking-widest text-[10px] sm:text-xs"
                                 >
                                     {loading ? t('registering') : t('submit')}
                                 </Button>

@@ -68,7 +68,7 @@ export default function HeroSection() {
 
         // Poll every 5 seconds to stay in sync with backend worker
         const syncInterval = setInterval(fetchLiveListing, 5000);
-        
+
         return () => clearInterval(syncInterval);
     }, []);
 
@@ -873,8 +873,8 @@ export default function HeroSection() {
                     <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-emerald-500/10 to-primary/20 rounded-[2rem] blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
 
                     <div className={`relative flex flex-col md:flex-row items-center justify-between gap-8 md:gap-8 py-10 md:py-6 px-6 md:px-10 rounded-[2rem] border backdrop-blur-3xl transition-all duration-500 ${theme === 'light'
-                            ? 'bg-white/80 border-slate-200 shadow-[0_8px_32px_rgba(0,0,0,0.05)]'
-                            : 'bg-[#0A0F1E]/60 border-white/10 shadow-[0_8px_40px_rgba(0,0,0,0.5)] group-hover:border-primary/30'
+                        ? 'bg-white/80 border-slate-200 shadow-[0_8px_32px_rgba(0,0,0,0.05)]'
+                        : 'bg-[#0A0F1E]/60 border-white/10 shadow-[0_8px_40px_rgba(0,0,0,0.5)] group-hover:border-primary/30'
                         }`}>
 
                         {/* Left: Live Status & Listings */}

@@ -10,10 +10,11 @@ import {
     Award, Target, BookOpen, Truck, Phone, Camera,
     Music, Film, Monitor, Cpu, Database, Cloud,
     Gift, Coffee, Smile, ThumbsUp, Bell, Layers,
-    Package, Compass, Map, Home, Route, type LucideIcon
+    Package, Compass, Map, Home, Route, X, type LucideIcon
 } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 import Link from "next/link";
+import { AnimatePresence } from "framer-motion";
 
 // Icon mapping: string name -> Lucide component
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -57,6 +58,8 @@ export default function UpcomingFeatures() {
     const ref = useRef(null);
     const inView = useInView(ref, { once: true, margin: "-100px" });
     const [features, setFeatures] = useState<UpcomingItem[]>(FALLBACK_FEATURES);
+    const [selectedFeature, setSelectedFeature] = useState<UpcomingItem | null>(null);
+    const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
     useEffect(() => {
         const fetchFeatures = async () => {
@@ -94,140 +97,99 @@ export default function UpcomingFeatures() {
         }
     };
 
+    const gradients = [
+        "from-blue-500/10 via-blue-900/5 to-transparent border-blue-500/20 group-hover:border-blue-400/50",
+        "from-purple-500/10 via-purple-900/5 to-transparent border-purple-500/20 group-hover:border-purple-400/50",
+        "from-emerald-500/10 via-emerald-900/5 to-transparent border-emerald-500/20 group-hover:border-emerald-400/50",
+        "from-amber-500/10 via-amber-900/5 to-transparent border-amber-500/20 group-hover:border-amber-400/50",
+        "from-pink-500/10 via-pink-900/5 to-transparent border-pink-500/20 group-hover:border-pink-400/50"
+    ];
+
+    const iconColors = [
+        "bg-blue-500/10 text-blue-400 group-hover:bg-blue-500 group-hover:text-white group-hover:shadow-[0_0_15px_rgba(59,130,246,0.5)]",
+        "bg-purple-500/10 text-purple-400 group-hover:bg-purple-500 group-hover:text-white group-hover:shadow-[0_0_15px_rgba(168,85,247,0.5)]",
+        "bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500 group-hover:text-white group-hover:shadow-[0_0_15px_rgba(16,185,129,0.5)]",
+        "bg-amber-500/10 text-amber-400 group-hover:bg-amber-500 group-hover:text-white group-hover:shadow-[0_0_15px_rgba(245,158,11,0.5)]",
+        "bg-pink-500/10 text-pink-400 group-hover:bg-pink-500 group-hover:text-white group-hover:shadow-[0_0_15px_rgba(236,72,153,0.5)]"
+    ];
+
     const renderCard = (f: UpcomingItem, i: number) => {
         const IconComponent = ICON_MAP[f.icon] || Rocket;
         const hasDetail = f._id && !FALLBACK_FEATURES.find(fb => fb._id === f._id);
+        const colorIdx = i % gradients.length;
 
         const cardContent = (
             <motion.div
                 key={i}
                 whileHover={{ y: -5, scale: 1.02 }}
-                className={`flex flex-col items-start gap-2 rounded-3xl p-6 border transition-all duration-500 cursor-pointer backdrop-blur-xl group w-full h-full relative overflow-hidden ${
-                    theme === 'light' 
-                    ? 'bg-white border-slate-300 shadow-sm hover:border-blue-500 hover:shadow-md' 
-                    : 'bg-white/5 border-white/5 hover:border-blue-500/40 hover:shadow-[0_20px_50px_-12px_rgba(59,130,246,0.25)]'
-                }`}
+                onMouseEnter={() => setHoveredIndex(i)}
+                onMouseLeave={() => setHoveredIndex(null)}
+                onClick={() => setSelectedFeature(f)}
+                className={`flex flex-col items-start gap-3 rounded-2xl p-5 border transition-all duration-500 cursor-pointer backdrop-blur-xl group w-full h-full relative overflow-hidden bg-gradient-to-br ${theme === 'light'
+                        ? 'bg-white border-slate-200 shadow-sm hover:shadow-md'
+                        : `bg-white/5 ${gradients[colorIdx]}`
+                    }`}
             >
-                {/* Icon Container */}
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-500 relative z-10 ${
-                    theme === 'light' 
-                    ? 'bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white' 
-                    : 'bg-white/5 text-blue-400 group-hover:bg-blue-500 group-hover:text-white group-hover:shadow-[0_0_20px_rgba(59,130,246,0.4)]'
-                }`}>
-                    <IconComponent size={24} />
-                </div>
-                
-                {/* Text Content */}
-                <div className="flex flex-col gap-1 mt-1">
-                    <h3 className={`font-display font-bold text-lg sm:text-xl tracking-tight transition-colors leading-tight ${
-                        theme === 'light' ? 'text-slate-900 group-hover:text-blue-600' : 'text-white group-hover:text-blue-400'
-                    }`}>
+                {/* Icon & Title Row */}
+                <div className="flex items-center gap-3 w-full relative z-10">
+                    <div className={`w-10 h-10 rounded-xl flex shrink-0 items-center justify-center transition-all duration-500 ${theme === 'light' ? 'bg-blue-50 text-blue-600' : iconColors[colorIdx]
+                        }`}>
+                        <IconComponent size={20} />
+                    </div>
+                    <h3 className={`font-display font-bold text-base sm:text-lg tracking-tight transition-colors leading-tight line-clamp-2 ${theme === 'light' ? 'text-slate-900 group-hover:text-blue-600' : 'text-white'
+                        }`}>
                         {f.title}
                     </h3>
-                    {f.description && (
-                        <div 
-                            className={`text-sm sm:text-base leading-relaxed opacity-80 group-hover:opacity-100 transition-opacity line-clamp-4 ${
-                                theme === 'light' ? 'text-slate-600' : 'text-slate-400'
-                            }`}
-                            dangerouslySetInnerHTML={{ __html: f.description }}
-                        />
-                    )}
                 </div>
 
-                {/* Decorative Background Pattern */}
-                <div className="absolute inset-0 z-0 opacity-[0.05] group-hover:opacity-[0.12] transition-opacity duration-700 pointer-events-none overflow-hidden rounded-3xl">
-                    {f.title.includes("Grow Your Existing Business") ? (
-                        <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-                            <rect x="10" y="60" width="10" height="30" fill="currentColor" />
-                            <rect x="25" y="40" width="10" height="50" fill="currentColor" />
-                            <rect x="40" y="50" width="10" height="40" fill="currentColor" />
-                            <rect x="55" y="30" width="10" height="60" fill="currentColor" />
-                            <rect x="70" y="45" width="10" height="45" fill="currentColor" />
-                            <rect x="85" y="55" width="10" height="35" fill="currentColor" />
-                        </svg>
-                    ) : f.title.includes("Live Route Guide") ? (
-                        <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-                            <path d="M0 80 L100 80 M0 60 L100 60 M0 40 L100 40 M20 0 L20 100 M40 0 L40 100 M60 0 L60 100 M80 0 L80 100" 
-                                  stroke="currentColor" fill="none" strokeWidth="0.5" />
-                            <path d="M10 90 L30 70 L50 75 L80 40 L95 10" 
-                                  stroke="currentColor" fill="none" strokeWidth="2" strokeDasharray="4 2" />
-                        </svg>
-                    ) : f.title.includes("Start Ready To Kick Start Business") ? (
-                        <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-                            <path d="M20 90 L50 20 L80 90" stroke="currentColor" fill="none" strokeWidth="1" />
-                            <path d="M30 85 L50 40 L70 85" stroke="currentColor" fill="none" strokeWidth="0.5" />
-                            <path d="M40 80 L50 60 L60 80" stroke="currentColor" fill="none" strokeWidth="0.5" />
-                            <circle cx="50" cy="15" r="2" fill="currentColor" />
-                        </svg>
-                    ) : f.title.includes("Sale In Your Zone") ? (
-                        <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-                            <circle cx="50" cy="50" r="10" stroke="currentColor" fill="none" strokeWidth="0.5" />
-                            <circle cx="50" cy="50" r="25" stroke="currentColor" fill="none" strokeWidth="0.5" />
-                            <circle cx="50" cy="50" r="40" stroke="currentColor" fill="none" strokeWidth="0.5" />
-                            <path d="M50 0 L50 100 M0 50 L100 50" stroke="currentColor" fill="none" strokeWidth="0.2" />
-                        </svg>
-                    ) : f.title.includes("Pre-Book") ? (
-                        <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-                            <circle cx="50" cy="50" r="30" stroke="currentColor" fill="none" strokeWidth="1" />
-                            <path d="M50 50 L50 30 M50 50 L65 50" stroke="currentColor" fill="none" strokeWidth="1.5" />
-                            <path d="M10 20 L30 20 M10 30 L30 30 M10 40 L30 40" stroke="currentColor" fill="none" strokeWidth="0.5" opacity="0.5" />
-                            <path d="M70 20 L90 20 M70 30 L90 30 M70 40 L90 40" stroke="currentColor" fill="none" strokeWidth="0.5" opacity="0.5" />
-                        </svg>
-                    ) : f.title.includes("Education Gallery") ? (
-                        <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-                            <path d="M20 30 L80 30 L80 70 L20 70 Z M20 40 L80 40 M20 50 L80 50 M20 60 L80 60" stroke="currentColor" fill="none" strokeWidth="0.5" />
-                            <path d="M50 20 L80 30 L50 40 L20 30 Z" stroke="currentColor" fill="none" strokeWidth="0.5" />
-                            <path d="M80 30 L80 50" stroke="currentColor" fill="none" strokeWidth="1" />
-                        </svg>
-                    ) : f.title.includes("Gem Tenders Info") ? (
-                        <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-                            <path d="M30 20 L70 20 L80 30 L80 80 L20 80 L20 30 Z" stroke="currentColor" fill="none" strokeWidth="0.5" />
-                            <path d="M30 40 L70 40 M30 50 L70 50 M30 60 L70 60" stroke="currentColor" fill="none" strokeWidth="0.5" />
-                            <circle cx="70" cy="30" r="5" stroke="currentColor" fill="none" strokeWidth="0.5" />
-                        </svg>
-                    ) : f.title.includes("Govt. Contractual Job") ? (
-                        <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-                            <rect x="20" y="20" width="60" height="60" stroke="currentColor" fill="none" strokeWidth="0.5" />
-                            <path d="M20 40 L80 40 M20 60 L80 60 M40 20 L40 80 M60 20 L60 80" stroke="currentColor" fill="none" strokeWidth="0.2" />
-                            <path d="M35 15 L65 15 L65 20 L35 20 Z" stroke="currentColor" fill="none" strokeWidth="0.5" />
-                        </svg>
-                    ) : f.title.includes("Earning Options") ? (
-                        <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-                            <rect x="20" y="30" width="60" height="40" rx="5" stroke="currentColor" fill="none" strokeWidth="0.5" />
-                            <circle cx="50" cy="50" r="8" stroke="currentColor" fill="none" strokeWidth="0.5" />
-                            <path d="M10 20 L25 35 M90 20 L75 35 M10 80 L25 65 M90 80 L75 65" stroke="currentColor" fill="none" strokeWidth="0.5" />
-                        </svg>
-                    ) : f.title.includes("Verify People") ? (
-                        <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-                            <path d="M50 10 L85 25 L85 55 Q 50 90, 15 55 L15 25 Z" stroke="currentColor" fill="none" strokeWidth="0.5" />
-                            <path d="M35 50 L45 60 L65 40" stroke="currentColor" fill="none" strokeWidth="1" />
-                        </svg>
-                    ) : f.title.includes("Business Suites") ? (
-                        <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-                            <rect x="15" y="15" width="25" height="25" stroke="currentColor" fill="none" strokeWidth="0.5" />
-                            <rect x="55" y="15" width="30" height="30" stroke="currentColor" fill="none" strokeWidth="0.5" />
-                            <rect x="15" y="55" width="35" height="30" stroke="currentColor" fill="none" strokeWidth="0.5" />
-                            <rect x="65" y="60" width="20" height="20" stroke="currentColor" fill="none" strokeWidth="0.5" />
-                        </svg>
-                    ) : f.title.includes("DBI Pay") ? (
-                        <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-                            <rect x="15" y="25" width="70" height="50" rx="8" stroke="currentColor" fill="none" strokeWidth="0.5" />
-                            <path d="M15 40 L85 40" stroke="currentColor" fill="none" strokeWidth="2" />
-                            <path d="M25 60 L45 60 M25 70 L35 70" stroke="currentColor" fill="none" strokeWidth="1" />
-                        </svg>
-                    ) : (
-                        <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-                            <path d="M0 20 Q 25 10, 50 20 T 100 20 M0 40 Q 25 30, 50 40 T 100 40 M0 60 Q 25 50, 50 60 T 100 60 M0 80 Q 25 70, 50 80 T 100 80" 
-                                  stroke="currentColor" fill="none" strokeWidth="0.5" />
-                        </svg>
-                    )}
+                {/* Text Content */}
+                <div className="flex flex-col gap-2 mt-1 flex-1 w-full relative z-10">
+                    <div
+                        className={`text-xs sm:text-sm leading-relaxed opacity-80 group-hover:opacity-100 transition-opacity line-clamp-3 ${theme === 'light' ? 'text-slate-600' : 'text-slate-300'
+                            }`}
+                        dangerouslySetInnerHTML={{ __html: f.description || `Explore the new ${f.title} features coming soon to enhance your digital experience.` }}
+                    />
                 </div>
+
+                {/* Read More Button */}
+                <div className="mt-auto pt-4 w-full border-t border-white/5 relative z-10">
+                    <motion.div
+                        animate={{ y: [0, -6, 0] }}
+                        transition={{
+                            duration: 1.5,
+                            repeat: Infinity,
+                            ease: "easeInOut"
+                        }}
+                        className={`flex items-center justify-between text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-300 ${theme === 'light'
+                                ? 'text-blue-600'
+                                : `${iconColors[colorIdx].split(' ').find(c => c.startsWith('text-'))} brightness-125`
+                            }`}
+                    >
+                        <span className="flex items-center gap-2">
+                            Read More
+                            <motion.span
+                                animate={{ opacity: [0.4, 1, 0.4] }}
+                                transition={{ duration: 2, repeat: Infinity }}
+                                className="w-1 h-1 rounded-full bg-current"
+                            />
+                        </span>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500 ${theme === 'light'
+                                ? 'bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white'
+                                : 'bg-white/5 border border-white/10 group-hover:bg-white group-hover:text-black group-hover:scale-110 shadow-lg'
+                            }`}>
+                            <span className="text-base">→</span>
+                        </div>
+                    </motion.div>
+                </div>
+
+                {/* Decorative Background Glow */}
+                <div className="absolute -right-8 -bottom-8 w-32 h-32 rounded-full opacity-0 group-hover:opacity-20 transition-opacity duration-700 blur-2xl z-0 bg-current text-white pointer-events-none" />
             </motion.div>
         );
 
         if (hasDetail) {
             return (
-                <Link href={`/upcoming/${f._id}`} key={i} className="flex-1 block h-full"> 
+                <Link href={`/upcoming/${f._id}`} key={i} className="flex-1 block h-full">
                     {cardContent}
                 </Link>
             );
@@ -240,24 +202,20 @@ export default function UpcomingFeatures() {
         <section className={`pt-20 pb-20 relative z-10 overflow-hidden ${theme === 'light' ? 'bg-slate-50' : 'bg-transparent'}`} id="upcoming" ref={ref}>
             <div className="container mx-auto px-4 relative z-10">
                 <div className="text-center mb-16">
-                    <div className={`inline-block py-2 px-6 rounded-full border backdrop-blur-md mb-6 ${
-                        theme === 'light' ? 'border-blue-200 bg-blue-50/50' : 'border-white/10 bg-white/5'
-                    }`}>
-                        <span className={`text-[10px] font-bold uppercase tracking-[0.4em] ${
-                            theme === 'light' ? 'text-blue-700' : 'text-blue-400/80'
+                    <div className={`inline-block py-2 px-6 rounded-full border backdrop-blur-md mb-6 ${theme === 'light' ? 'border-blue-200 bg-blue-50/50' : 'border-white/10 bg-white/5'
                         }`}>
+                        <span className={`text-[10px] font-bold uppercase tracking-[0.4em] ${theme === 'light' ? 'text-blue-700' : 'text-blue-400/80'
+                            }`}>
                             Upcoming Board
                         </span>
                     </div>
-                    
-                    <h2 className={`text-4xl sm:text-7xl font-display font-black mt-2 tracking-tighter leading-tight ${
-                        theme === 'light' ? 'text-slate-900' : 'text-white'
-                    }`}>
+
+                    <h2 className={`text-4xl sm:text-7xl font-display font-black mt-2 tracking-tighter leading-tight ${theme === 'light' ? 'text-slate-900' : 'text-white'
+                        }`}>
                         Upcoming <span className="text-blue-500">Categories</span>
                     </h2>
-                    <p className={`mt-6 max-w-2xl mx-auto text-base sm:text-xl font-medium ${
-                        theme === 'light' ? 'text-slate-600' : 'text-slate-400'
-                    }`}>
+                    <p className={`mt-6 max-w-2xl mx-auto text-base sm:text-xl font-medium ${theme === 'light' ? 'text-slate-600' : 'text-slate-400'
+                        }`}>
                         New tools we are bringing soon to the platform.
                     </p>
                 </div>
@@ -265,7 +223,7 @@ export default function UpcomingFeatures() {
                 {/* Desktop Grid Layout (hidden on mobile) */}
                 <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
                     {features.map((f, i) => (
-                        <motion.div 
+                        <motion.div
                             key={f._id}
                             variants={itemVariants}
                             initial="hidden"
@@ -299,6 +257,94 @@ export default function UpcomingFeatures() {
                     </motion.div>
                 </div>
             </div>
+
+            {/* Feature Detail Modal */}
+            <AnimatePresence>
+                {selectedFeature && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-hidden">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setSelectedFeature(null)}
+                            className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
+                        />
+
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.3, y: 100, rotate: -10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0, rotate: 0 }}
+                            exit={{ opacity: 0, scale: 0.5, y: 50, rotate: 5 }}
+                            transition={{
+                                type: "spring",
+                                damping: 18,
+                                stiffness: 400,
+                                mass: 0.8
+                            }}
+                            className={`relative w-full max-w-lg overflow-hidden rounded-[2.5rem] border shadow-2xl ${theme === 'light'
+                                    ? 'bg-white border-slate-200'
+                                    : 'bg-slate-900 border-white/10'
+                                }`}
+                        >
+                            {/* Colorful background splash */}
+                            <div className={`absolute -top-24 -right-24 w-64 h-64 rounded-full blur-[80px] opacity-20 pointer-events-none bg-blue-500`} />
+                            <div className={`absolute -bottom-24 -left-24 w-64 h-64 rounded-full blur-[80px] opacity-20 pointer-events-none bg-purple-500`} />
+
+                            <button
+                                onClick={() => setSelectedFeature(null)}
+                                className="absolute top-6 right-6 p-2 rounded-full hover:bg-white/10 transition-colors z-20 group"
+                            >
+                                <X size={20} className={theme === 'light' ? 'text-slate-600' : 'text-white/70 group-hover:text-white'} />
+                            </button>
+
+                            <div className="relative z-10 p-8 sm:p-10 flex flex-col gap-6">
+                                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg transform -rotate-3 ${theme === 'light' ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white'
+                                    }`}>
+                                    {(() => {
+                                        const Icon = ICON_MAP[selectedFeature.icon] || Rocket;
+                                        return <Icon size={32} />;
+                                    })()}
+                                </div>
+
+                                <div className="space-y-4">
+                                    <h3 className={`text-3xl sm:text-4xl font-display font-black tracking-tight leading-tight ${theme === 'light' ? 'text-slate-900' : 'text-white'
+                                        }`}>
+                                        {selectedFeature.title}
+                                    </h3>
+
+                                    <div className={`h-1.5 w-20 rounded-full bg-gradient-to-r from-blue-500 to-purple-500`} />
+
+                                    <div
+                                        className={`text-base sm:text-lg leading-relaxed font-medium ${theme === 'light' ? 'text-slate-600' : 'text-slate-300'
+                                            }`}
+                                        dangerouslySetInnerHTML={{
+                                            __html: selectedFeature.description || `Explore the new ${selectedFeature.title} features coming soon to enhance your digital experience. We are working hard to bring this to you.`
+                                        }}
+                                    />
+                                </div>
+
+                                <div className="pt-4 flex flex-col sm:flex-row gap-4">
+                                    <button
+                                        onClick={() => setSelectedFeature(null)}
+                                        className={`py-4 px-8 rounded-2xl font-bold transition-all duration-300 transform active:scale-95 ${theme === 'light'
+                                                ? 'bg-slate-900 text-white hover:bg-slate-800'
+                                                : 'bg-white text-slate-950 hover:bg-slate-100 shadow-[0_0_20px_rgba(255,255,255,0.2)]'
+                                            }`}
+                                    >
+                                        Close Details
+                                    </button>
+
+                                    <div className="flex-1 flex items-center justify-center sm:justify-start px-2">
+                                        <span className={`text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ${theme === 'light' ? 'text-slate-900' : 'text-white'
+                                            }`}>
+                                            Coming Soon
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </section>
     );
 }

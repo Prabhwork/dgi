@@ -12,7 +12,7 @@ export default function JoinCommunityBanner() {
     return (
         <section className="py-20 relative overflow-hidden">
             <div className="container mx-auto px-4 relative z-10">
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     whileInView={{ opacity: 1, scale: 1 }}
                     className={`relative rounded-[3rem] p-8 md:p-16 overflow-hidden border border-solid border-primary/20 bg-[#020631] ${isLight ? 'bg-primary border-blue-400 shadow-2xl shadow-primary/40 text-white' : 'bg-white/[0.03] border-white/10 shadow-3xl text-white'}`}
@@ -31,10 +31,10 @@ export default function JoinCommunityBanner() {
                                 Join the Digital Book of India <span className="text-primary italic">Community</span>
                             </h2>
                             <p className="text-white/70 text-lg md:text-xl leading-relaxed font-medium mb-8">
-                                Be part of India's largest localized business network. Collaborate with peers, share insights, 
+                                Be part of India's largest localized business network. Collaborate with peers, share insights,
                                 and stay ahead of the curve with real-time updates and exclusive community benefits.
                             </p>
-                            <Link 
+                            <Link
                                 href="/community/register"
                                 className={`inline-flex items-center gap-3 px-10 py-5 rounded-full font-black text-lg transition-all duration-500 hover:scale-105 active:scale-95 shadow-xl ${isLight ? 'bg-white text-primary hover:bg-slate-50' : 'bg-primary text-white hover:bg-primary/90 shadow-primary/30'}`}
                             >
@@ -49,8 +49,8 @@ export default function JoinCommunityBanner() {
                                 <Users size={80} className="md:w-32 md:h-32 text-white drop-shadow-2xl" />
                             </div>
                             {/* Floating decorative elements */}
-                            <motion.div animate={{ y: [0, -10, 0] }} transition={{ repeat: Infinity, duration: 4 }} className="absolute -top-4 -right-4 w-12 h-12 rounded-2xl bg-primary flex items-center justify-center shadow-lg"><Sparkles size={24} className="text-white"/></motion.div>
-                            <motion.div animate={{ x: [0, 10, 0] }} transition={{ repeat: Infinity, duration: 5 }} className="absolute -bottom-2 -left-6 w-10 h-10 rounded-2xl bg-blue-400 flex items-center justify-center shadow-lg rotate-12"><Users size={20} className="text-white"/></motion.div>
+                            <motion.div animate={{ y: [0, -10, 0] }} transition={{ repeat: Infinity, duration: 4 }} className="absolute -top-4 -right-4 w-12 h-12 rounded-2xl bg-primary flex items-center justify-center shadow-lg"><Sparkles size={24} className="text-white" /></motion.div>
+                            <motion.div animate={{ x: [0, 10, 0] }} transition={{ repeat: Infinity, duration: 5 }} className="absolute -bottom-2 -left-6 w-10 h-10 rounded-2xl bg-blue-400 flex items-center justify-center shadow-lg rotate-12"><Users size={20} className="text-white" /></motion.div>
                         </div>
                     </div>
                 </motion.div>
