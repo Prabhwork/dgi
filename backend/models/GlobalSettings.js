@@ -19,11 +19,11 @@ const globalSettingsSchema = new mongoose.Schema({
     },
     liveListingMinInterval: {
         type: Number,
-        default: 2000 // ms
+        default: 5000 // ms
     },
     liveListingMaxInterval: {
         type: Number,
-        default: 5000 // ms
+        default: 10000 // ms
     },
     liveListingStartTime: {
         type: Number,

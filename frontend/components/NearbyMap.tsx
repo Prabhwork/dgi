@@ -51,6 +51,71 @@ function decodePolyline(encoded: string): [number, number][] {
     return points;
 }
 
+// ── Navigation Geometry Utilities ─────────────────────────────────────────────
+
+/** Haversine distance in meters between two lngLat points */
+function haversineMeters(a: [number, number], b: [number, number]): number {
+    const R = 6371000;
+    const dLat = (b[1] - a[1]) * Math.PI / 180;
+    const dLng = (b[0] - a[0]) * Math.PI / 180;
+    const aa =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(a[1] * Math.PI / 180) * Math.cos(b[1] * Math.PI / 180) *
+        Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(aa), Math.sqrt(1 - aa));
+}
+
+/** Perpendicular distance (meters) from point P to segment [A, B] */
+function pointToSegmentDistance(
+    p: [number, number],
+    a: [number, number],
+    b: [number, number]
+): number {
+    const dx = b[0] - a[0];
+    const dy = b[1] - a[1];
+    if (dx === 0 && dy === 0) return haversineMeters(p, a);
+    let t = ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / (dx * dx + dy * dy);
+    t = Math.max(0, Math.min(1, t));
+    return haversineMeters(p, [a[0] + t * dx, a[1] + t * dy]);
+}
+
+/**
+ * Snap user position to the nearest point on the polyline.
+ * Returns { index: nearest segment start index, distanceM: meters from route }
+ */
+function snapToPolyline(
+    user: [number, number],
+    polyline: [number, number][]
+): { index: number; distanceM: number } {
+    let bestIdx = 0;
+    let bestDist = Infinity;
+    for (let i = 0; i < polyline.length - 1; i++) {
+        const d = pointToSegmentDistance(user, polyline[i], polyline[i + 1]);
+        if (d < bestDist) {
+            bestDist = d;
+            bestIdx = i;
+        }
+    }
+    return { index: bestIdx, distanceM: bestDist };
+}
+
+/**
+ * Split polyline into covered (grey) and remaining (green) segments.
+ * snapIdx = index of the segment the user is currently on.
+ */
+function splitRoute(
+    polyline: [number, number][],
+    snapIdx: number
+): { covered: [number, number][]; remaining: [number, number][] } {
+    if (polyline.length < 2) return { covered: [], remaining: polyline };
+    // covered = points 0 … snapIdx+1 (inclusive)
+    const splitPt = Math.min(snapIdx + 1, polyline.length - 1);
+    const covered = polyline.slice(0, splitPt + 1);
+    const remaining = polyline.slice(splitPt);
+    return { covered, remaining };
+}
+
+
 interface Business {
     _id: string;
     businessName: string;
@@ -116,6 +181,16 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
 
     const navigationStepsRef = useRef<any[]>([]);
     const lastInstructionSpokenRef = useRef<string>("");
+
+    // ── Navigation engine refs ─────────────────────────────────────────────────
+    /** Full decoded route polyline [[lng,lat]…] — used for snapping & off-route checks */
+    const routePolylineRef = useRef<[number, number][]>([]);
+    /** Timestamp (ms) of last reroute API call — gates calls to max 1 per 10s */
+    const lastRerouteTimeRef = useRef<number>(0);
+    /** True while a reroute fetch is in-flight — prevents duplicate concurrent calls */
+    const isReroutingRef = useRef<boolean>(false);
+    /** Per-segment traffic array aligned with routePolylineRef */
+    const routeTrafficRef = useRef<string[]>([]);
 
     const API = (process.env.NEXT_PUBLIC_API_URL);
 
@@ -667,25 +742,161 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
         recognition.start();
     };
 
-    // ✅ SHOW ROUTE handler — ab sahi GPS ke saath kaam karega
+    // ── Route Visualization ───────────────────────────────────────────────────────────────
+    /**
+     * Draw (or update) the route on the map.
+     * - covered: grey segments (already driven)
+     * - remaining: green/traffic segments (still to go)
+     * Uses setData() when sources already exist to avoid flicker from add/remove.
+     */
+    const updateRouteVisualization = (
+        map: mapboxgl.Map,
+        covered: [number, number][],
+        remaining: [number, number][],
+        trafficArr: string[],
+        startIdx: number, // offset into trafficArr for remaining
+        walkingPaths?: { start?: [number, number][], end?: [number, number][] }
+    ) => {
+        // Build remaining features with per-segment traffic colour
+        const remainingFeatures: any[] = [];
+        for (let i = 0; i < remaining.length - 1; i++) {
+            const tIdx = startIdx + i;
+            const congestion = trafficArr[tIdx] || 'low';
+            remainingFeatures.push({
+                type: 'Feature',
+                geometry: { type: 'LineString', coordinates: [remaining[i], remaining[i + 1]] },
+                properties: { congestion }
+            });
+        }
+
+        const coveredFeatures: any[] = covered.length >= 2 ? [{
+            type: 'Feature',
+            geometry: { type: 'LineString', coordinates: covered },
+            properties: { congestion: 'covered' }
+        }] : [];
+
+        const allFeatures = [...coveredFeatures, ...remainingFeatures];
+
+        const walkingFeatures: any[] = [];
+        if (walkingPaths?.start?.length) {
+            walkingFeatures.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: walkingPaths.start } });
+        }
+        if (walkingPaths?.end?.length) {
+            walkingFeatures.push({ type: 'Feature', geometry: { type: 'LineString', coordinates: walkingPaths.end } });
+        }
+
+        // ─ If sources already exist, just update data (no flicker) ─
+        if (map.getSource('route-remaining')) {
+            (map.getSource('route-remaining') as mapboxgl.GeoJSONSource)
+                .setData({ type: 'FeatureCollection', features: remainingFeatures });
+        }
+        if (map.getSource('route-covered')) {
+            (map.getSource('route-covered') as mapboxgl.GeoJSONSource)
+                .setData({ type: 'FeatureCollection', features: coveredFeatures });
+        }
+        if (map.getSource('route')) {
+            (map.getSource('route') as mapboxgl.GeoJSONSource)
+                .setData({ type: 'FeatureCollection', features: allFeatures as any });
+        }
+        if (map.getSource('route-walking')) {
+            (map.getSource('route-walking') as mapboxgl.GeoJSONSource)
+                .setData({ type: 'FeatureCollection', features: walkingFeatures as any });
+            return; // Sources/layers already set up
+        }
+        if (map.getSource('route')) return; // sources exist but no walking source
+
+        // ─ First-time setup: create all sources & layers ─
+
+        // Remove any legacy layers
+        ['route-glow', 'route-line', 'route-particles', 'route-covered-line', 'route-walking-line',
+            'route-remaining-glow', 'route-remaining-line', 'route-particles-remaining']
+            .forEach(id => { if (map.getLayer(id)) map.removeLayer(id); });
+        ['route', 'route-covered', 'route-remaining', 'route-walking']
+            .forEach(id => { if (map.getSource(id)) map.removeSource(id); });
+
+        // Covered source
+        map.addSource('route-covered', {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: coveredFeatures as any }
+        });
+
+        // Remaining source
+        map.addSource('route-remaining', {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: remainingFeatures as any }
+        });
+
+        // Combined "route" source for the particle animation (remaining only)
+        map.addSource('route', {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: remainingFeatures as any }
+        });
+
+        // Walking dots source
+        map.addSource('route-walking', {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: walkingFeatures as any }
+        });
+
+        // Walking dots layer (off-road segments)
+        map.addLayer({
+            id: 'route-walking-line', type: 'line', source: 'route-walking',
+            layout: { 'line-join': 'round', 'line-cap': 'round' },
+            paint: { 'line-color': '#9ca3af', 'line-width': 4, 'line-dasharray': [0.5, 2], 'line-opacity': 0.9 }
+        });
+
+        // Covered: grey line, half opacity
+        map.addLayer({
+            id: 'route-covered-line', type: 'line', source: 'route-covered',
+            layout: { 'line-join': 'round', 'line-cap': 'round' },
+            paint: { 'line-color': '#6b7280', 'line-width': 4, 'line-opacity': 0.55 }
+        });
+
+        // Remaining: glow
+        map.addLayer({
+            id: 'route-remaining-glow', type: 'line', source: 'route-remaining',
+            layout: { 'line-join': 'round', 'line-cap': 'round' },
+            paint: {
+                'line-color': ['match', ['get', 'congestion'],
+                    'low', '#22c55e', 'moderate', '#eab308', 'heavy', '#f97316', 'severe', '#ef4444', '#22c55e'],
+                'line-width': 16, 'line-blur': 12, 'line-opacity': 0.25
+            }
+        });
+
+        // Remaining: main line with traffic colours
+        map.addLayer({
+            id: 'route-remaining-line', type: 'line', source: 'route-remaining',
+            layout: { 'line-join': 'round', 'line-cap': 'round' },
+            paint: {
+                'line-color': ['match', ['get', 'congestion'],
+                    'low', '#22c55e', 'moderate', '#eab308', 'heavy', '#f97316', 'severe', '#ef4444', '#38bdf8'],
+                'line-width': 6, 'line-opacity': 1
+            }
+        });
+
+        // Animated dashes on remaining route
+        map.addLayer({
+            id: 'route-particles', type: 'line', source: 'route',
+            layout: { 'line-join': 'round', 'line-cap': 'round' },
+            paint: { 'line-color': '#ffffff', 'line-width': 2, 'line-dasharray': [0, 4, 1, 4], 'line-opacity': 0.7 }
+        });
+    };
+
+    // ── SHOW ROUTE ──────────────────────────────────────────────────────────────────
     const handleShowRoute = async () => {
         if (!mapRef.current || !selectedBusiness) return;
 
-        // ✅ GPS ready nahi toh pehle acquire karo
         const freshUserLoc = await getFreshLocation();
+        console.log('🗺️ Route from:', freshUserLoc, '→ to:', selectedBusiness.gpsCoordinates);
 
-        console.log("🗺️ Route from:", freshUserLoc, "→ to:", selectedBusiness.gpsCoordinates);
-
-        // ✅ Validate: agar user aur destination same hain toh warn karo
-        const distCheck = Math.abs(freshUserLoc.lat - selectedBusiness.gpsCoordinates.lat) + Math.abs(freshUserLoc.lng - selectedBusiness.gpsCoordinates.lng);
+        const distCheck =
+            Math.abs(freshUserLoc.lat - selectedBusiness.gpsCoordinates.lat) +
+            Math.abs(freshUserLoc.lng - selectedBusiness.gpsCoordinates.lng);
         if (distCheck < 0.0001) {
-            if (!gpsReadyRef.current) {
-                alert("Please enable GPS/Location access to get turn-by-turn directions.");
-                return;
-            } else {
-                alert("You appear to be at this location already!");
-                return;
-            }
+            alert(!gpsReadyRef.current
+                ? 'Please enable GPS/Location access to get turn-by-turn directions.'
+                : 'You appear to be at this location already!');
+            return;
         }
 
         activeDestRef.current = selectedBusiness.gpsCoordinates;
@@ -693,84 +904,62 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
         try {
             const originStr = `${freshUserLoc.lat},${freshUserLoc.lng}`;
             const destStr = `${selectedBusiness.gpsCoordinates.lat},${selectedBusiness.gpsCoordinates.lng}`;
-            const url = `/api/directions?origin=${originStr}&destination=${destStr}`;
+            const json = await fetch(`/api/directions?origin=${originStr}&destination=${destStr}`).then(r => r.json());
 
-            const query = await fetch(url);
-            let json = await query.json();
-
-            // v2 response uses routes array without a status wrapper
             if (!json.routes?.length) {
-                console.error("Google Maps API Route Error Payload:", json);
-
-                // Show a helpful error if it's an API permission issue
-                if (json.error) {
-                    alert(`Google API Error: ${json.error.message}\nMake sure Routes API is enabled in your Google Cloud Console.`);
-                } else {
-                    alert("No route found for this destination via Google Maps.");
-                }
+                if (json.error) alert(`Google API Error: ${json.error.message}`);
+                else alert('No route found for this destination.');
                 return;
             }
 
             const data = json.routes[0];
-            const userCoord = [freshUserLoc.lng, freshUserLoc.lat] as [number, number];
 
-            const polylinePoints = data.polyline?.encodedPolyline || "";
-            const rawRoute = decodePolyline(polylinePoints);
-            const route = [userCoord, ...rawRoute];
+            // FIX #3: Do NOT prepend userCoord — Google polyline already starts at
+            // the road-snapped origin. Prepending creates a gap & road misalignment.
+            const route: [number, number][] = decodePolyline(data.polyline?.encodedPolyline || '');
 
-            const routeDist = (data.distanceMeters || 0) / 1000;
-            const durationMins = parseInt(data.duration || "0") / 60;
+            // Store route for snapping & off-route detection
+            routePolylineRef.current = route;
+            lastRerouteTimeRef.current = Date.now();
 
-            // Build segment traffic array from speedReadingIntervals
+            // Build per-segment traffic array
             const intervals = data.travelAdvisory?.speedReadingIntervals || [];
-            const pointTraffic = new Array(route.length).fill('low');
-            let severeCount = 0;
-            let moderateCount = 0;
-
-            intervals.forEach((interval: any) => {
-                const sIdx = interval.startPolylinePointIndex || 0;
-                const eIdx = interval.endPolylinePointIndex || route.length - 1;
-                let level = 'low';
-                if (interval.speed === 'TRAFFIC_JAM') { level = 'severe'; severeCount += (eIdx - sIdx); }
-                else if (interval.speed === 'SLOW') { level = 'moderate'; moderateCount += (eIdx - sIdx); }
-
-                for (let j = sIdx; j <= eIdx && j + 1 < route.length; j++) {
-                    pointTraffic[j + 1] = level;
-                }
+            const trafficArr = new Array(route.length).fill('low');
+            let severeCount = 0, moderateCount = 0;
+            intervals.forEach((iv: any) => {
+                const s = iv.startPolylinePointIndex || 0;
+                const e = iv.endPolylinePointIndex || route.length - 1;
+                let lvl = 'low';
+                if (iv.speed === 'TRAFFIC_JAM') { lvl = 'severe'; severeCount += (e - s); }
+                else if (iv.speed === 'SLOW') { lvl = 'moderate'; moderateCount += (e - s); }
+                for (let j = s; j <= e && j + 1 < route.length; j++) trafficArr[j + 1] = lvl;
             });
+            routeTrafficRef.current = trafficArr;
 
-            let overallCongestion = "LOW";
-            const totalPoints = Math.max(1, route.length);
-            if (severeCount / totalPoints > 0.25) overallCongestion = "HEAVY";
-            else if (severeCount > 0 || moderateCount / totalPoints > 0.3) overallCongestion = "MODERATE";
+            const totalPts = Math.max(1, route.length);
+            let overallCongestion = 'LOW';
+            if (severeCount / totalPts > 0.25) overallCongestion = 'HEAVY';
+            else if (severeCount > 0 || moderateCount / totalPts > 0.3) overallCongestion = 'MODERATE';
 
-            // Extract voice navigation instructions
+            // Extract voice steps
             const processedSteps = (data.legs?.[0]?.steps || []).map((s: any) => {
-                let instruction = s.navigationInstruction?.instructions?.replace(/<[^>]*>?/gm, '') || "";
-                if (instruction && !instruction.toLowerCase().includes("destination") && !instruction.toLowerCase().startsWith("head ")) {
-                    instruction = `In 200 meters, ${instruction}`;
-                }
-                return {
-                    lat: s.startLocation?.latLng?.latitude,
-                    lng: s.startLocation?.latLng?.longitude,
-                    instruction
-                };
+                let inst = s.navigationInstruction?.instructions?.replace(/<[^>]*>?/gm, '') || '';
+                if (inst && !inst.toLowerCase().includes('destination') && !inst.toLowerCase().startsWith('head '))
+                    inst = `In 200 meters, ${inst}`;
+                return { lat: s.startLocation?.latLng?.latitude, lng: s.startLocation?.latLng?.longitude, instruction: inst };
             }).filter((s: any) => s.instruction);
 
             navigationStepsRef.current = processedSteps;
-            lastInstructionSpokenRef.current = "";
+            lastInstructionSpokenRef.current = '';
 
-            // ✅ CRITICAL: Route draw karne ka exact GPS save karo — START NAVIGATION isi se flyTo karega
             routeOriginRef.current = freshUserLoc;
             canonicalLocRef.current = freshUserLoc;
             lastLocationRef.current = freshUserLoc;
 
-            // ✅ FIX: SHOW ROUTE = sirf preview, isNavigating false rakhte hain
-            // Navigation tabhi shuru hogi jab user "START NAVIGATION" dabaaye
             setIsNavigating(false);
             setRouteInfo({
-                distance: routeDist,
-                duration: durationMins,
+                distance: (data.distanceMeters || 0) / 1000,
+                duration: parseInt(data.duration || '0') / 60,
                 businessName: selectedBusiness.brandName || selectedBusiness.businessName,
                 trafficCondition: overallCongestion
             });
@@ -778,19 +967,14 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
             const map = mapRef.current;
             if (!map) return;
 
-            ['route-glow', 'route-line', 'route-particles'].forEach(id => {
-                if (map.getLayer(id)) map.removeLayer(id);
-            });
-            if (map.getSource('route')) map.removeSource('route');
-
             if (startMarkerRef.current) { startMarkerRef.current.remove(); startMarkerRef.current = null; }
 
             const startCoord = route[0];
             const nextCoord = route[1] || route[0];
-            const bearing = nextCoord ? (Math.atan2(nextCoord[0] - startCoord[0], nextCoord[1] - startCoord[1]) * 180 / Math.PI) : 0;
+            const bearing = Math.atan2(nextCoord[0] - startCoord[0], nextCoord[1] - startCoord[1]) * 180 / Math.PI;
 
-            const startEl = document.createElement("div");
-            startEl.style.zIndex = "1000";
+            const startEl = document.createElement('div');
+            startEl.style.zIndex = '1000';
             startEl.innerHTML = `
                 <div style="transform: rotate(${bearing}deg); filter: drop-shadow(0 0 15px rgba(14,165,233,0.8)); transition: transform 0.3s ease-out;">
                     <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -803,42 +987,14 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                 .setLngLat(startCoord)
                 .addTo(map);
 
-            const features = [];
-            for (let i = 0; i < route.length - 1; i++) {
-                const segCongestion = pointTraffic[i + 1] || 'low';
-                features.push({
-                    type: 'Feature',
-                    geometry: { type: 'LineString', coordinates: [route[i], route[i + 1]] },
-                    properties: { congestion: segCongestion }
-                });
-            }
+            // Initial visualization: full route is "remaining" (nothing covered yet)
+            const walkingPaths = { 
+                start: [[freshUserLoc.lng, freshUserLoc.lat] as [number, number], route[0]], 
+                end: [route[route.length - 1], [selectedBusiness.gpsCoordinates.lng, selectedBusiness.gpsCoordinates.lat] as [number, number]] 
+            };
+            updateRouteVisualization(map, [], route, trafficArr, 0, walkingPaths);
 
-            map.addSource('route', { type: 'geojson', data: { type: 'FeatureCollection', features: features as any } });
-
-            map.addLayer({
-                id: 'route-glow', type: 'line', source: 'route',
-                layout: { 'line-join': 'round', 'line-cap': 'round' },
-                paint: {
-                    'line-color': ['match', ['get', 'congestion'], 'low', '#22c55e', 'moderate', '#eab308', 'heavy', '#f97316', 'severe', '#ef4444', '#0ea5e9'],
-                    'line-width': 16, 'line-blur': 12, 'line-opacity': 0.25
-                }
-            });
-
-            map.addLayer({
-                id: 'route-line', type: 'line', source: 'route',
-                layout: { 'line-join': 'round', 'line-cap': 'round' },
-                paint: {
-                    'line-color': ['match', ['get', 'congestion'], 'low', '#22c55e', 'moderate', '#eab308', 'heavy', '#f97316', 'severe', '#ef4444', '#38bdf8'],
-                    'line-width': 6, 'line-opacity': 1
-                }
-            });
-
-            map.addLayer({
-                id: 'route-particles', type: 'line', source: 'route',
-                layout: { 'line-join': 'round', 'line-cap': 'round' },
-                paint: { 'line-color': '#ffffff', 'line-width': 3, 'line-dasharray': [0, 4, 1, 4], 'line-opacity': 0.8 }
-            });
-
+            // Animated dashes
             let step = 0;
             const animate = () => {
                 step = (step + 0.2) % 10;
@@ -850,15 +1006,20 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
             if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
             animate();
 
-            const bounds = route.reduce((bounds: mapboxgl.LngLatBounds, coord: any) => bounds.extend(coord), new mapboxgl.LngLatBounds(route[0], route[0]));
-            map.fitBounds(bounds, { padding: { top: 150, bottom: 350, left: 50, right: 50 }, duration: 2500, pitch: 62, bearing: bearing, essential: true });
+            const bounds = route.reduce(
+                (b: mapboxgl.LngLatBounds, c) => b.extend(c),
+                new mapboxgl.LngLatBounds(route[0], route[0])
+            );
+            map.fitBounds(bounds, { padding: { top: 150, bottom: 350, left: 50, right: 50 }, duration: 2500, pitch: 62, bearing, essential: true });
 
             setSelectedBusiness(null);
+            console.log('🛣️ Route drawn. Points:', route.length);
         } catch (err) {
-            console.error("Could not fetch directions:", err);
-            alert("Could not fetch route. Please try again.");
+            console.error('Could not fetch directions:', err);
+            alert('Could not fetch route. Please try again.');
         }
     };
+
 
     const siteBackground = {
         backgroundImage: `radial-gradient(at 0% 0%, hsla(210, 100%, 56%, 0.15) 0px, transparent 50%), radial-gradient(at 100% 0%, hsla(255, 60%, 69%, 0.1) 0px, transparent 50%)`,
@@ -1074,8 +1235,12 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                         setRouteInfo(null);
                                         if (mapRef.current) {
                                             const map = mapRef.current;
-                                            ['route-glow', 'route-line', 'route-particles'].forEach(id => { if (map.getLayer(id)) map.removeLayer(id); });
-                                            if (map.getSource('route')) map.removeSource('route');
+                                            ['route-covered-line', 'route-remaining-glow', 'route-remaining-line', 'route-particles', 'route-walking-line'].forEach(id => {
+                                                if (map.getLayer(id)) map.removeLayer(id);
+                                            });
+                                            ['route-covered', 'route-remaining', 'route', 'route-walking'].forEach(id => {
+                                                if (map.getSource(id)) map.removeSource(id);
+                                            });
                                             if (startMarkerRef.current) { startMarkerRef.current.remove(); startMarkerRef.current = null; }
                                             if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
                                         }
@@ -1116,68 +1281,89 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                     map.flyTo({ center: [navLoc.lng, navLoc.lat], zoom: 18, pitch: 75, duration: 2000 });
                                                 }
 
+                                                // Announce first instruction
                                                 if (navigationStepsRef.current.length > 0) {
                                                     const firstStep = navigationStepsRef.current[0];
-                                                    const utterance = new SpeechSynthesisUtterance("Starting navigation. " + firstStep.instruction);
-                                                    utterance.rate = 0.95;
-                                                    utterance.pitch = 1.05;
-                                                    if (!isMutedRef.current) {
-                                                        window.speechSynthesis.speak(utterance);
-                                                    }
+                                                    const utterance = new SpeechSynthesisUtterance('Starting navigation. ' + firstStep.instruction);
+                                                    utterance.rate = 0.95; utterance.pitch = 1.05;
+                                                    if (!isMutedRef.current) window.speechSynthesis.speak(utterance);
                                                     lastInstructionSpokenRef.current = firstStep.instruction;
                                                 }
 
                                                 if (rerouteTimerRef.current) clearInterval(rerouteTimerRef.current);
 
-                                                const fetchRouteData = async (locToUse: any) => {
+                                                // ── Reroute helper: only called when off-route ──────────────────────
+                                                const doReroute = async (loc: { lat: number; lng: number }) => {
                                                     const dest = activeDestRef.current;
-                                                    if (!locToUse || !dest || !mapRef.current) return;
-                                                    const bName = routeInfo?.businessName || '';
+                                                    if (!dest || !mapRef.current || isReroutingRef.current) return;
+                                                    isReroutingRef.current = true;
+                                                    lastRerouteTimeRef.current = Date.now();
+                                                    console.log('⚠️ Off-route! Fetching new route from', loc);
                                                     try {
-                                                        const originStr = `${locToUse.lat},${locToUse.lng}`;
-                                                        const destStr = `${dest.lat},${dest.lng}`;
-                                                        const url = `/api/directions?origin=${originStr}&destination=${destStr}`;
-                                                        const res = await fetch(url);
-                                                        const js = await res.json();
+                                                        const bName = routeInfo?.businessName || '';
+                                                        const js = await fetch(
+                                                            `/api/directions?origin=${loc.lat},${loc.lng}&destination=${dest.lat},${dest.lng}`
+                                                        ).then(r => r.json());
                                                         if (!js.routes?.length) return;
 
                                                         const d = js.routes[0];
-                                                        const dist = (d.distanceMeters || 0) / 1000;
-                                                        const dMins = parseInt(d.duration || "0") / 60;
+                                                        const newRoute: [number, number][] = decodePolyline(d.polyline?.encodedPolyline || '');
+                                                        routePolylineRef.current = newRoute;
 
-                                                        const intervals = d.travelAdvisory?.speedReadingIntervals || [];
-                                                        let sCount = 0; let mCount = 0;
-                                                        intervals.forEach((i: any) => {
-                                                            const diff = (i.endPolylinePointIndex || 0) - (i.startPolylinePointIndex || 0);
-                                                            if (i.speed === 'TRAFFIC_JAM') sCount += diff;
-                                                            else if (i.speed === 'SLOW') mCount += diff;
+                                                        // Rebuild traffic array for new route
+                                                        const ivs = d.travelAdvisory?.speedReadingIntervals || [];
+                                                        const ta = new Array(newRoute.length).fill('low');
+                                                        let sc = 0, mc = 0;
+                                                        ivs.forEach((iv: any) => {
+                                                            const s = iv.startPolylinePointIndex || 0;
+                                                            const e = iv.endPolylinePointIndex || newRoute.length - 1;
+                                                            let lvl = 'low';
+                                                            if (iv.speed === 'TRAFFIC_JAM') { lvl = 'severe'; sc += (e - s); }
+                                                            else if (iv.speed === 'SLOW') { lvl = 'moderate'; mc += (e - s); }
+                                                            for (let j = s; j <= e && j + 1 < newRoute.length; j++) ta[j + 1] = lvl;
+                                                        });
+                                                        routeTrafficRef.current = ta;
+
+                                                        const tp = Math.max(1, newRoute.length);
+                                                        let tCond = 'LOW';
+                                                        if (sc / tp > 0.25) tCond = 'HEAVY';
+                                                        else if (sc > 0 || mc / tp > 0.3) tCond = 'MODERATE';
+
+                                                        setRouteInfo({
+                                                            distance: (d.distanceMeters || 0) / 1000,
+                                                            duration: parseInt(d.duration || '0') / 60,
+                                                            businessName: bName,
+                                                            trafficCondition: tCond
                                                         });
 
-                                                        let tCond = "LOW";
-                                                        const poly = decodePolyline(d.polyline?.encodedPolyline || "");
-                                                        const tPts = Math.max(1, poly.length);
-                                                        if (sCount / tPts > 0.25) tCond = "HEAVY";
-                                                        else if (sCount > 0 || mCount / tPts > 0.3) tCond = "MODERATE";
-
-                                                        setRouteInfo({ distance: dist, duration: dMins, businessName: bName, trafficCondition: tCond });
-
+                                                        // Update navigation steps
                                                         const newSteps = (d.legs?.[0]?.steps || []).map((s: any) => {
-                                                            let instruction = s.navigationInstruction?.instructions?.replace(/<[^>]*>?/gm, '') || "";
-                                                            if (instruction && !instruction.toLowerCase().includes("destination") && !instruction.toLowerCase().startsWith("head ")) {
-                                                                instruction = `In 200 meters, ${instruction}`;
-                                                            }
-                                                            return {
-                                                                lat: s.startLocation?.latLng?.latitude,
-                                                                lng: s.startLocation?.latLng?.longitude,
-                                                                instruction
-                                                            };
+                                                            let inst = s.navigationInstruction?.instructions?.replace(/<[^>]*>?/gm, '') || '';
+                                                            if (inst && !inst.toLowerCase().includes('destination') && !inst.toLowerCase().startsWith('head '))
+                                                                inst = `In 200 meters, ${inst}`;
+                                                            return { lat: s.startLocation?.latLng?.latitude, lng: s.startLocation?.latLng?.longitude, instruction: inst };
                                                         }).filter((s: any) => s.instruction);
-                                                        if (newSteps.length > 0) navigationStepsRef.current = newSteps;
-                                                    } catch (e) { console.warn('Reroute error:', e); }
+                                                        if (newSteps.length > 0) {
+                                                            navigationStepsRef.current = newSteps;
+                                                            lastInstructionSpokenRef.current = '';
+                                                        }
+
+                                                        // Draw rerouted path: nothing covered yet on new route
+                                                        const destLoc = activeDestRef.current;
+                                                        const walkingPaths = { 
+                                                            start: [[loc.lng, loc.lat] as [number, number], newRoute[0]], 
+                                                            end: destLoc ? [newRoute[newRoute.length - 1], [destLoc.lng, destLoc.lat] as [number, number]] : undefined
+                                                        };
+                                                        updateRouteVisualization(mapRef.current!, [], newRoute, ta, 0, walkingPaths);
+                                                        console.log('🛣️ Route updated. Points:', newRoute.length);
+                                                    } catch (e) {
+                                                        console.warn('Reroute error:', e);
+                                                    } finally {
+                                                        isReroutingRef.current = false;
+                                                    }
                                                 };
 
-                                                fetchRouteData(navLoc);
-
+                                                // ── GPS watcher ──────────────────────────────────────────────────────
                                                 if (navigator.geolocation) {
                                                     if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
                                                     watchIdRef.current = navigator.geolocation.watchPosition(
@@ -1187,38 +1373,75 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                             const heading = pos.coords.heading;
                                                             const newLoc = { lat, lng };
 
-                                                            if (lastLocationRef.current && !hasMoved(lastLocationRef.current, newLoc, 5)) return;
-
+                                                            // Gate: ignore if not moved enough
+                                                            if (lastLocationRef.current && !hasMoved(lastLocationRef.current, newLoc, 8)) return;
                                                             lastLocationRef.current = newLoc;
                                                             canonicalLocRef.current = newLoc;
                                                             setUserLocation(newLoc);
-                                                            fetchRouteData(newLoc);
 
-                                                            if (navigationStepsRef.current.length > 0) {
-                                                                const nextStep = navigationStepsRef.current[0];
-                                                                const distToManhattan = Math.abs(lat - nextStep.lat) + Math.abs(lng - nextStep.lng);
-                                                                if (distToManhattan < 0.002) {
-                                                                    if (lastInstructionSpokenRef.current !== nextStep.instruction) {
-                                                                        const utterance = new SpeechSynthesisUtterance(nextStep.instruction);
-                                                                        utterance.rate = 0.95;
-                                                                        utterance.pitch = 1.05;
-                                                                        if (!isMutedRef.current) {
-                                                                            window.speechSynthesis.speak(utterance);
-                                                                        }
-                                                                        lastInstructionSpokenRef.current = nextStep.instruction;
-                                                                    }
-                                                                    navigationStepsRef.current.shift();
+                                                            const userLngLat: [number, number] = [lng, lat];
+
+                                                            // ── Step 1: Snap to polyline & update grey/green split ──────────
+                                                            const poly = routePolylineRef.current;
+                                                            if (poly.length >= 2 && mapRef.current) {
+                                                                const { index: snapIdx, distanceM } = snapToPolyline(userLngLat, poly);
+                                                                console.log(`📍 Snapped at index ${snapIdx}, dist ${distanceM.toFixed(0)}m`);
+
+                                                                const { covered, remaining } = splitRoute(poly, snapIdx);
+                                                                const destLoc = activeDestRef.current;
+                                                                const walkingPaths = { 
+                                                                    start: [userLngLat, poly[snapIdx]], 
+                                                                    end: destLoc ? [poly[poly.length - 1], [destLoc.lng, destLoc.lat] as [number, number]] : undefined
+                                                                };
+                                                                updateRouteVisualization(
+                                                                    mapRef.current,
+                                                                    covered,
+                                                                    remaining,
+                                                                    routeTrafficRef.current,
+                                                                    snapIdx,
+                                                                    walkingPaths
+                                                                );
+
+                                                                // ── Step 2: Off-route check (API only when needed) ──────────
+                                                                const OFF_ROUTE_THRESHOLD_M = 45;
+                                                                const REROUTE_COOLDOWN_MS = 10000;
+                                                                const timeSinceReroute = Date.now() - lastRerouteTimeRef.current;
+
+                                                                if (
+                                                                    distanceM > OFF_ROUTE_THRESHOLD_M &&
+                                                                    timeSinceReroute > REROUTE_COOLDOWN_MS &&
+                                                                    !isReroutingRef.current
+                                                                ) {
+                                                                    console.log(`⚠️ Off-route: ${distanceM.toFixed(0)}m`);
+                                                                    doReroute(newLoc);
                                                                 }
                                                             }
 
+                                                            // ── Step 3: Voice turn-by-turn instructions ─────────────────────
+                                                            if (navigationStepsRef.current.length > 0) {
+                                                                const nextStep = navigationStepsRef.current[0];
+                                                                // ~150m threshold (more reliable than Manhattan)
+                                                                const stepDist = haversineMeters(userLngLat, [nextStep.lng, nextStep.lat]);
+                                                                if (stepDist < 150) {
+                                                                    if (lastInstructionSpokenRef.current !== nextStep.instruction) {
+                                                                        const utterance = new SpeechSynthesisUtterance(nextStep.instruction);
+                                                                        utterance.rate = 0.95; utterance.pitch = 1.05;
+                                                                        if (!isMutedRef.current) window.speechSynthesis.speak(utterance);
+                                                                        lastInstructionSpokenRef.current = nextStep.instruction;
+                                                                    }
+                                                                    if (stepDist < 30) navigationStepsRef.current.shift();
+                                                                }
+                                                            }
+
+                                                            // ── Step 4: Map camera follow ────────────────────────────────────
                                                             let mapBearing = mapRef.current?.getBearing() ?? 0;
                                                             if (heading !== null && heading !== undefined && !isNaN(heading)) {
                                                                 mapBearing = heading;
                                                             } else if (lastLocationRef.current) {
-                                                                const dLng = newLoc.lng - lastLocationRef.current.lng;
-                                                                const dLat = newLoc.lat - lastLocationRef.current.lat;
-                                                                if (Math.abs(dLng) > 0.00001 || Math.abs(dLat) > 0.00001) {
-                                                                    mapBearing = Math.atan2(dLng, dLat) * 180 / Math.PI;
+                                                                const dLng2 = newLoc.lng - lastLocationRef.current.lng;
+                                                                const dLat2 = newLoc.lat - lastLocationRef.current.lat;
+                                                                if (Math.abs(dLng2) > 0.00001 || Math.abs(dLat2) > 0.00001) {
+                                                                    mapBearing = Math.atan2(dLng2, dLat2) * 180 / Math.PI;
                                                                 }
                                                             }
 
@@ -1227,8 +1450,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                                 mapRef.current?.easeTo({
                                                                     center: [lng, lat],
                                                                     bearing: mapBearing,
-                                                                    pitch: 75,
-                                                                    zoom: 18,
+                                                                    pitch: 75, zoom: 18,
                                                                     duration: 800,
                                                                     easing: (t) => t
                                                                 });
@@ -1238,12 +1460,10 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                             if (startMarkerRef.current) {
                                                                 startMarkerRef.current.setLngLat([lng, lat]);
                                                                 const arrowDiv = startMarkerRef.current.getElement().querySelector('div');
-                                                                if (arrowDiv) {
-                                                                    arrowDiv.style.transform = `rotate(${mapBearing}deg)`;
-                                                                }
+                                                                if (arrowDiv) arrowDiv.style.transform = `rotate(${mapBearing}deg)`;
                                                             }
                                                         },
-                                                        (err) => console.warn("Watch pos err:", err),
+                                                        (err) => console.warn('Watch pos err:', err),
                                                         { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
                                                     );
                                                 }
