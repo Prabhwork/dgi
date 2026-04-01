@@ -86,31 +86,17 @@ function pointToSegmentDistance(
 function snapToPolyline(
     user: [number, number],
     polyline: [number, number][]
-): { index: number; distanceM: number; point: [number, number] } {
+): { index: number; distanceM: number } {
     let bestIdx = 0;
     let bestDist = Infinity;
-    let bestPoint = user;
     for (let i = 0; i < polyline.length - 1; i++) {
-        const a = polyline[i];
-        const b = polyline[i + 1];
-        const dx = b[0] - a[0];
-        const dy = b[1] - a[1];
-        if (dx === 0 && dy === 0) {
-            const d = haversineMeters(user, a);
-            if (d < bestDist) { bestDist = d; bestIdx = i; bestPoint = a; }
-            continue;
-        }
-        let t = ((user[0] - a[0]) * dx + (user[1] - a[1]) * dy) / (dx * dx + dy * dy);
-        t = Math.max(0, Math.min(1, t));
-        const proj: [number, number] = [a[0] + t * dx, a[1] + t * dy];
-        const d = haversineMeters(user, proj);
+        const d = pointToSegmentDistance(user, polyline[i], polyline[i + 1]);
         if (d < bestDist) {
             bestDist = d;
             bestIdx = i;
-            bestPoint = proj;
         }
     }
-    return { index: bestIdx, distanceM: bestDist, point: bestPoint };
+    return { index: bestIdx, distanceM: bestDist };
 }
 
 /**
@@ -119,17 +105,13 @@ function snapToPolyline(
  */
 function splitRoute(
     polyline: [number, number][],
-    snapIdx: number,
-    snappedPoint?: [number, number]
+    snapIdx: number
 ): { covered: [number, number][]; remaining: [number, number][] } {
     if (polyline.length < 2) return { covered: [], remaining: polyline };
-    if (!snappedPoint) {
-        const splitPt = Math.min(snapIdx + 1, polyline.length - 1);
-        return { covered: polyline.slice(0, splitPt + 1), remaining: polyline.slice(splitPt) };
-    }
-    const covered = polyline.slice(0, snapIdx + 1);
-    covered.push(snappedPoint);
-    const remaining = [snappedPoint, ...polyline.slice(snapIdx + 1)];
+    // covered = points 0 … snapIdx+1 (inclusive)
+    const splitPt = Math.min(snapIdx + 1, polyline.length - 1);
+    const covered = polyline.slice(0, splitPt + 1);
+    const remaining = polyline.slice(splitPt);
     return { covered, remaining };
 }
 
@@ -180,12 +162,6 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
     const [isAutoCentering, setIsAutoCentering] = useState(true);
     const autoCenteringRef = useRef(true);
     useEffect(() => { autoCenteringRef.current = isAutoCentering; }, [isAutoCentering]);
-    useEffect(() => {
-        if (typeof window !== 'undefined' && window.speechSynthesis) {
-            window.speechSynthesis.getVoices();
-            window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
-        }
-    }, []);
     const isProgrammaticMove = useRef(false);
     const rerouteTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const lastLocationRef = useRef<{ lat: number; lng: number } | null>(null);
@@ -215,7 +191,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
     const isReroutingRef = useRef<boolean>(false);
     /** Per-segment traffic array aligned with routePolylineRef */
     const routeTrafficRef = useRef<string[]>([]);
-    const routeBeforeLayerRef = useRef<string | undefined>(undefined);
+
     const API = (process.env.NEXT_PUBLIC_API_URL);
 
     const getTrafficLevel = (congestion: string[]): string => {
@@ -471,7 +447,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
             } catch (layerErr) {
                 console.warn("Could not add 3D buildings layer:", layerErr);
             }
-            routeBeforeLayerRef.current = map.getLayer('3d-buildings') ? '3d-buildings' : undefined;
+
             // ✅ User marker — canonicalLocRef se location lo
             const markerLoc = canonicalLocRef.current || initial;
             const userEl = document.createElement("div");
@@ -499,7 +475,6 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
         });
 
         const handleInteraction = () => {
-            if (isProgrammaticMove.current) return;
             if (autoCenteringRef.current) {
                 setIsAutoCentering(false);
                 autoCenteringRef.current = false;
@@ -842,19 +817,18 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
         // Covered source
         map.addSource('route-covered', {
             type: 'geojson',
-            lineMetrics: true,   // ← ADD KARO
             data: { type: 'FeatureCollection', features: coveredFeatures as any }
         });
 
+        // Remaining source
         map.addSource('route-remaining', {
             type: 'geojson',
-            lineMetrics: true,   // ← ADD KARO
             data: { type: 'FeatureCollection', features: remainingFeatures as any }
         });
 
+        // Combined "route" source for the particle animation (remaining only)
         map.addSource('route', {
             type: 'geojson',
-            lineMetrics: true,   // ← ADD KARO
             data: { type: 'FeatureCollection', features: remainingFeatures as any }
         });
 
@@ -864,19 +838,21 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
             data: { type: 'FeatureCollection', features: walkingFeatures as any }
         });
 
-
+        // Walking dots layer (off-road segments)
         map.addLayer({
             id: 'route-walking-line', type: 'line', source: 'route-walking',
             layout: { 'line-join': 'round', 'line-cap': 'round' },
             paint: { 'line-color': '#9ca3af', 'line-width': 4, 'line-dasharray': [0.5, 2], 'line-opacity': 0.9 }
-        }, routeBeforeLayerRef.current);  // ← SECOND ARGUMENT
+        });
 
+        // Covered: grey line, half opacity
         map.addLayer({
             id: 'route-covered-line', type: 'line', source: 'route-covered',
             layout: { 'line-join': 'round', 'line-cap': 'round' },
             paint: { 'line-color': '#6b7280', 'line-width': 4, 'line-opacity': 0.55 }
-        }, routeBeforeLayerRef.current);  // ← SECOND ARGUMENT
+        });
 
+        // Remaining: glow
         map.addLayer({
             id: 'route-remaining-glow', type: 'line', source: 'route-remaining',
             layout: { 'line-join': 'round', 'line-cap': 'round' },
@@ -885,8 +861,9 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                     'low', '#22c55e', 'moderate', '#eab308', 'heavy', '#f97316', 'severe', '#ef4444', '#22c55e'],
                 'line-width': 16, 'line-blur': 12, 'line-opacity': 0.25
             }
-        }, routeBeforeLayerRef.current);
+        });
 
+        // Remaining: main line with traffic colours
         map.addLayer({
             id: 'route-remaining-line', type: 'line', source: 'route-remaining',
             layout: { 'line-join': 'round', 'line-cap': 'round' },
@@ -895,13 +872,14 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                     'low', '#22c55e', 'moderate', '#eab308', 'heavy', '#f97316', 'severe', '#ef4444', '#38bdf8'],
                 'line-width': 6, 'line-opacity': 1
             }
-        }, routeBeforeLayerRef.current);  // ← SECOND ARGUMENT
+        });
 
+        // Animated dashes on remaining route
         map.addLayer({
             id: 'route-particles', type: 'line', source: 'route',
             layout: { 'line-join': 'round', 'line-cap': 'round' },
             paint: { 'line-color': '#ffffff', 'line-width': 2, 'line-dasharray': [0, 4, 1, 4], 'line-opacity': 0.7 }
-        }, routeBeforeLayerRef.current);  // ← SECOND ARGUMENT
+        });
     };
 
     // ── SHOW ROUTE ──────────────────────────────────────────────────────────────────
@@ -938,13 +916,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
 
             // FIX #3: Do NOT prepend userCoord — Google polyline already starts at
             // the road-snapped origin. Prepending creates a gap & road misalignment.
-            const route: [number, number][] = data.polyline?.geoJsonLinestring?.coordinates 
-                || decodePolyline(data.polyline?.encodedPolyline || '');
-
-            if (!route || route.length === 0) {
-                alert('No valid route data received.');
-                return;
-            }
+            const route: [number, number][] = decodePolyline(data.polyline?.encodedPolyline || '');
 
             // Store route for snapping & off-route detection
             routePolylineRef.current = route;
@@ -1004,16 +976,10 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
             const startEl = document.createElement('div');
             startEl.style.zIndex = '1000';
             startEl.innerHTML = `
-                <div style="transform: rotate(${bearing}deg); filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5)); transition: transform 0.3s ease-out;">
-                    <svg width="40" height="80" viewBox="0 0 64 128" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="8" y="4" width="48" height="120" rx="16" fill="#0ea5e9" stroke="white" stroke-width="2"/>
-                        <rect x="16" y="32" width="32" height="64" rx="8" fill="#0284c7" />
-                        <path d="M18 30 L46 30 L42 40 L22 40 Z" fill="#0f172a"/>
-                        <path d="M22 88 L42 88 L46 96 L18 96 Z" fill="#0f172a"/>
-                        <rect x="14" y="4" width="8" height="6" rx="2" fill="#fef08a"/>
-                        <rect x="42" y="4" width="8" height="6" rx="2" fill="#fef08a"/>
-                        <rect x="12" y="118" width="12" height="6" rx="2" fill="#ef4444"/>
-                        <rect x="40" y="118" width="12" height="6" rx="2" fill="#ef4444"/>
+                <div style="transform: rotate(${bearing}deg); filter: drop-shadow(0 0 15px rgba(14,165,233,0.8)); transition: transform 0.3s ease-out;">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L19 21L12 17L5 21L12 2Z" fill="#0ea5e9" stroke="white" stroke-width="2" stroke-linejoin="round"/>
+                        <circle cx="12" cy="14" r="2" fill="white" opacity="0.5"/>
                     </svg>
                 </div>
             `;
@@ -1022,9 +988,9 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                 .addTo(map);
 
             // Initial visualization: full route is "remaining" (nothing covered yet)
-            const walkingPaths = {
-                start: [[freshUserLoc.lng, freshUserLoc.lat] as [number, number], route[0]],
-                end: [route[route.length - 1], [selectedBusiness.gpsCoordinates.lng, selectedBusiness.gpsCoordinates.lat] as [number, number]]
+            const walkingPaths = { 
+                start: [[freshUserLoc.lng, freshUserLoc.lat] as [number, number], route[0]], 
+                end: [route[route.length - 1], [selectedBusiness.gpsCoordinates.lng, selectedBusiness.gpsCoordinates.lat] as [number, number]] 
             };
             updateRouteVisualization(map, [], route, trafficArr, 0, walkingPaths);
 
@@ -1312,21 +1278,13 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                 const map = mapRef.current!;
                                                 const navLoc = routeOriginRef.current || canonicalLocRef.current;
                                                 if (navLoc) {
-                                                    // "START NAVIGATION" button onClick mein:
-                                                    map.flyTo({ center: [navLoc.lng, navLoc.lat], zoom: 18, pitch: 45, duration: 2000 });
-                                                    //                                                          ↑ 75 se 45 karo
+                                                    map.flyTo({ center: [navLoc.lng, navLoc.lat], zoom: 18, pitch: 75, duration: 2000 });
                                                 }
 
                                                 // Announce first instruction
                                                 if (navigationStepsRef.current.length > 0) {
                                                     const firstStep = navigationStepsRef.current[0];
                                                     const utterance = new SpeechSynthesisUtterance('Starting navigation. ' + firstStep.instruction);
-                                                    utterance.lang = 'en-IN';
-                                                    const voices = window.speechSynthesis.getVoices();
-                                                    const femaleVoice = voices.find(v => (v.name.includes('Female') || v.name.includes('Zira') || v.name.includes('Hazel') || v.name.includes('Heera') || v.name.includes('Ria')) && !v.name.includes('Male')) 
-                                                                     || voices.find(v => v.lang.includes('en-IN') && !v.name.toLowerCase().includes('ravi') && !v.name.toLowerCase().includes('male'))
-                                                                     || voices.find(v => v.lang.includes('en-') && (v.name.includes('Female') || v.name.includes('Zira')));
-                                                    if (femaleVoice) { utterance.voice = femaleVoice; }
                                                     utterance.rate = 0.95; utterance.pitch = 1.05;
                                                     if (!isMutedRef.current) window.speechSynthesis.speak(utterance);
                                                     lastInstructionSpokenRef.current = firstStep.instruction;
@@ -1349,8 +1307,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                         if (!js.routes?.length) return;
 
                                                         const d = js.routes[0];
-                                                        const newRoute: [number, number][] = d.polyline?.geoJsonLinestring?.coordinates 
-                                                            || decodePolyline(d.polyline?.encodedPolyline || '');
+                                                        const newRoute: [number, number][] = decodePolyline(d.polyline?.encodedPolyline || '');
                                                         routePolylineRef.current = newRoute;
 
                                                         // Rebuild traffic array for new route
@@ -1393,8 +1350,8 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
 
                                                         // Draw rerouted path: nothing covered yet on new route
                                                         const destLoc = activeDestRef.current;
-                                                        const walkingPaths = {
-                                                            start: [[loc.lng, loc.lat] as [number, number], newRoute[0]],
+                                                        const walkingPaths = { 
+                                                            start: [[loc.lng, loc.lat] as [number, number], newRoute[0]], 
                                                             end: destLoc ? [newRoute[newRoute.length - 1], [destLoc.lng, destLoc.lat] as [number, number]] : undefined
                                                         };
                                                         updateRouteVisualization(mapRef.current!, [], newRoute, ta, 0, walkingPaths);
@@ -1423,18 +1380,17 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                             setUserLocation(newLoc);
 
                                                             const userLngLat: [number, number] = [lng, lat];
-                                                            let displayLoc: [number, number] = [lng, lat];
 
                                                             // ── Step 1: Snap to polyline & update grey/green split ──────────
                                                             const poly = routePolylineRef.current;
                                                             if (poly.length >= 2 && mapRef.current) {
-                                                                const { index: snapIdx, distanceM, point } = snapToPolyline(userLngLat, poly);
-                                                                if (distanceM < 45) { displayLoc = point; }
+                                                                const { index: snapIdx, distanceM } = snapToPolyline(userLngLat, poly);
                                                                 console.log(`📍 Snapped at index ${snapIdx}, dist ${distanceM.toFixed(0)}m`);
 
-                                                                const { covered, remaining } = splitRoute(poly, snapIdx, point);
+                                                                const { covered, remaining } = splitRoute(poly, snapIdx);
                                                                 const destLoc = activeDestRef.current;
-                                                                const walkingPaths = {
+                                                                const walkingPaths = { 
+                                                                    start: [userLngLat, poly[snapIdx]], 
                                                                     end: destLoc ? [poly[poly.length - 1], [destLoc.lng, destLoc.lat] as [number, number]] : undefined
                                                                 };
                                                                 updateRouteVisualization(
@@ -1469,12 +1425,6 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                                 if (stepDist < 150) {
                                                                     if (lastInstructionSpokenRef.current !== nextStep.instruction) {
                                                                         const utterance = new SpeechSynthesisUtterance(nextStep.instruction);
-                                                                        utterance.lang = 'en-IN';
-                                                                        const voices = window.speechSynthesis.getVoices();
-                                                                        const femaleVoice = voices.find(v => (v.name.includes('Female') || v.name.includes('Zira') || v.name.includes('Hazel') || v.name.includes('Heera') || v.name.includes('Ria')) && !v.name.includes('Male')) 
-                                                                                         || voices.find(v => v.lang.includes('en-IN') && !v.name.toLowerCase().includes('ravi') && !v.name.toLowerCase().includes('male'))
-                                                                                         || voices.find(v => v.lang.includes('en-') && (v.name.includes('Female') || v.name.includes('Zira')));
-                                                                        if (femaleVoice) { utterance.voice = femaleVoice; }
                                                                         utterance.rate = 0.95; utterance.pitch = 1.05;
                                                                         if (!isMutedRef.current) window.speechSynthesis.speak(utterance);
                                                                         lastInstructionSpokenRef.current = nextStep.instruction;
@@ -1498,10 +1448,9 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                             if (autoCenteringRef.current) {
                                                                 isProgrammaticMove.current = true;
                                                                 mapRef.current?.easeTo({
-                                                                    center: displayLoc,
+                                                                    center: [lng, lat],
                                                                     bearing: mapBearing,
-                                                                    pitch: 45,   // ← 75 se 45 karo
-                                                                    zoom: 18,
+                                                                    pitch: 75, zoom: 18,
                                                                     duration: 800,
                                                                     easing: (t) => t
                                                                 });
@@ -1509,7 +1458,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                             }
 
                                                             if (startMarkerRef.current) {
-                                                                startMarkerRef.current.setLngLat(displayLoc);
+                                                                startMarkerRef.current.setLngLat([lng, lat]);
                                                                 const arrowDiv = startMarkerRef.current.getElement().querySelector('div');
                                                                 if (arrowDiv) arrowDiv.style.transform = `rotate(${mapBearing}deg)`;
                                                             }
@@ -1538,7 +1487,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                             >
                                                 {isMuted ? <MicOff size={18} /> : <Mic size={18} className="text-primary" />}
                                             </button>
-
+                                            
                                             <AnimatePresence mode="wait">
                                                 {!isAutoCentering && (
                                                     <motion.button
@@ -1551,13 +1500,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                             const loc = canonicalLocRef.current;
                                                             if (loc) {
                                                                 isProgrammaticMove.current = true;
-                                                                mapRef.current?.flyTo({
-                                                                    center: [loc.lng, loc.lat],
-                                                                    zoom: 18,
-                                                                    pitch: 45,   // ← 75 se 45 karo
-                                                                    duration: 1500,
-                                                                    essential: true
-                                                                });
+                                                                mapRef.current?.flyTo({ center: [loc.lng, loc.lat], zoom: 18, pitch: 75, duration: 1500, essential: true });
                                                                 setTimeout(() => { isProgrammaticMove.current = false; }, 1600);
                                                             }
                                                         }}

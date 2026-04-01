@@ -9,60 +9,75 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'Missing origin or destination' }, { status: 400 });
     }
 
-    const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
-    if (!GOOGLE_MAPS_API_KEY) {
-        return NextResponse.json({ error: 'Missing Google Maps API Key' }, { status: 500 });
+    const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
+    if (!MAPBOX_TOKEN) {
+        return NextResponse.json({ error: 'Missing Mapbox Token' }, { status: 500 });
     }
 
     const [oLat, oLng] = origin.split(',');
     const [dLat, dLng] = destination.split(',');
 
-    const url = 'https://routes.googleapis.com/directions/v2:computeRoutes';
-
-    const body = {
-        origin: { location: { latLng: { latitude: Number(oLat), longitude: Number(oLng) } } },
-        destination: { location: { latLng: { latitude: Number(dLat), longitude: Number(dLng) } } },
-        travelMode: 'DRIVE',
-        // Always prefer fastest traffic-aware route
-        routingPreference: 'TRAFFIC_AWARE_OPTIMAL',
-        // Request alternatives so we can pick the single fastest one
-        computeAlternativeRoutes: true,
-        extraComputations: ['TRAFFIC_ON_POLYLINE'],
-    };
-
-    const headers = {
-        'Content-Type': 'application/json',
-        'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY,
-        'X-Goog-FieldMask':
-            'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline,routes.travelAdvisory,routes.legs',
-    };
+    // Fetch from Mapbox Directions API for perfect map-road alignment
+    const url = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${oLng},${oLat};${dLng},${dLat}?geometries=geojson&overview=full&annotations=congestion,duration,distance&steps=true&access_token=${MAPBOX_TOKEN}`;
 
     try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify(body),
-        });
-
+        const response = await fetch(url);
         const data = await response.json();
 
-        if (data.error) {
-            console.error('Google Routes API Error:', data.error);
-            return NextResponse.json(data, { status: data.error.code || 400 });
-        }
-
-        if (!data.routes?.length) {
+        if (data.code !== 'Ok' || !data.routes?.length) {
+            console.error('Mapbox Directions API Error:', data);
             return NextResponse.json({ routes: [] });
         }
 
-        // Pick the single fastest route by duration (in seconds)
-        const fastest = data.routes.reduce((best: any, r: any) => {
-            const bSecs = parseInt(best.duration ?? '99999');
-            const rSecs = parseInt(r.duration ?? '99999');
-            return rSecs < bSecs ? r : best;
-        }, data.routes[0]);
+        const mbRoute = data.routes[0];
 
-        // Return in the same shape as before so the frontend doesn't break
+        // Format speed intervals to Google format
+        const speedReadingIntervals: any[] = [];
+        if (mbRoute.legs?.[0]?.annotation?.congestion) {
+            const congestion = mbRoute.legs[0].annotation.congestion;
+            let currentStart = 0;
+            let currentSpeed = '';
+            const getSpeed = (c: string) => {
+                if (c === 'severe' || c === 'heavy') return 'TRAFFIC_JAM';
+                if (c === 'moderate') return 'SLOW';
+                return 'NORMAL';
+            };
+
+            for (let i = 0; i < congestion.length; i++) {
+                const sp = getSpeed(congestion[i]);
+                if (i === 0) { currentSpeed = sp; }
+                else if (sp !== currentSpeed) {
+                    speedReadingIntervals.push({ startPolylinePointIndex: currentStart, endPolylinePointIndex: i, speed: currentSpeed });
+                    currentStart = i;
+                    currentSpeed = sp;
+                }
+            }
+            if (congestion.length > 0) {
+                speedReadingIntervals.push({ startPolylinePointIndex: currentStart, endPolylinePointIndex: congestion.length, speed: currentSpeed });
+            }
+        }
+
+        // Map steps
+        const steps = mbRoute.legs?.[0]?.steps?.map((step: any) => ({
+            startLocation: { latLng: { latitude: step.maneuver.location[1], longitude: step.maneuver.location[0] } },
+            navigationInstruction: { instructions: step.maneuver.instruction }
+        })) || [];
+
+        // Format to what NearbyMap.tsx expects from Google Routes API
+        const fastest = {
+            duration: `${Math.round(mbRoute.duration)}s`,
+            distanceMeters: mbRoute.distance,
+            polyline: {
+                geoJsonLinestring: {
+                    coordinates: mbRoute.geometry.coordinates
+                }
+            },
+            travelAdvisory: {
+                speedReadingIntervals
+            },
+            legs: [{ steps }]
+        };
+
         return NextResponse.json({ routes: [fastest] });
     } catch (error) {
         console.error('Error fetching directions:', error);
