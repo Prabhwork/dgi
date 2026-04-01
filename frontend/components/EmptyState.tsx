@@ -11,53 +11,102 @@ export default function EmptyState({ categoryName }: { categoryName?: string }) 
     const { theme } = useTheme();
     const isLight = theme === 'light';
 
-    // Helper to generate a deterministic "random" number based on category name
-    const getBaseCount = (name?: string) => {
-        if (!name) return 47; // sensible default
+    const [liveListingCurrent, setLiveListingCurrent] = useState<number>(47000); // Default fallback
+    const [mainCategories, setMainCategories] = useState<string[]>([]);
+
+    useEffect(() => {
+        const fetchSettingsAndMainCategories = async () => {
+            try {
+                const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
+                
+                // Fetch settings
+                const resSettings = await fetch(`${API}/global-settings`);
+                const dataSettings = await resSettings.json();
+                if (dataSettings.success && dataSettings.data) {
+                    setLiveListingCurrent(dataSettings.data.liveListingCurrent || 47000);
+                }
+
+                // Fetch main categories to identify which ones get heavily weighted
+                const mainRes = await fetch(`${API}/main-categories?limit=50`).then(r => r.json());
+
+                const mainNames: string[] = [];
+                if (mainRes.success && mainRes.data) {
+                    mainRes.data.forEach((m: any) => { if (m.name) mainNames.push(m.name.toLowerCase()); });
+                }
+                if (!mainNames.includes("restaurants")) {
+                    mainNames.push("restaurants");
+                }
+
+                setMainCategories(mainNames);
+            } catch (err) {
+                console.error("Failed to fetch settings/categories for empty state", err);
+            }
+        };
+        fetchSettingsAndMainCategories();
+    }, []);
+
+    // Helper to generate a deterministic random multiplier based on category name & main status
+    const getMultiplier = (name?: string) => {
+        if (!name) return 1.0;
         let hash = 0;
         for (let i = 0; i < name.length; i++) {
             hash = name.charCodeAt(i) + ((hash << 5) - hash);
         }
-        // Range: 5 to 79 (leaves room to grow up to 99)
-        return Math.abs(hash % 75) + 5;
+        hash = Math.abs(hash);
+
+        // Check if it's one of the front-page main categories
+        const isMain = mainCategories.includes(name.toLowerCase());
+        
+        if (isMain) {
+            // Main categories get 20x to 50x the average
+            return 20.0 + (hash % 300) / 10;
+        } else {
+            // Normal categories get 0x to 0.4x the average (some might be 0, some 10, some 40)
+            return (hash % 40) / 100;
+        }
     };
 
-    const CAP = 99; // absolute max per category
-
-    const initialBase = getBaseCount(categoryName);
-    const [count, setCount] = useState(initialBase);
-    const [displayCount, setDisplayCount] = useState(initialBase);
+    const TOTAL_CATEGORIES = 4000;
+    
+    const [count, setCount] = useState<number>(0);
+    const [displayCount, setDisplayCount] = useState<number>(0);
     const [increment, setIncrement] = useState<number | null>(null);
 
     // Dynamic Growth simulation
     useEffect(() => {
-        const base = getBaseCount(categoryName);
-        const baseDate = new Date('2026-03-27T17:00:00').getTime();
-        const now = Date.now();
-        const elapsedMinutes = (now - baseDate) / (1000 * 60);
-        const realisticBase = Math.min(Math.floor(base + (elapsedMinutes / 15)), CAP);
+        if (mainCategories.length === 0 && liveListingCurrent === 47000) return; // Wait until fetched
+
+        const multiplier = getMultiplier(categoryName);
+        const avgPerCategory = liveListingCurrent / TOTAL_CATEGORIES;
+        const targetCount = Math.floor(avgPerCategory * multiplier);
         
+        // Let some normal categories be exactly 0 or very small
+        const safeTargetCount = Math.max(0, targetCount);
+
+        // Use local storage to prevent going backwards on immediate reload
         const storageKey = `dgi_growth_count_${categoryName || 'default'}`;
         const savedCount = localStorage.getItem(storageKey);
-        const finalBase = savedCount ? Math.min(Math.max(parseInt(savedCount), realisticBase), CAP) : realisticBase;
+        const finalCount = savedCount ? Math.max(parseInt(savedCount), safeTargetCount) : safeTargetCount;
 
-        setCount(finalBase);
-        setDisplayCount(finalBase);
-    }, [categoryName]);
+        setCount(finalCount);
+        setDisplayCount(finalCount);
+    }, [categoryName, liveListingCurrent, mainCategories]);
 
     useEffect(() => {
         const interval = setInterval(() => {
             setCount(prev => {
-                if (prev >= CAP) return prev; // stop growing at cap
-                const inc = Math.floor(Math.random() * 2) + 1;
-                const next = Math.min(prev + inc, CAP);
-                setIncrement(next > prev ? next - prev : null);
+                // If it grows randomly, just add 1 occasionally
+                const inc = Math.floor(Math.random() * 2);
+                if (inc === 0) return prev;
+                
+                const next = prev + inc;
+                setIncrement(inc);
                 const storageKey = `dgi_growth_count_${categoryName || 'default'}`;
                 localStorage.setItem(storageKey, next.toString());
                 setTimeout(() => setIncrement(null), 3000);
                 return next;
             });
-        }, 20000 + Math.random() * 20000);
+        }, 30000 + Math.random() * 30000);
 
         return () => clearInterval(interval);
     }, [categoryName]);

@@ -7,8 +7,9 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CursorGlow from "@/components/CursorGlow";
 import ParticleNetworkWrapper from "@/components/ParticleNetworkWrapper";
+import BusinessGrowthFunnel from "@/components/BusinessGrowthFunnel";
 import {
-    Loader2, ArrowLeft
+    Loader2, ArrowLeft, Rocket, ArrowRight
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -77,103 +78,137 @@ export default function UpcomingDetailPage() {
     const imageUrl = hasImage ? `${API_BASE}/uploads/${detail.image}` : null;
 
     return (
-        <div className="min-h-screen bg-[#020631] text-white">
-            <ParticleNetworkWrapper className="z-0 opacity-40" />
+        <div className="min-h-screen bg-[#010638] text-white selection:bg-primary/30 selection:text-white">
+            <ParticleNetworkWrapper className="z-0 opacity-80" />
             <CursorGlow />
             <Navbar />
 
-            <main className="pt-20 pb-16 relative z-10">
-                <div className="container mx-auto px-4 flex flex-col items-center">
+            <main className="pt-20 pb-12 relative z-10 overflow-hidden">
+                {/* Master Digital Background Layer - Synced with CTA Style */}
+                <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-600/15 via-transparent to-cyan-500/15 opacity-70" />
+                    <div className="absolute inset-0 digital-grid opacity-[0.10] scale-110" />
+                    
+                    {/* Synchronized Glows */}
+                    <div className="absolute -top-[10%] -left-[10%] w-[70%] h-[60%] bg-blue-600/25 rounded-full blur-[140px] animate-pulse-glow" style={{ animationDuration: '8s' }} />
+                    <div className="absolute top-[20%] -right-[10%] w-[60%] h-[50%] bg-cyan-500/20 rounded-full blur-[120px] animate-pulse-glow" style={{ animationDuration: '10s', animationDelay: '2s' }} />
+                </div>
 
-                    {/* Back Button */}
+                <div className="container mx-auto px-4 relative z-20">
                     <motion.div
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
-                        className="w-full max-w-7xl mt-8 mb-8"
+                        className="max-w-6xl mx-auto mb-10"
                     >
                         <Link
                             href="/#upcoming"
-                            className="inline-flex items-center gap-2 text-white/60 hover:text-white transition-colors group text-sm"
+                            className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full glass border-white/10 text-white/70 hover:text-white hover:border-primary/50 transition-all group backdrop-blur-xl shadow-lg hover:shadow-primary/20"
                         >
-                            <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-                            Back
+                            <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
+                            <span className="text-xs font-black uppercase tracking-[0.2em] mt-0.5">Back</span>
                         </Link>
                     </motion.div>
 
-                    {/* Hero Header */}
-                    <motion.div
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="text-center mb-12 px-4"
-                    >
-                        <h1 className="text-4xl md:text-6xl lg:text-7xl font-display font-black leading-tight tracking-tight text-foreground py-2">
-                            {(() => {
-                                const words = detail.title.split(' ');
-                                if (words.length <= 1) return <span className="gradient-text">{detail.title}</span>;
-                                const firstWord = words[0];
-                                const remaining = words.slice(1).join(' ');
-                                return (
-                                    <>
-                                        {firstWord} <span className="gradient-text">{remaining}</span>
-                                    </>
-                                );
-                            })()}
-                        </h1>
-                    </motion.div>
+                    <div className="max-w-6xl mx-auto text-center mb-10 px-4">
+                        <motion.h1
+                            initial={{ opacity: 0, y: 30 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="text-4xl md:text-7xl font-display font-black leading-tight tracking-tighter mb-8"
+                        >
+                            <span className="text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.3)] block md:inline">{detail.title.split(' ')[0]} </span>
+                            <span className="gradient-text brightness-150 saturate-150 inline-block">
+                                {detail.title.split(' ').slice(1).join(' ')}
+                            </span>
+                        </motion.h1>
 
-                    {/* Image Section */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.3 }}
+                            className="flex flex-wrap justify-center gap-4"
+                        >
+                            {['Early Access', 'Next Gen', 'Digital India'].map((tag) => (
+                                <span key={tag} className="px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.3em] border border-primary/30 bg-primary/10 text-white backdrop-blur-2xl shadow-xl shadow-primary/5">
+                                    {tag}
+                                </span>
+                            ))}
+                        </motion.div>
+                    </div>
+
+                    {/* Featured Image - WIDTH INCREASED to max-w-[1400px] */}
                     {imageUrl && (
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.15 }}
-                            className="w-full max-w-4xl mb-12"
+                            initial={{ opacity: 0, y: 40 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.4 }}
+                            className="max-w-[1400px] mx-auto mb-10 px-4"
                         >
-                            <div className="relative group rounded-2xl overflow-hidden border border-white/5 shadow-2xl">
-                                <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-cyan-500/20 rounded-2xl blur-xl opacity-40" />
-                                <div className="relative rounded-2xl overflow-hidden">
+                            <div className="relative group rounded-[3rem] overflow-hidden p-2">
+                                <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-cyan-400 to-purple-500 rounded-[3rem] p-[2px] opacity-40 group-hover:opacity-100 transition-opacity duration-700 blur-[1px]">
+                                    <div className="w-full h-full bg-[#010638] rounded-[2.9rem]" />
+                                </div>
+                                <div className="absolute -inset-8 bg-blue-500/20 blur-[80px] opacity-0 group-hover:opacity-60 transition-opacity duration-1000" />
+
+                                <div className="relative rounded-[2.7rem] overflow-hidden shadow-2xl border border-white/10">
+                                    <div className="scan-line opacity-60 pointer-events-none" />
+
                                     <Image
                                         src={imageUrl}
                                         alt={detail.title}
-                                        width={1200}
-                                        height={600}
-                                        className="w-full h-auto object-cover"
+                                        width={1400}
+                                        height={800}
+                                        className="w-full h-auto object-cover transform scale-100 group-hover:scale-105 transition-transform duration-[2s]"
+                                        priority
                                     />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-[#010638] via-transparent to-transparent opacity-60" />
+                                    <div className="absolute inset-0 bg-blue-500/5 mix-blend-overlay" />
                                 </div>
                             </div>
                         </motion.div>
                     )}
 
-                    {/* Content Card */}
+                    {/* High-Tech Main Content Card - WIDTH INCREASED to max-w-[1400px] */}
                     {detail.description && (
                         <motion.div
-                            initial={{ opacity: 0, y: 30 }}
+                            initial={{ opacity: 0, y: 50 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.2 }}
-                            className="w-full max-w-7xl mx-auto px-2 md:px-6"
+                            transition={{ delay: 0.5 }}
+                            className="max-w-[1400px] mx-auto px-4"
                         >
-                            <div className="relative group">
-                                 {/* Transparent Blur Background */}
-                                 <div className="absolute -inset-2 bg-white/[0.02] backdrop-blur-3xl rounded-[1.5rem] md:rounded-[3rem] -z-10" />
+                            <div className="relative group border border-white/10 rounded-[3rem] overflow-hidden glass shadow-2xl">
+                                {/* Synced Content Card Background Layer */}
+                                <div className="absolute inset-0 bg-gradient-to-br from-blue-600/15 via-transparent to-cyan-500/15 opacity-60 pointer-events-none" />
+                                <div className="absolute inset-0 digital-grid opacity-[0.08] pointer-events-none" />
 
-                                 <div className="relative p-6 md:p-10 lg:p-12">
-                                     <div className="overflow-x-auto custom-scrollbar-horizontal">
+                                <div className="relative p-4 md:p-6 lg:p-8 overflow-hidden">
+                                    {/* Floating Cyber Accents inside card */}
+                                    <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 rounded-full blur-[100px] pointer-events-none mix-blend-screen" />
+                                    <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent/20 rounded-full blur-[100px] pointer-events-none mix-blend-screen" />
+
+                                    <div className="relative">
                                         <div
-                                            className="prose prose-invert prose-sm md:prose-lg lg:prose-xl max-w-5xl mx-auto text-white/90 leading-relaxed
-                                                prose-headings:text-white prose-headings:font-display prose-headings:font-bold prose-headings:mb-0 prose-headings:mt-6
-                                                prose-p:my-2 prose-p:py-0
-                                                prose-hr:border-white/40 prose-hr:my-4 prose-hr:border-t-[1px]
-                                                prose-ul:my-2 prose-li:my-1
-                                                prose-table:w-full prose-table:my-1 prose-table:border-collapse prose-table:border prose-table:border-white/40
-                                                prose-th:text-white prose-th:font-bold prose-th:text-base md:text-xl prose-th:p-1 prose-th:border prose-th:border-white/40 prose-th:bg-white/10 prose-th:text-center
-                                                prose-td:text-white prose-td:p-1 prose-td:border prose-td:border-white/40 prose-td:align-middle prose-td:text-center text-sm md:text-lg
-                                                [&_td:first-child]:font-bold [&_td:first-child]:text-white [&_td:first-child]:whitespace-nowrap [&_td:first-child]:text-left
-                                                [&_thead_th]:text-center [&_th]:text-center [&_table]:overflow-visible
-                                                [&_h1]:border-t [&_h1]:border-white/30 [&_h1]:pt-4 [&_h1]:mt-8 [&_h1:first-child]:border-t-0 [&_h1:first-child]:pt-0 [&_h1:first-child]:mt-0
-                                                [&_h2]:border-t [&_h2]:border-white/30 [&_h2]:pt-4 [&_h2]:mt-8 [&_h2:first-child]:border-t-0 [&_h2:first-child]:pt-0 [&_h2:first-child]:mt-0
-                                                [&_h3]:border-t [&_h3]:border-white/30 [&_h3]:pt-4 [&_h3]:mt-8 [&_h3:first-child]:border-t-0 [&_h3:first-child]:pt-0 [&_h3:first-child]:mt-0
+                                            className="prose prose-invert prose-lg md:prose-xl max-w-none text-white/90 font-medium leading-snug text-left
+                                                prose-headings:font-display prose-headings:font-black prose-headings:tracking-tight prose-headings:text-white prose-headings:mt-4 prose-headings:mb-1
+                                                prose-h2:text-3xl md:text-5xl prose-h2:text-cyber-multi
+                                                prose-h3:text-2xl md:text-3xl prose-h3:text-cyber-yellow
+                                                prose-p:text-lg md:text-xl prose-p:mb-4
+                                                prose-strong:font-black prose-strong:text-xl md:prose-strong:text-2xl
+                                                prose-a:text-cyan-400 prose-a:underline-offset-4 hover:prose-a:text-white transition-all
+                                                prose-li:marker:text-primary prose-li:my-1 prose-li:text-lg md:text-xl
+                                                prose-hr:border-white/10 prose-hr:my-6
                                             "
-                                            dangerouslySetInnerHTML={{ __html: detail.description }}
+                                            dangerouslySetInnerHTML={{ 
+                                                __html: (() => {
+                                                    const colors = ['text-cyber-red', 'text-cyber-green', 'text-cyber-yellow', 'text-cyber-purple', 'text-cyber-multi'];
+                                                    let count = 0;
+                                                    return detail.description.replace(/<strong>(.*?)<\/strong>|<h3>(.*?)<\/h3>/g, (match, strongContent, h3Content) => {
+                                                        if (h3Content) return `<h3 class="text-cyber-multi">${h3Content}</h3>`;
+                                                        const color = colors[count % colors.length];
+                                                        count++;
+                                                        return `<strong class="${color}">${strongContent}</strong>`;
+                                                    });
+                                                })() 
+                                            }}
                                         />
                                     </div>
                                 </div>
@@ -181,29 +216,8 @@ export default function UpcomingDetailPage() {
                         </motion.div>
                     )}
 
-                    {/* Join Community CTA */}
-                    <motion.section
-                        initial={{ opacity: 0, y: 50 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.8 }}
-                        className="mt-16 md:mt-24 text-center w-full max-w-6xl px-4"
-                    >
-                        <h2 className="text-3xl md:text-5xl font-display font-bold mb-6 text-[#00ccff]">
-                            Stay Updated
-                        </h2>
-                        <p className="text-sm md:text-xl text-white/70 mb-10 max-w-5xl mx-auto leading-relaxed">
-                            Be the first to know when this feature goes live. Join our community and get exclusive early access to all our upcoming tools and directories.
-                        </p>
-                        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                            <Link
-                                href="/join-community"
-                                className="group/btn relative h-12 sm:h-14 px-8 sm:px-12 bg-primary text-white font-bold rounded-2xl overflow-hidden active:scale-95 transition-all text-sm sm:text-base inline-flex items-center justify-center gap-2 shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-0.5"
-                            >
-                                Join Community
-                            </Link>
-                        </div>
-                    </motion.section>
+                    {/* Interactive Lead Generation Funnel */}
+                    <BusinessGrowthFunnel />
                 </div>
             </main>
 

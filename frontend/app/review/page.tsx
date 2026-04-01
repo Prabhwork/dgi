@@ -213,7 +213,11 @@ export default function ReviewPage() {
                                         <button
                                             disabled={isSubmitting}
                                             type="submit"
-                                            className="w-full mt-4 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white font-bold py-4 rounded-xl shadow-[0_0_20px_hsl(var(--primary)/0.4)] hover:shadow-[0_0_30px_hsl(var(--primary)/0.6)] transition-all flex items-center justify-center gap-2 group border border-white/10 disabled:opacity-70 disabled:cursor-not-allowed"
+                                            className={`w-full mt-4 font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg border-none disabled:opacity-70 disabled:cursor-not-allowed ${
+                                                theme === 'light'
+                                                    ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-600/20'
+                                                    : 'bg-primary text-white hover:bg-primary/90 shadow-primary/20'
+                                            }`}
                                         >
                                             {isSubmitting ? (
                                                 <span className="flex items-center gap-2">

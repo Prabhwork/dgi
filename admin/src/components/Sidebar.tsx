@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Layers, Tag, LogOut, Settings, X, ShieldCheck, Mail, Rocket, MessageSquare, UserCheck, CreditCard } from 'lucide-react';
+import { LayoutDashboard, Layers, Tag, LogOut, Settings, X, ShieldCheck, Mail, Rocket, MessageSquare, UserCheck, CreditCard, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -40,6 +40,8 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
         { name: 'Solutions', path: '/dashboard/solutions', icon: Tag },
         { name: 'Page Details', path: '/dashboard/page-details', icon: LayoutDashboard },
         { name: 'Upcoming Categories', path: '/dashboard/upcoming-categories', icon: Rocket },
+        { name: 'Funnel Questions', path: '/dashboard/funnel-questions', icon: MessageSquare },
+        { name: 'Business Leads', path: '/dashboard/leads', icon: Users },
         { name: 'Existing Customers', path: '/dashboard/existing-customers', icon: UserCheck },
         { name: 'Testimonials', path: '/dashboard/testimonials', icon: MessageSquare },
         { name: 'Google Categories', path: '/dashboard/google-categories', icon: Tag },

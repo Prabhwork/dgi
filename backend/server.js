@@ -55,6 +55,7 @@ const existingCustomers = require('./routes/existingCustomers');
 const mainSubcategories = require('./routes/mainSubcategoryRoutes');
 const googleCategories = require('./routes/googleCategoryRoutes');
 const globalSettings = require('./routes/globalSettingsRoutes');
+const funnel = require('./routes/funnelRoutes');
 const { startLiveListingWorker } = require('./utils/liveListingWorker');
 
 
@@ -81,14 +82,15 @@ app.use('/api/testimonials', testimonials);
 app.use('/api/existing-customers', existingCustomers);
 app.use('/api/google-categories', googleCategories);
 app.use('/api/global-settings', globalSettings);
+app.use('/api/funnel', funnel);
 
 app.get('/', (req, res) => {
-    res.send('Digital Book of India Admin API');
+  res.send('Digital Book of India Admin API');
 });
 
 const PORT = process.env.PORT || 5001;
 
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    startLiveListingWorker();
+  console.log(`Server running on port ${PORT}`);
+  startLiveListingWorker();
 });

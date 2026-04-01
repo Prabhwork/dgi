@@ -104,3 +104,30 @@ export interface ExistingCustomer {
     isActive: boolean;
     createdAt: string;
 }
+
+export interface FunnelOption {
+    label: string;
+    icon: string;
+    color: string;
+}
+
+export interface FunnelQuestion {
+    _id: string;
+    question: string;
+    options: FunnelOption[];
+    order: number;
+    isActive: boolean;
+    createdAt: string;
+}
+
+export interface FunnelLead {
+    _id: string;
+    name: string;
+    phone: string;
+    email: string;
+    businessName: string;
+    description: string;
+    answers: Record<string, string>;
+    status: 'new' | 'contacted' | 'qualified' | 'closed';
+    createdAt: string;
+}

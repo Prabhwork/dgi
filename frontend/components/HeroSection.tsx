@@ -665,7 +665,7 @@ export default function HeroSection() {
                                     initial={{ opacity: 0, scale: 0.9 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{ delay: i * 0.1, duration: 0.3 }}
-                                    onClick={() => router.push(`/main-category/${encodeURIComponent(cat.name)}`)}
+                                    onClick={() => router.push(`/search?q=${encodeURIComponent(cat.name)}`)}
                                     className={`rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:scale-110 transition-all duration-700 w-[140px] h-[130px] group relative overflow-hidden backdrop-blur-[2px] border border-solid ${theme === 'light'
                                         ? 'bg-transparent border-slate-900/25 hover:border-primary/50 shadow-sm'
                                         : 'bg-white/[0.02] border-white/10 hover:bg-white/[0.08] hover:border-primary/50 shadow-2xl'
@@ -805,7 +805,7 @@ export default function HeroSection() {
                                 {mobilePool.map((cat, i) => (
                                     <div
                                         key={`${cat.name}-${i}`}
-                                        onClick={() => router.push(`/main-category/${encodeURIComponent(cat.name)}`)}
+                                        onClick={() => router.push(`/search?q=${encodeURIComponent(cat.name)}`)}
                                         className={`flex-shrink-0 flex flex-col items-center justify-center p-4 rounded-[2rem] border transition-all duration-300 cursor-pointer w-[150px] h-[150px] relative overflow-hidden backdrop-blur-[2px] ${theme === 'light'
                                             ? 'bg-transparent border-slate-900/40 text-slate-900 active:scale-95 shadow-sm'
                                             : 'bg-white/5 border-white/20 text-white active:scale-95 shadow-2xl'
@@ -840,7 +840,7 @@ export default function HeroSection() {
                                     initial={{ opacity: 0, scale: 0.9 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{ delay: i * 0.1, duration: 0.3 }}
-                                    onClick={() => router.push(`/main-category/${encodeURIComponent(cat.name)}`)}
+                                    onClick={() => router.push(`/search?q=${encodeURIComponent(cat.name)}`)}
                                     className={`rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:scale-110 transition-all duration-700 w-[140px] h-[130px] group relative overflow-hidden backdrop-blur-[2px] border border-solid ${theme === 'light'
                                         ? 'bg-transparent border-slate-900/25 hover:border-primary/50 shadow-sm'
                                         : 'bg-white/[0.02] border-white/10 hover:bg-white/[0.08] hover:border-primary/50 shadow-2xl'

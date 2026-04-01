@@ -126,8 +126,8 @@ export default function UpcomingFeatures() {
                 onMouseLeave={() => setHoveredIndex(null)}
                 onClick={() => setSelectedFeature(f)}
                 className={`flex flex-col items-start gap-3 rounded-2xl p-5 border transition-all duration-500 cursor-pointer backdrop-blur-xl group w-full h-full relative overflow-hidden bg-gradient-to-br ${theme === 'light'
-                        ? 'bg-white border-slate-200 shadow-sm hover:shadow-md'
-                        : `bg-white/5 ${gradients[colorIdx]}`
+                    ? 'bg-white border-slate-200 shadow-sm hover:shadow-md'
+                    : `bg-white/5 ${gradients[colorIdx]}`
                     }`}
             >
                 {/* Icon & Title Row */}
@@ -161,11 +161,11 @@ export default function UpcomingFeatures() {
                             ease: "easeInOut"
                         }}
                         className={`flex items-center justify-between text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-300 ${theme === 'light'
-                                ? 'text-blue-600'
-                                : `${iconColors[colorIdx].split(' ').find(c => c.startsWith('text-'))} brightness-125`
+                            ? 'text-blue-600'
+                            : 'text-blue-400 group-hover:brightness-125'
                             }`}
                     >
-                        <span className="flex items-center gap-2">
+                        <span className={`flex items-center gap-2 ${theme === 'light' ? '' : 'gradient-text brightness-125'}`}>
                             Read More
                             <motion.span
                                 animate={{ opacity: [0.4, 1, 0.4] }}
@@ -174,8 +174,8 @@ export default function UpcomingFeatures() {
                             />
                         </span>
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500 ${theme === 'light'
-                                ? 'bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white'
-                                : 'bg-white/5 border border-white/10 group-hover:bg-white group-hover:text-black group-hover:scale-110 shadow-lg'
+                            ? 'bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white'
+                            : 'bg-white/5 border border-white/10 group-hover:bg-white group-hover:text-black group-hover:scale-110 shadow-lg'
                             }`}>
                             <span className="text-base">→</span>
                         </div>
@@ -199,20 +199,19 @@ export default function UpcomingFeatures() {
     };
 
     return (
-        <section className={`pt-20 pb-20 relative z-10 overflow-hidden ${theme === 'light' ? 'bg-slate-50' : 'bg-transparent'}`} id="upcoming" ref={ref}>
+        <section className={`pt-10 pb-20 relative z-10 overflow-hidden ${theme === 'light' ? 'bg-slate-50' : 'bg-transparent'}`} id="upcoming" ref={ref}>
             <div className="container mx-auto px-4 relative z-10">
-                <div className="text-center mb-16">
-                    <div className={`inline-block py-2 px-6 rounded-full border backdrop-blur-md mb-6 ${theme === 'light' ? 'border-blue-200 bg-blue-50/50' : 'border-white/10 bg-white/5'
+                <div className="text-center mb-10">
+                    <span className={`rounded-full px-5 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] relative overflow-hidden backdrop-blur-2xl border border-solid transition-all duration-300 ${theme === 'light'
+                        ? 'bg-white/80 border-blue-600 text-primary shadow-none'
+                        : 'bg-white/10 border-white/30 text-white'
                         }`}>
-                        <span className={`text-[10px] font-bold uppercase tracking-[0.4em] ${theme === 'light' ? 'text-blue-700' : 'text-blue-400/80'
-                            }`}>
-                            Upcoming Board
-                        </span>
-                    </div>
+                        Upcoming Board
+                    </span>
 
                     <h2 className={`text-4xl sm:text-7xl font-display font-black mt-2 tracking-tighter leading-tight ${theme === 'light' ? 'text-slate-900' : 'text-white'
                         }`}>
-                        Upcoming <span className="text-blue-500">Categories</span>
+                        Upcoming <span className="gradient-text">Categories</span>
                     </h2>
                     <p className={`mt-6 max-w-2xl mx-auto text-base sm:text-xl font-medium ${theme === 'light' ? 'text-slate-600' : 'text-slate-400'
                         }`}>
@@ -238,113 +237,33 @@ export default function UpcomingFeatures() {
 
                 {/* Mobile Auto-Scroll Marquee (hidden on desktop) */}
                 <div className="sm:hidden -mx-4 overflow-hidden relative">
-                    <motion.div
-                        className="flex gap-4 px-4"
-                        animate={{
-                            x: [0, -1 * (280 + 16) * features.length]
-                        }}
-                        transition={{
-                            duration: features.length * 4,
-                            ease: "linear",
-                            repeat: Infinity
-                        }}
+                    <style>{`
+                        @keyframes mobileMarquee {
+                            0% { transform: translateX(0); }
+                            100% { transform: translateX(-${(280 + 16) * features.length}px); }
+                        }
+                        .animate-mobile-marquee {
+                            animation: mobileMarquee ${features.length * 4}s linear infinite;
+                        }
+                        .animate-mobile-marquee:hover {
+                            animation-play-state: paused;
+                        }
+                    `}</style>
+                    <div
+                        className="flex gap-4 px-4 animate-mobile-marquee"
+                        onTouchStart={(e) => (e.currentTarget.style.animationPlayState = "paused")}
+                        onTouchEnd={(e) => (e.currentTarget.style.animationPlayState = "running")}
                     >
                         {[...features, ...features].map((f, i) => (
                             <div key={`${f._id}-${i}`} className="flex-shrink-0 w-[280px] h-full">
                                 {renderCard(f, i)}
                             </div>
                         ))}
-                    </motion.div>
+                    </div>
                 </div>
             </div>
 
-            {/* Feature Detail Modal */}
-            <AnimatePresence>
-                {selectedFeature && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-hidden">
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setSelectedFeature(null)}
-                            className="absolute inset-0 bg-slate-950/80 backdrop-blur-md"
-                        />
 
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.3, y: 100, rotate: -10 }}
-                            animate={{ opacity: 1, scale: 1, y: 0, rotate: 0 }}
-                            exit={{ opacity: 0, scale: 0.5, y: 50, rotate: 5 }}
-                            transition={{
-                                type: "spring",
-                                damping: 18,
-                                stiffness: 400,
-                                mass: 0.8
-                            }}
-                            className={`relative w-full max-w-lg overflow-hidden rounded-[2.5rem] border shadow-2xl ${theme === 'light'
-                                    ? 'bg-white border-slate-200'
-                                    : 'bg-slate-900 border-white/10'
-                                }`}
-                        >
-                            {/* Colorful background splash */}
-                            <div className={`absolute -top-24 -right-24 w-64 h-64 rounded-full blur-[80px] opacity-20 pointer-events-none bg-blue-500`} />
-                            <div className={`absolute -bottom-24 -left-24 w-64 h-64 rounded-full blur-[80px] opacity-20 pointer-events-none bg-purple-500`} />
-
-                            <button
-                                onClick={() => setSelectedFeature(null)}
-                                className="absolute top-6 right-6 p-2 rounded-full hover:bg-white/10 transition-colors z-20 group"
-                            >
-                                <X size={20} className={theme === 'light' ? 'text-slate-600' : 'text-white/70 group-hover:text-white'} />
-                            </button>
-
-                            <div className="relative z-10 p-8 sm:p-10 flex flex-col gap-6">
-                                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg transform -rotate-3 ${theme === 'light' ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white'
-                                    }`}>
-                                    {(() => {
-                                        const Icon = ICON_MAP[selectedFeature.icon] || Rocket;
-                                        return <Icon size={32} />;
-                                    })()}
-                                </div>
-
-                                <div className="space-y-4">
-                                    <h3 className={`text-3xl sm:text-4xl font-display font-black tracking-tight leading-tight ${theme === 'light' ? 'text-slate-900' : 'text-white'
-                                        }`}>
-                                        {selectedFeature.title}
-                                    </h3>
-
-                                    <div className={`h-1.5 w-20 rounded-full bg-gradient-to-r from-blue-500 to-purple-500`} />
-
-                                    <div
-                                        className={`text-base sm:text-lg leading-relaxed font-medium ${theme === 'light' ? 'text-slate-600' : 'text-slate-300'
-                                            }`}
-                                        dangerouslySetInnerHTML={{
-                                            __html: selectedFeature.description || `Explore the new ${selectedFeature.title} features coming soon to enhance your digital experience. We are working hard to bring this to you.`
-                                        }}
-                                    />
-                                </div>
-
-                                <div className="pt-4 flex flex-col sm:flex-row gap-4">
-                                    <button
-                                        onClick={() => setSelectedFeature(null)}
-                                        className={`py-4 px-8 rounded-2xl font-bold transition-all duration-300 transform active:scale-95 ${theme === 'light'
-                                                ? 'bg-slate-900 text-white hover:bg-slate-800'
-                                                : 'bg-white text-slate-950 hover:bg-slate-100 shadow-[0_0_20px_rgba(255,255,255,0.2)]'
-                                            }`}
-                                    >
-                                        Close Details
-                                    </button>
-
-                                    <div className="flex-1 flex items-center justify-center sm:justify-start px-2">
-                                        <span className={`text-[10px] font-black uppercase tracking-[0.3em] opacity-40 ${theme === 'light' ? 'text-slate-900' : 'text-white'
-                                            }`}>
-                                            Coming Soon
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
         </section>
     );
 }

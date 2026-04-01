@@ -67,8 +67,8 @@ const NavDropdown = ({
                         className="absolute top-full left-0 mt-1 z-50 flex"
                     >
                         {/* Left Panel — Categories */}
-                        <div className={`w-80 p-2 rounded-2xl border border-solid shadow-[0_8px_32px_rgba(0,0,0,0.1)] backdrop-blur-2xl ${isLight 
-                            ? 'bg-[#FCF8EB]/95 border-slate-900/10' 
+                        <div className={`w-80 p-2 rounded-2xl border border-solid shadow-[0_8px_32px_rgba(0,0,0,0.1)] backdrop-blur-2xl ${isLight
+                            ? 'bg-[#FCF8EB]/95 border-slate-900/10'
                             : 'bg-slate-900/80 border-white/10 shadow-black/40'
                             }`}>
                             <div className="max-h-[65vh] overflow-y-auto custom-scrollbar relative">
@@ -106,10 +106,10 @@ const NavDropdown = ({
                                                 }`}>
                                                 <item.icon size={15} />
                                             </div>
-                                            <div className={`flex-1 text-[12px] font-bold tracking-tight transition-colors ${isActive 
-                                                ? 'text-primary' 
+                                            <div className={`flex-1 text-[12px] font-bold tracking-tight transition-colors ${isActive
+                                                ? 'text-primary'
                                                 : isLight ? 'text-black' : 'text-slate-300'
-                                            }`}>
+                                                }`}>
                                                 {item.name}
                                             </div>
                                             {hasSubs && (
@@ -129,13 +129,13 @@ const NavDropdown = ({
                                         initial={{ opacity: 0, x: -10 }}
                                         animate={{ opacity: 1, x: 0, y: flyoutY }}
                                         exit={{ opacity: 0, x: -10 }}
-                                        transition={{ 
+                                        transition={{
                                             opacity: { duration: 0.2 },
                                             x: { duration: 0.2 },
-                                            y: { type: "spring", stiffness: 300, damping: 30 } 
+                                            y: { type: "spring", stiffness: 300, damping: 30 }
                                         }}
-                                        className={`w-72 ml-2 p-2 rounded-2xl border border-solid shadow-[0_8px_32px_rgba(0,0,0,0.1)] h-fit backdrop-blur-2xl pointer-events-auto ${isLight 
-                                            ? 'bg-[#FCF8EB]/95 border-slate-900/10' 
+                                        className={`w-72 ml-2 p-2 rounded-2xl border border-solid shadow-[0_8px_32px_rgba(0,0,0,0.1)] h-fit backdrop-blur-2xl pointer-events-auto ${isLight
+                                            ? 'bg-[#FCF8EB]/95 border-slate-900/10'
                                             : 'bg-slate-900/80 border-white/10 shadow-black/40'
                                             }`}
                                     >
@@ -194,7 +194,7 @@ export default function Navbar() {
     const [flyoutY, setFlyoutY] = useState(0);
     const [mobileExpandedCat, setMobileExpandedCat] = useState<string | null>(null);
     const [mobileSectionOpen, setMobileSectionOpen] = useState<string | null>(null);
-    
+
     // Auth State
     const [businessUser, setBusinessUser] = useState<any>(null);
     const [regularUser, setRegularUser] = useState<any>(null);
@@ -285,7 +285,7 @@ export default function Navbar() {
         const fetchUser = async () => {
             const bToken = localStorage.getItem("businessToken");
             const uToken = localStorage.getItem("userToken");
-            
+
             if (bToken) {
                 try {
                     const res = await fetch(`${API}/business/me`, {
@@ -451,7 +451,7 @@ export default function Navbar() {
                                 </div>
                                 <ChevronDown size={14} className={`transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
                             </button>
-                            
+
                             <AnimatePresence>
                                 {userMenuOpen && (
                                     <motion.div
@@ -464,30 +464,30 @@ export default function Navbar() {
                                             <p className={`text-xs uppercase tracking-wider font-bold opacity-50 ${isLight ? 'text-slate-500 border-slate-100' : 'text-slate-400 border-white/10'}`}>Signed in as</p>
                                             <p className={`text-sm font-bold truncate ${isLight ? 'text-slate-900' : 'text-white'}`}>{businessUser ? businessUser.officialEmailAddress : regularUser?.email}</p>
                                         </div>
-                                        
+
                                         <div className="space-y-1">
-                                            <Link 
+                                            <Link
                                                 href={businessUser ? "/profile" : "/user-profile"}
                                                 className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${isLight ? 'text-slate-700 hover:bg-slate-100 hover:text-primary' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}
                                             >
                                                 <User size={16} /> {businessUser ? 'Business Profile' : 'User Profile'}
                                             </Link>
-                                            <Link 
+                                            <Link
                                                 href="#"
                                                 className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${isLight ? 'text-slate-700 hover:bg-slate-100 hover:text-primary' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}
                                             >
                                                 <Settings size={16} /> Settings
                                             </Link>
-                                            <Link 
+                                            <Link
                                                 href={businessUser ? "/settings/2fa" : "/user-settings/2fa"}
                                                 className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${isLight ? 'text-slate-700 hover:bg-slate-100 hover:text-primary' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}
                                             >
                                                 <ShieldCheck size={16} /> 2-Step Verification
                                             </Link>
                                         </div>
-                                        
+
                                         <div className={`mt-2 pt-2 border-t border-solid ${isLight ? 'border-slate-100' : 'border-white/10'}`}>
-                                            <button 
+                                            <button
                                                 onClick={handleLogout}
                                                 className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold text-red-500 hover:bg-red-500/10 transition-colors"
                                             >
@@ -501,29 +501,28 @@ export default function Navbar() {
                     ) : (
                         <div className="flex items-center gap-3">
                             <div className={`flex items-center rounded-full p-1 border transition-all ${isLight ? 'bg-[#FFFFF0]/30 border-black/10' : 'bg-white/5 border-white/10'}`}>
-                                <Link 
-                                    href="/login" 
+                                <Link
+                                    href="/login"
                                     className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-full transition-all hover:text-primary ${isLight ? 'text-slate-900/80 hover:bg-black/5' : 'text-white/70 hover:bg-white/5'}`}
                                 >
                                     Login
                                 </Link>
                                 <div className={`w-px h-4 ${isLight ? 'bg-black/10' : 'bg-white/10'}`} />
-                                <Link 
-                                    href="/register" 
+                                <Link
+                                    href="/register"
                                     className={`px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-full transition-all hover:text-primary ${isLight ? 'text-slate-900/80 hover:bg-black/5' : 'text-white/70 hover:bg-white/5'}`}
                                 >
                                     Sign Up
                                 </Link>
                             </div>
-                            
+
                             <Button
                                 variant="default"
                                 size="sm"
-                                className={`font-bold border-none transition-all duration-300 rounded-xl px-5 h-10 shadow-lg ${
-                                    isLight 
-                                        ? "bg-blue-600 text-white hover:bg-blue-700 shadow-blue-600/20" 
+                                className={`font-bold border-none transition-all duration-300 rounded-xl px-5 h-10 shadow-lg ${isLight
+                                        ? "bg-blue-600 text-white hover:bg-blue-700 shadow-blue-600/20"
                                         : "bg-primary text-white hover:bg-primary/90 shadow-primary/20"
-                                }`}
+                                    }`}
                                 asChild
                             >
                                 <Link href="/community/register" className="flex items-center gap-2">
@@ -573,14 +572,14 @@ export default function Navbar() {
                                 const isSectionOpen = mobileSectionOpen === section.title;
                                 return (
                                     <div key={section.title} className="space-y-0">
-                                        <button 
+                                        <button
                                             onClick={() => setMobileSectionOpen(isSectionOpen ? null : section.title)}
                                             className={`w-full flex items-center justify-between py-2.5 px-2 text-[11px] font-black uppercase tracking-[0.2em] transition-colors ${isSectionOpen ? 'text-white' : 'text-white/60'}`}
                                         >
                                             {section.title}
                                             <ChevronDown size={14} className={`transition-transform duration-300 ${isSectionOpen ? 'rotate-180' : ''}`} />
                                         </button>
-                                        
+
                                         <AnimatePresence>
                                             {isSectionOpen && (
                                                 <motion.div
@@ -621,10 +620,10 @@ export default function Navbar() {
                                                                                 }`}>
                                                                                 <item.icon size={14} />
                                                                             </div>
-                                                                            <span className={`text-sm font-bold tracking-tight transition-colors ${isExpanded 
-                                                                                ? 'text-primary' 
+                                                                            <span className={`text-sm font-bold tracking-tight transition-colors ${isExpanded
+                                                                                ? 'text-primary'
                                                                                 : isLight ? 'text-black' : 'text-slate-300'
-                                                                            }`}>
+                                                                                }`}>
                                                                                 {item.name}
                                                                             </span>
                                                                         </div>
@@ -632,7 +631,7 @@ export default function Navbar() {
                                                                             <ChevronRight size={14} className={`transition-transform duration-300 ${isExpanded ? 'rotate-90 text-primary' : 'text-slate-400'}`} />
                                                                         )}
                                                                     </Link>
-                                                                    
+
                                                                     <AnimatePresence>
                                                                         {isExpanded && hasSubs && (
                                                                             <motion.div
@@ -708,7 +707,7 @@ export default function Navbar() {
                                                 </span>
                                             </div>
                                         </div>
-                                        
+
                                         <div className="grid grid-cols-3 gap-2">
                                             <Link href={businessUser ? "/profile" : "/user-profile"} onClick={() => setMobileOpen(false)} className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border text-center transition-colors ${isLight ? 'bg-white border-slate-200 text-slate-700 hover:border-primary/50' : 'bg-white/5 border-white/10 text-slate-300 hover:border-white/30'}`}>
                                                 <User size={18} className={isLight ? "text-primary" : "text-white/80"} />
@@ -720,17 +719,16 @@ export default function Navbar() {
                                             </Link>
                                             <Link href={businessUser ? "/settings/2fa" : "/user-settings/2fa"} onClick={() => setMobileOpen(false)} className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border text-center transition-colors ${isLight ? 'bg-white border-slate-200 text-slate-700 hover:border-primary/50' : 'bg-white/5 border-white/10 text-slate-300 hover:border-white/30'}`}>
                                                 <ShieldCheck size={18} className={isLight ? "text-primary" : "text-white/80"} />
-                                                <span className="text-[10px] font-bold leading-tight">2FA<br/>Security</span>
+                                                <span className="text-[10px] font-bold leading-tight">2FA<br />Security</span>
                                             </Link>
                                         </div>
 
-                                        <button 
+                                        <button
                                             onClick={handleLogout}
-                                            className={`w-full mt-1 flex items-center justify-center gap-2 p-3 rounded-xl font-bold text-sm transition-colors border ${
-                                                isLight 
-                                                ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100' 
-                                                : 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20'
-                                            }`}
+                                            className={`w-full mt-1 flex items-center justify-center gap-2 p-3 rounded-xl font-bold text-sm transition-colors border ${isLight
+                                                    ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
+                                                    : 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20'
+                                                }`}
                                         >
                                             <LogOut size={16} /> Logout
                                         </button>
