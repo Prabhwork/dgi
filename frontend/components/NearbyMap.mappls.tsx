@@ -41,6 +41,15 @@ function haversineMeters(a: [number, number], b: [number, number]): number {
     return R * 2 * Math.atan2(Math.sqrt(aa), Math.sqrt(1 - aa));
 }
 
+/** Calculate total distance of a polyline in meters */
+function calcPolylineDistance(polyline: [number, number][]): number {
+    let d = 0;
+    for (let i = 0; i < polyline.length - 1; i++) {
+        d += haversineMeters(polyline[i], polyline[i + 1]);
+    }
+    return d;
+}
+
 function snapToPolyline(user: [number, number], polyline: [number, number][]): { index: number; distanceM: number } {
     let bestIdx = 0, bestDist = Infinity;
     for (let i = 0; i < polyline.length - 1; i++) {
@@ -533,7 +542,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
     const siteBackground = { backgroundImage: `radial-gradient(at 0% 0%, hsla(210, 100%, 56%, 0.15) 0px, transparent 50%), radial-gradient(at 100% 0%, hsla(255, 60%, 69%, 0.1) 0px, transparent 50%)`, backgroundColor: "#020631" };
 
     return (
-        <div className="relative w-full h-screen overflow-hidden font-display" style={siteBackground}>
+        <div className="relative w-full h-[100dvh] bg-[#020617] overflow-hidden font-display">
             {/* Map Container with dark filter */}
             <div style={{ filter: 'invert(1) hue-rotate(180deg)', width: '100%', height: '100%', position: 'absolute', inset: 0 }}>
                 <div ref={mapContainer} style={{ width: '100%', height: '100%' }} />
@@ -548,10 +557,10 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                 )}
             </AnimatePresence>
 
-            {/* Active Navigation Header */}
+            {/* Active Navigation Header - Notch Safe */}
             <AnimatePresence>
                 {isNavigating && (
-                    <motion.div initial={{ y: -100 }} animate={{ y: 0 }} exit={{ y: -100 }} className="absolute top-0 left-0 right-0 z-40 bg-black/40 backdrop-blur-2xl p-2.5 sm:p-4 flex items-center justify-between shadow-[0_10px_40px_rgba(0,0,0,0.5)] border-b border-primary/30">
+                    <motion.div initial={{ y: -100 }} animate={{ y: 0 }} exit={{ y: -100 }} className="absolute top-0 left-0 right-0 z-40 bg-[#081121]/80 backdrop-blur-3xl p-4 rounded-b-[2rem] flex items-center justify-between shadow-[0_10px_60px_rgba(0,0,0,0.7)] border-b border-white/10 w-full px-6">
                         <div className="flex items-center gap-2 sm:gap-3">
                             <div className="relative">
                                 <div className="absolute inset-0 bg-primary/20 blur-lg rounded-full animate-pulse" />
@@ -627,7 +636,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
             <AnimatePresence>
                 {searchQuery && searchResults.length === 0 && !loading && (
                     <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="absolute top-20 left-1/2 -translate-x-1/2 z-20 px-6 py-3 bg-red-500/10 border border-red-500/20 backdrop-blur-xl rounded-2xl text-red-400 text-xs font-bold shadow-2xl">
-                        No businesses found matching "{searchQuery}"
+                  
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -672,9 +681,9 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
             {/* Route Info Card */}
             <AnimatePresence>
                 {routeInfo && !selectedBusiness && (
-                    <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }} className={`absolute z-20 px-2 sm:px-12 flex justify-center sm:justify-end pointer-events-auto transition-all duration-700 w-full left-0 right-0 bottom-4 sm:bottom-12 h-min`}>
-                        <div className={`relative bg-[#020617]/95 backdrop-blur-3xl border ${isNavigating ? 'border-primary/40' : 'border-primary/20'} shadow-[0_20px_90px_rgba(0,0,0,0.9)] overflow-hidden transition-all duration-500
-                            ${isNavigating ? 'rounded-[1rem] sm:rounded-[1.2rem] p-2.5 sm:p-3.5 w-[min(calc(100%-2.5rem),380px)]' : 'rounded-[1.2rem] sm:rounded-2xl p-4 sm:p-5 w-[calc(100%-2rem)] sm:w-full max-w-[280px] sm:max-w-[260px]'}`}>
+                    <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 40 }} className={`absolute z-30 px-4 flex justify-center pointer-events-auto transition-all duration-700 w-full left-0 right-0 bottom-12 h-min`}>
+                        <div className={`relative bg-[#081121]/90 backdrop-blur-[40px] border ${isNavigating ? 'border-primary/40' : 'border-primary/20'} shadow-[0_25px_100px_rgba(0,0,0,0.9)] overflow-hidden transition-all duration-500
+                            rounded-[1.8rem] p-3 sm:p-5 w-full max-w-[340px] sm:max-w-[400px]`}>
                             <motion.div animate={{ y: ['100%', '-100%'] }} transition={{ duration: 4, repeat: Infinity, ease: "linear" }} className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/10 to-transparent h-1/2 pointer-events-none opacity-40" />
 
                             {!isNavigating && (
@@ -682,18 +691,40 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                             )}
 
                             <div className={`flex relative z-10 w-full ${isNavigating ? 'flex-row items-center justify-between gap-3' : 'flex-col'}`}>
-                                <div className="flex flex-col">
-                                    <div className="flex items-center gap-2 mb-1.5 font-black uppercase tracking-[0.2em] text-[10px] sm:text-[12px]">
-                                        <div className={`w-1.5 h-1.5 rounded-full bg-primary ${isNavigating ? 'animate-pulse' : 'animate-ping'}`} />
-                                        <span className="text-primary">{isNavigating ? 'LIVE' : 'ROUTE READY'}</span>
+                                <div className="flex flex-col min-w-[85px]">
+                                    <div className="flex items-center gap-1.5 mb-1.5 font-black uppercase tracking-[0.2em] text-[10px]">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                                        <span className="text-primary text-[10px] font-black uppercase tracking-[0.2em]">LIVE</span>
+                                    </div>
+                                    <div className="flex items-baseline gap-1">
+                                        <span className="text-white text-3xl font-black tracking-tighter leading-none">
+                                            {Math.round(routeInfo.duration)}
+                                        </span>
+                                        <span className="text-white/60 text-[10px] font-bold uppercase">MIN</span>
+                                    </div>
+                                </div>
+
+                                <div className="flex-1 flex flex-col justify-center border-l border-white/10 pl-2 sm:pl-6 gap-2">
+                                    <div className="flex flex-col">
+                                        <span className="text-white/30 text-[9px] font-black uppercase tracking-widest leading-none mb-1">Distance Left</span>
+                                        <span className="text-white text-xl font-black leading-none uppercase">
+                                            {routeInfo.distance.toFixed(1)}<span className="text-xs ml-1 text-white/50">KM</span>
+                                        </span>
                                     </div>
                                     <div className="flex flex-col">
-                                        <span className={`text-white font-black tracking-tighter leading-none ${isNavigating ? 'text-xl sm:text-2xl' : 'text-3xl sm:text-5xl'}`}>
-                                            {routeInfo.duration > 60 ? `${Math.floor(routeInfo.duration / 60)}h ${Math.round(routeInfo.duration % 60)}m` : `${Math.round(routeInfo.duration)}`}
-                                            <span className="text-[9px] sm:text-[10px] ml-0.5 font-bold opacity-60 uppercase">MIN</span>
-                                        </span>
-                                        <span className={`text-primary font-black uppercase tracking-[0.1em] ${isNavigating ? 'text-[10px] sm:text-xs' : 'text-xs sm:text-base'}`}>
-                                            {routeInfo.distance.toFixed(1)} <span className="text-[8px] sm:text-[9px]">KM</span>
+                                        <span className="text-white/30 text-[9px] font-black uppercase tracking-widest leading-none mb-1">Arrival Time</span>
+                                        <span className="text-primary text-base font-black leading-none whitespace-nowrap">
+                                            {(() => {
+                                                const d = new Date();
+                                                d.setMinutes(d.getMinutes() + routeInfo.duration);
+                                                const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+                                                const [time, period] = timeStr.split(' ');
+                                                return (
+                                                    <>
+                                                        {time} <span className="text-[9px] opacity-70 ml-0.5">{period}</span>
+                                                    </>
+                                                );
+                                            })()}
                                         </span>
                                     </div>
                                 </div>
@@ -722,8 +753,8 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                             const speed = pos.coords.speed || 0; // speed in meters/second
                                                             const newLoc = { lat, lng };
                                                             
-                                                            // Filter for jitter: 10m threshold if stationary/walking (< 1.0 m/s), 6m if driving
-                                                            const threshold = speed < 1.0 ? 10 : 6;
+                                                            // Filter for jitter: tighter threshold for "PRO" accuracy (3m if slow, 1.5m if driving)
+                                                            const threshold = speed < 1.0 ? 3 : 1.5;
                                                             if (lastLocationRef.current && !hasMoved(lastLocationRef.current, newLoc, threshold)) return;
                                                             lastLocationRef.current = newLoc; canonicalLocRef.current = newLoc; setUserLocation(newLoc);
                                                             const userLngLat: [number, number] = [lng, lat];
@@ -732,6 +763,22 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                             const poly = routePolylineRef.current;
                                                             if (poly.length >= 2) {
                                                                 const { index: snapIdx, distanceM } = snapToPolyline(userLngLat, poly);
+                                                                
+                                                                // ✅ Real-time Progress Update
+                                                                if (routeInfo) {
+                                                                    const remaining = poly.slice(snapIdx);
+                                                                    const remainingDistM = calcPolylineDistance(remaining);
+                                                                    const totalDistM = calcPolylineDistance(poly) || 1;
+                                                                    const ratio = remainingDistM / totalDistM;
+                                                                    const newDuration = (routeInfo.duration > 0) ? (ratio * routeInfo.duration) : (remainingDistM / 1000 * 5);
+
+                                                                    setRouteInfo(prev => prev ? {
+                                                                        ...prev,
+                                                                        distance: remainingDistM / 1000,
+                                                                        duration: newDuration
+                                                                    } : prev);
+                                                                }
+
                                                                 if (distanceM > 45 && Date.now() - lastRerouteTimeRef.current > 10000 && !isReroutingRef.current) {
                                                                     isReroutingRef.current = true; lastRerouteTimeRef.current = Date.now();
                                                                     const dest = activeDestRef.current;
@@ -772,7 +819,20 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                             // Camera follow
                                                             if (autoCenteringRef.current && mapRef.current) {
                                                                 isProgrammaticMove.current = true;
-                                                                mapRef.current.setCenter([lat, lng]);
+                                                                const map = mapRef.current;
+                                                                map.setCenter([lat, lng]);
+                                                                // Calculate movement bearing for rotation
+                                                                if (lastLocationRef.current) {
+                                                                    const dLng = lng - lastLocationRef.current.lng;
+                                                                    const dLat = lat - lastLocationRef.current.lat;
+                                                                    if (Math.abs(dLng) > 0.00001 || Math.abs(dLat) > 0.00001) {
+                                                                        const b = Math.atan2(dLng, dLat) * 180 / Math.PI;
+                                                                        if (typeof map.setBearing === 'function') map.setBearing(b);
+                                                                        // Balanced zoom and tilt for mobile navigation
+                                                                        if (typeof map.setTilt === 'function') map.setTilt(55.0);
+                                                                        if (typeof map.setZoom === 'function') map.setZoom(19.3);
+                                                                    }
+                                                                }
                                                                 setTimeout(() => { isProgrammaticMove.current = false; }, 900);
                                                             }
                                                             if (userMarkerRef.current) userMarkerRef.current.setPosition({ lat, lng });

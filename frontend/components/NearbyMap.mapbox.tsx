@@ -1162,7 +1162,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
             <AnimatePresence>
                 {searchQuery && searchResults.length === 0 && !loading && (
                     <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="absolute top-20 left-1/2 -translate-x-1/2 z-20 px-6 py-3 bg-red-500/10 border border-red-500/20 backdrop-blur-xl rounded-2xl text-red-400 text-xs font-bold shadow-2xl">
-                        No businesses found matching "{searchQuery}"
+                      
                     </motion.div>
                 )}
             </AnimatePresence>

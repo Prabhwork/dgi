@@ -65,6 +65,15 @@ function haversineMeters(a: [number, number], b: [number, number]): number {
     return R * 2 * Math.atan2(Math.sqrt(aa), Math.sqrt(1 - aa));
 }
 
+/** Calculate total distance of a polyline in meters */
+function calcPolylineDistance(polyline: [number, number][]): number {
+    let d = 0;
+    for (let i = 0; i < polyline.length - 1; i++) {
+        d += haversineMeters(polyline[i], polyline[i + 1]);
+    }
+    return d;
+}
+
 /** Perpendicular distance (meters) from point P to segment [A, B] */
 function pointToSegmentDistance(
     p: [number, number],
@@ -1064,7 +1073,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
     };
 
     return (
-        <div className="relative w-full h-screen overflow-hidden font-display" style={siteBackground}>
+        <div className="relative w-full h-[100dvh] bg-[#020617] overflow-hidden font-display">
             <div ref={mapContainer} className="absolute inset-0 w-full h-full" />
 
             {/* ✅ GPS Loading indicator — jab tak GPS nahi milta */}
@@ -1082,10 +1091,10 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                 )}
             </AnimatePresence>
 
-            {/* Active Navigation Header */}
+            {/* Active Navigation Header - Safe Area Optimized */}
             <AnimatePresence>
                 {isNavigating && (
-                    <motion.div initial={{ y: -100 }} animate={{ y: 0 }} exit={{ y: -100 }} className="absolute top-0 left-0 right-0 z-40 bg-black/40 backdrop-blur-2xl p-2.5 sm:p-4 flex items-center justify-between shadow-[0_10px_40px_rgba(0,0,0,0.5)] border-b border-primary/30">
+                    <motion.div initial={{ y: -100 }} animate={{ y: 0 }} exit={{ y: -100 }} className="absolute top-0 left-0 right-0 z-40 bg-black/40 backdrop-blur-3xl p-3 sm:p-4 rounded-b-3xl flex items-center justify-between shadow-[0_10px_60px_rgba(0,0,0,0.6)] border-b border-primary/20 w-full px-6">
                         <div className="flex items-center gap-2 sm:gap-3">
                             <div className="relative">
                                 <div className="absolute inset-0 bg-primary/20 blur-lg rounded-full animate-pulse" />
@@ -1196,13 +1205,7 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
             </AnimatePresence>
 
             {/* No Results */}
-            <AnimatePresence>
-                {searchQuery && searchResults.length === 0 && !loading && (
-                    <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="absolute top-20 left-1/2 -translate-x-1/2 z-20 px-6 py-3 bg-red-500/10 border border-red-500/20 backdrop-blur-xl rounded-2xl text-red-400 text-xs font-bold shadow-2xl">
-                        No businesses found matching "{searchQuery}"
-                    </motion.div>
-                )}
-            </AnimatePresence>
+           
 
             <style>{`
                 .business-label-popup .mapboxgl-popup-content { background: none !important; box-shadow: none !important; padding: 0 !important; border: none !important; }
@@ -1255,10 +1258,10 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                         initial={{ opacity: 0, y: 40 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 40 }}
-                        className={`absolute z-20 px-2 sm:px-12 flex justify-center sm:justify-end pointer-events-auto transition-all duration-700 w-full left-0 right-0 bottom-4 sm:bottom-12 h-min`}
+                        className={`absolute z-30 px-4 flex justify-center pointer-events-auto transition-all duration-700 w-full left-0 right-0 bottom-12 h-min`}
                     >
-                        <div className={`relative bg-[#020617]/95 backdrop-blur-3xl border ${isNavigating ? 'border-primary/40' : 'border-primary/20'} shadow-[0_20px_90px_rgba(0,0,0,0.9)] overflow-hidden transition-all duration-500
-                            ${isNavigating ? 'rounded-[1rem] sm:rounded-[1.2rem] p-2.5 sm:p-3.5 w-[min(calc(100%-2.5rem),380px)]' : 'rounded-[1.2rem] sm:rounded-2xl p-4 sm:p-5 w-[calc(100%-2rem)] sm:w-full max-w-[280px] sm:max-w-[260px]'}
+                        <div className={`relative bg-[#081121]/90 backdrop-blur-[40px] border ${isNavigating ? 'border-primary/40' : 'border-primary/20'} shadow-[0_25px_100px_rgba(0,0,0,0.9)] overflow-hidden transition-all duration-500
+                            rounded-[1.8rem] p-3 sm:p-5 w-full max-w-[340px] sm:max-w-[400px]
                         `}>
                             <motion.div
                                 animate={{ y: ['100%', '-100%'] }}
@@ -1289,21 +1292,53 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                 </button>
                             )}
 
-                            <div className={`flex relative z-10 w-full ${isNavigating ? 'flex-row items-center justify-between gap-3' : 'flex-col'}`}>
-                                <div className="flex flex-col">
-                                    <div className="flex items-center gap-2 mb-1.5 font-black uppercase tracking-[0.2em] text-[10px] sm:text-[12px]">
-                                        <div className={`w-1.5 h-1.5 rounded-full bg-primary ${isNavigating ? 'animate-pulse' : 'animate-ping'}`} />
-                                        <span className="text-primary">{isNavigating ? 'LIVE' : 'ROUTE READY'}</span>
+                            <div className={`flex relative z-10 w-full items-center gap-2 sm:gap-6 ${isNavigating ? 'flex-row' : 'flex-col'}`}>
+                                {/* Column 1: Time Left */}
+                                <div className="flex flex-col min-w-[65px] sm:min-w-[85px]">
+                                    <div className="flex items-center gap-1 mb-0.5 font-black uppercase tracking-[0.2em] text-[7px] sm:text-[10px]">
+                                        <div className={`w-1 h-1 rounded-full bg-primary ${isNavigating ? 'animate-pulse' : 'animate-ping'}`} />
+                                        <span className="text-primary">{isNavigating ? 'LIVE' : 'READY'}</span>
                                     </div>
+                                    <div className="flex items-baseline gap-0.5">
+                                        <span className={`text-white font-black tracking-tighter leading-none ${isNavigating ? 'text-2xl' : 'text-3xl sm:text-4xl'}`}>
+                                            {routeInfo.duration > 60 ? Math.floor(routeInfo.duration / 60) : Math.round(routeInfo.duration)}
+                                        </span>
+                                        <span className="text-white/60 text-[8px] font-bold uppercase">{routeInfo.duration > 60 ? 'HR' : 'MIN'}</span>
+                                        {routeInfo.duration > 60 && (
+                                            <>
+                                                <span className="text-white text-2xl font-black tracking-tighter leading-none ml-0.5">{Math.round(routeInfo.duration % 60)}</span>
+                                                <span className="text-white/60 text-[8px] font-bold uppercase">M</span>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Column 2: Data Metrics */}
+                                <div className={`flex flex-col justify-center gap-1 ${isNavigating ? 'flex-1 border-l border-white/10 pl-2 sm:pl-6' : 'w-full mt-2 pt-2 border-t border-white/10'}`}>
                                     <div className="flex flex-col">
-                                        <span className={`text-white font-black tracking-tighter leading-none ${isNavigating ? 'text-xl sm:text-2xl' : 'text-3xl sm:text-5xl'}`}>
-                                            {routeInfo.duration > 60 ? `${Math.floor(routeInfo.duration / 60)}h ${Math.round(routeInfo.duration % 60)}m` : `${Math.round(routeInfo.duration)}`}
-                                            <span className="text-[9px] sm:text-[10px] ml-0.5 font-bold opacity-60 uppercase">MIN</span>
-                                        </span>
-                                        <span className={`text-primary font-black uppercase tracking-[0.1em] ${isNavigating ? 'text-[10px] sm:text-xs' : 'text-xs sm:text-base'}`}>
-                                            {routeInfo.distance.toFixed(1)} <span className="text-[8px] sm:text-[9px]">KM</span>
+                                        <span className="text-white/30 text-[6px] font-black uppercase tracking-widest leading-none mb-1">Distance Left</span>
+                                        <span className={`text-white font-black leading-none uppercase ${isNavigating ? 'text-sm' : 'text-lg'}`}>
+                                            {routeInfo.distance.toFixed(1)}<span className="text-[9px] ml-0.5 text-white/50">KM</span>
                                         </span>
                                     </div>
+                                    {isNavigating && (
+                                        <div className="flex flex-col">
+                                            <span className="text-white/30 text-[7px] font-black uppercase tracking-widest leading-none mb-1 text-primary/60">Arrival</span>
+                                            <span className="text-primary text-base font-black leading-none whitespace-nowrap">
+                                                {(() => {
+                                                    const d = new Date();
+                                                    d.setMinutes(d.getMinutes() + routeInfo.duration);
+                                                    const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+                                                    const [time, period] = timeStr.split(' ');
+                                                    return (
+                                                        <>
+                                                            {time} <span className="text-[9px] opacity-70 ml-0.5">{period}</span>
+                                                        </>
+                                                    );
+                                                })()}
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className={`flex items-center ${isNavigating ? 'flex-shrink-0' : 'w-full mt-4 pt-4 border-t border-white/5'}`}>
@@ -1420,8 +1455,8 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                             const heading = pos.coords.heading;
                                                             const newLoc = { lat, lng };
 
-                                                            // Filter for jitter: 10m threshold if stationary/walking (< 1.0 m/s), 6m if driving
-                                                            const threshold = speed < 1.0 ? 10 : 6;
+                                                            // Filter for jitter: tighter threshold for "PRO" accuracy (3m if slow, 1.5m if driving)
+                                                            const threshold = speed < 1.0 ? 3 : 1.5;
                                                             if (lastLocationRef.current && !hasMoved(lastLocationRef.current, newLoc, threshold)) return;
                                                             lastLocationRef.current = newLoc;
                                                             canonicalLocRef.current = newLoc;
@@ -1438,6 +1473,23 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                                 console.log(`📍 Snapped at index ${snapIdx}, dist ${distanceM.toFixed(0)}m`);
 
                                                                 const { covered, remaining } = splitRoute(poly, snapIdx, point);
+                                                                
+                                                                // ✅ Real-time Progress Update: KM & Time decrease as you move
+                                                                if (routeInfo) {
+                                                                    const remainingM = calcPolylineDistance(remaining);
+                                                                    const totalM = calcPolylineDistance(poly) || 1;
+                                                                    const progressRatio = remainingM / totalM;
+                                                                    // We use the initial baseline to ensure estimates stay proportional
+                                                                    // If duration is missing, we fallback to distance
+                                                                    const newDuration = (routeInfo.duration > 0) ? (progressRatio * routeInfo.duration) : (remainingM / 1000 * 5); // 5 min per km fallback
+
+                                                                    setRouteInfo(prev => prev ? {
+                                                                        ...prev,
+                                                                        distance: remainingM / 1000,
+                                                                        duration: newDuration
+                                                                    } : prev);
+                                                                }
+
                                                                 const destLoc = activeDestRef.current;
                                                                 const walkingPaths = {
                                                                     end: destLoc ? [poly[poly.length - 1], [destLoc.lng, destLoc.lat] as [number, number]] : undefined
@@ -1505,12 +1557,13 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                                 mapRef.current?.easeTo({
                                                                     center: displayLoc,
                                                                     bearing: mapBearing,
-                                                                    pitch: 45,   // ← 75 se 45 karo
-                                                                    zoom: 18,
-                                                                    duration: 800,
+                                                                    pitch: 50,
+                                                                    zoom: 18.2, // Slightly more zoomed out for context as requested
+                                                                    padding: { top: 0, bottom: 240, left: 0, right: 0 },
+                                                                    duration: 1200,
                                                                     easing: (t) => t
                                                                 });
-                                                                setTimeout(() => { isProgrammaticMove.current = false; }, 900);
+                                                                setTimeout(() => { isProgrammaticMove.current = false; }, 1100);
                                                             }
 
                                                             if (startMarkerRef.current) {
@@ -1524,9 +1577,9 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                     );
                                                 }
                                             }}
-                                            className="bg-primary text-white font-black py-3 px-6 rounded-2xl hover:bg-primary/90 transition-all flex items-center justify-center gap-2 shadow-[0_8px_30px_rgba(59,130,246,0.5)] w-full text-xs uppercase tracking-widest border border-white/10"
+                                            className="bg-primary text-white font-black py-2 px-6 rounded-xl hover:bg-primary/90 transition-all flex items-center justify-center gap-2 shadow-[0_8px_30px_rgba(59,130,246,0.5)] w-full text-[10px] uppercase tracking-widest border border-white/10"
                                         >
-                                            <NavigationIcon size={16} fill="currentColor" /> START NAVIGATION
+                                            <NavigationIcon size={14} fill="currentColor" /> START NAVIGATION
                                         </button>
                                     ) : (
                                         <div className="flex items-center gap-3 w-full">
@@ -1554,13 +1607,25 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                         onClick={() => {
                                                             setIsAutoCentering(true);
                                                             const loc = canonicalLocRef.current;
-                                                            if (loc) {
+                                                            if (loc && mapRef.current) {
                                                                 isProgrammaticMove.current = true;
-                                                                mapRef.current?.flyTo({
+                                                                // Calculate current bearing if available
+                                                                let currentBearing = mapRef.current.getBearing();
+                                                                if (lastLocationRef.current && loc) {
+                                                                    const dLng = loc.lng - lastLocationRef.current.lng;
+                                                                    const dLat = loc.lat - lastLocationRef.current.lat;
+                                                                    if (Math.abs(dLng) > 0.00001 || Math.abs(dLat) > 0.00001) {
+                                                                        currentBearing = Math.atan2(dLng, dLat) * 180 / Math.PI;
+                                                                    }
+                                                                }
+
+                                                                mapRef.current.flyTo({
                                                                     center: [loc.lng, loc.lat],
-                                                                    zoom: 18,
-                                                                    pitch: 45,   // ← 75 se 45 karo
-                                                                    duration: 1500,
+                                                                    zoom: 18.5,
+                                                                    bearing: currentBearing,
+                                                                    pitch: 50,
+                                                                    padding: { top: 0, bottom: 280, left: 0, right: 0 },
+                                                                    duration: 2000,
                                                                     essential: true
                                                                 });
                                                                 setTimeout(() => { isProgrammaticMove.current = false; }, 1600);
