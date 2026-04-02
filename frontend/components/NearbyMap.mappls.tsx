@@ -214,6 +214,9 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
             const wId = navigator.geolocation.watchPosition(
                 (p) => {
                     const loc = { lat: p.coords.latitude, lng: p.coords.longitude };
+                    // If we already have a location, only update if it move significantly (> 5m)
+                    if (lastLocationRef.current && !hasMoved(lastLocationRef.current, loc, 5)) return;
+                    
                     canonicalLocRef.current = loc; lastLocationRef.current = loc; gpsReadyRef.current = true; setGpsReady(true);
                     if (userMarkerRef.current && window.mappls) {
                         userMarkerRef.current.setPosition({ lat: loc.lat, lng: loc.lng });
@@ -716,9 +719,12 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                                     watchIdRef.current = navigator.geolocation.watchPosition(
                                                         (pos) => {
                                                             const lat = pos.coords.latitude, lng = pos.coords.longitude;
-                                                            const heading = pos.coords.heading;
+                                                            const speed = pos.coords.speed || 0; // speed in meters/second
                                                             const newLoc = { lat, lng };
-                                                            if (lastLocationRef.current && !hasMoved(lastLocationRef.current, newLoc, 8)) return;
+                                                            
+                                                            // Filter for jitter: 10m threshold if stationary/walking (< 1.0 m/s), 6m if driving
+                                                            const threshold = speed < 1.0 ? 10 : 6;
+                                                            if (lastLocationRef.current && !hasMoved(lastLocationRef.current, newLoc, threshold)) return;
                                                             lastLocationRef.current = newLoc; canonicalLocRef.current = newLoc; setUserLocation(newLoc);
                                                             const userLngLat: [number, number] = [lng, lat];
 

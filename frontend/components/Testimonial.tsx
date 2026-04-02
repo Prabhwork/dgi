@@ -104,9 +104,9 @@ export default function Testimonial() {
                         <div className="mt-10">
                             <Link href="/review">
                                 <button
-                                    className={`px-8 py-4 rounded-xl font-bold transition-all duration-300 border border-white/10 ${theme === 'light'
-                                        ? 'bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white shadow-[0_0_20px_hsl(var(--primary)/0.3)] hover:shadow-[0_0_30px_hsl(var(--primary)/0.5)] hover:-translate-y-1'
-                                        : 'bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white shadow-[0_0_20px_hsl(var(--primary)/0.4)] hover:shadow-[0_0_30px_hsl(var(--primary)/0.6)] hover:-translate-y-1'
+                                    className={`px-8 py-4 rounded-xl font-bold transition-all duration-300 border-none shadow-lg ${theme === 'light'
+                                        ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-600/20 hover:-translate-y-1'
+                                        : 'bg-primary text-white hover:bg-primary/90 shadow-primary/20 hover:-translate-y-1'
                                         }`}>
                                     Give Your Review
                                 </button>
