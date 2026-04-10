@@ -8,6 +8,7 @@ const Product = require('../models/Product');
 const Category = require('../models/Category');
 const Partner = require('../models/Partner');
 const Settlement = require('../models/Settlement');
+const Settings = require('../models/Settings');
 const settlementController = require('../controllers/settlementController');
 const fcmService = require('../services/fcmService');
 
@@ -328,12 +329,10 @@ router.patch('/fssai-submissions/:id', protectAdmin, async (req, res) => {
 
     // If approved, write fssai into the partner's Settings record
     if (status === 'Approved') {
-      const settingsSchema = new mongoose.Schema({}, { strict: false });
-      const SettingsModel = mongoose.models.Settings || mongoose.model('Settings', settingsSchema);
-      await SettingsModel.findOneAndUpdate(
+      await Settings.findOneAndUpdate(
         { partnerId: sub.partnerId },
         { fssai: sub.fssaiNumber },
-        { new: true }
+        { new: true, upsert: true }
       );
     }
 
