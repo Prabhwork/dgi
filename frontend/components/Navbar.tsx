@@ -505,7 +505,7 @@ export default function Navbar() {
                                             </Link>
                                             {businessUser && isFoodCategory(businessUser.businessCategory) && (
                                                 <a
-                                                    href={`${process.env.NEXT_PUBLIC_FOOD_DASHBOARD_URL}/?sso_token=${typeof window !== 'undefined' ? localStorage.getItem('businessToken') : ''}`}
+                                                    href={`${process.env.NEXT_PUBLIC_FOOD_DASHBOARD_URL}/?sso_token=${typeof window !== 'undefined' ? localStorage.getItem('businessToken') : ''}&partner_id=${businessUser._id}`}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-colors ${isLight ? 'bg-primary/10 text-primary hover:bg-primary/20' : 'bg-primary/20 text-primary hover:bg-primary/30'}`}
@@ -765,7 +765,7 @@ export default function Navbar() {
                                                 <span className="text-[10px] font-bold leading-tight">2FA<br />Security</span>
                                             </Link>
                                             {businessUser && isFoodCategory(businessUser.businessCategory) && (
-                                                <a href={`${process.env.NEXT_PUBLIC_FOOD_DASHBOARD_URL}/?sso_token=${typeof window !== 'undefined' ? localStorage.getItem('businessToken') : ''}`} target="_blank" rel="noopener noreferrer" onClick={() => setMobileOpen(false)} className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border text-center transition-colors ${isLight ? 'bg-primary/10 border-primary/20 text-primary hover:border-primary/50' : 'bg-primary/20 border-primary/30 text-primary hover:border-primary/50'}`}>
+                                                <a href={`${process.env.NEXT_PUBLIC_FOOD_DASHBOARD_URL}/?sso_token=${typeof window !== 'undefined' ? localStorage.getItem('businessToken') : ''}&partner_id=${businessUser._id}`} target="_blank" rel="noopener noreferrer" onClick={() => setMobileOpen(false)} className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border text-center transition-colors ${isLight ? 'bg-primary/10 border-primary/20 text-primary hover:border-primary/50' : 'bg-primary/20 border-primary/30 text-primary hover:border-primary/50'}`}>
                                                     <Utensils size={18} className="text-primary" />
                                                     <span className="text-[10px] font-bold leading-tight">Food<br />Dash</span>
                                                 </a>

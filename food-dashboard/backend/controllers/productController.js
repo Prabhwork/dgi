@@ -1,7 +1,7 @@
 const Product = require('../models/Product');
 
 // Helper to extract partnerId from headers with fallback
-const getPartnerId = (req) => req.headers['x-partner-id'] || '69b93a0452f3d2ba12cb2d27';
+const getPartnerId = (req) => req.headers['x-partner-id'] || req.partnerId;
 
 // GET all products (Partitioned by Partner)
 exports.getAllProducts = async (req, res) => {

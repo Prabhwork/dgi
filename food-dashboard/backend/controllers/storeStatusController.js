@@ -13,7 +13,7 @@ const storeStatusSchema = new mongoose.Schema({
 const StoreStatus = mongoose.models.StoreStatus || mongoose.model('StoreStatus', storeStatusSchema);
 
 // Helper to extract partnerId from headers with fallback
-const getPartnerId = (req) => req.headers['x-partner-id'] || '69b93a0452f3d2ba12cb2d27';
+const getPartnerId = (req) => req.headers['x-partner-id'] || req.partnerId;
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  STORE STATUS CONTROLLERS

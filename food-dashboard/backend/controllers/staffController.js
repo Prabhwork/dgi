@@ -5,7 +5,7 @@ const fcmService = require('../services/fcmService');
 const Settlement = require('../models/Settlement');
 
 // Helper to extract partnerId from headers with fallback
-const getPartnerId = (req) => req.headers['x-partner-id'] || '69b93a0452f3d2ba12cb2d27';
+const getPartnerId = (req) => req.headers['x-partner-id'] || req.partnerId;
 
 // GET all active staff (Partitioned by Partner)
 exports.getAllStaff = async (req, res) => {

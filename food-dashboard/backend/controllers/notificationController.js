@@ -13,7 +13,7 @@ const notificationSchema = new mongoose.Schema({
 const Notification = mongoose.models.Notification || mongoose.model('Notification', notificationSchema);
 
 // Helper to extract partnerId from headers with fallback
-const getPartnerId = (req) => req.headers['x-partner-id'] || '69b93a0452f3d2ba12cb2d27';
+const getPartnerId = (req) => req.headers['x-partner-id'] || req.partnerId;
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  NOTIFICATION CONTROLLERS

@@ -4,7 +4,7 @@ const Staff = require('../models/Staff');
 const Category = require('../models/Category');
 
 // Helper to extract partnerId from headers with fallback
-const getPartnerId = (req) => req.headers['x-partner-id'] || '69b93a0452f3d2ba12cb2d27';
+const getPartnerId = (req) => req.headers['x-partner-id'] || req.partnerId;
 
 // GET global search (header search bar, Partitioned by Partner)
 exports.globalSearch = async (req, res) => {
