@@ -179,26 +179,22 @@ export default function MenuPage() {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/upload`, {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) throw new Error('Upload failed');
-      const data = await response.json();
+      // Use the centralized api utility to ensure Authorization headers are included
+      const data = await api.post('/upload', formData);
       
       const updatedImages = [...(newProduct.images || [])];
       updatedImages[slotIdx] = data.url;
       
       // If this is the first image, or no cover is set, set it as cover
       let newCover = newProduct.coverImage;
-      if (!newCover || updatedImages.length === 1) {
+      if (!newCover || updatedImages.length <= 1) {
         newCover = data.url;
       }
 
       setNewProduct({ ...newProduct, images: updatedImages, coverImage: newCover });
     } catch (err) {
-      console.error('Slot upload failed');
+      console.error('Slot upload failed:', err);
+      alert('Failed to upload image. Please check your connection or login status.');
     }
   };
 

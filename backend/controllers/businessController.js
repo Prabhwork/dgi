@@ -20,9 +20,27 @@ const handleBusinessFiles = (req, existingData = {}) => {
                 businessData[field] = req.files[field][0].path.replace(/\\/g, '/');
             }
         });
-        if (req.files.gallery) {
-            businessData.gallery = req.files.gallery.map(file => file.path.replace(/\\/g, '/'));
+        
+        // Gallery Merging Logic
+        let currentGallery = [];
+        if (req.body.existingGallery) {
+            try {
+                currentGallery = JSON.parse(req.body.existingGallery);
+            } catch (e) {
+                currentGallery = [];
+            }
         }
+
+        if (req.files.gallery) {
+            const newGallery = req.files.gallery.map(file => file.path.replace(/\\/g, '/'));
+            businessData.gallery = [...currentGallery, ...newGallery];
+        } else if (req.body.existingGallery) {
+            businessData.gallery = currentGallery;
+        }
+    } else if (req.body.existingGallery) {
+        try {
+            businessData.gallery = JSON.parse(req.body.existingGallery);
+        } catch (e) {}
     }
     return businessData;
 };

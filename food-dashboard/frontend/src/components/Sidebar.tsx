@@ -43,6 +43,7 @@ const menuItems: MenuItem[] = [
   { name: 'Promotions', icon: Ticket, path: '/promotions' },
   { name: 'Support', icon: HelpCircle, path: '/support' },
   { name: 'Settings', icon: Settings, path: '/settings' },
+  { name: 'Moderation', icon: Ticket, path: '/moderation' },
 ];
 
 export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsOpen: (val: boolean) => void }) {

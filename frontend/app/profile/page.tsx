@@ -158,11 +158,13 @@ export default function ProfilePage() {
     const [bannerImagePreview, setBannerImagePreview] = useState<string>('');
     const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
     const [galleryPreviews, setGalleryPreviews] = useState<string[]>([]);
+    const [existingGallery, setExistingGallery] = useState<string[]>([]);
     const [catalogFile, setCatalogFile] = useState<File | null>(null);
     const [aadhaarFile, setAadhaarFile] = useState<File | null>(null);
     const [panFile, setPanFile] = useState<File | null>(null);
     const [estabFile, setEstabFile] = useState<File | null>(null);
 
+    const headerCoverRef = useRef<HTMLInputElement>(null);
     const coverRef = useRef<HTMLInputElement>(null);
     const bannerRef = useRef<HTMLInputElement>(null);
     const galleryRef = useRef<HTMLInputElement>(null);
@@ -256,7 +258,9 @@ export default function ProfilePage() {
 
                     if (b.coverImage) setCoverImagePreview(`${BASE_URL}/${b.coverImage}`);
                     if (b.bannerImage) setBannerImagePreview(`${BASE_URL}/${b.bannerImage}`);
-                    if (b.gallery && b.gallery.length) setGalleryPreviews(b.gallery.map((g: string) => `${BASE_URL}/${g}`));
+                    if (b.gallery && b.gallery.length) {
+                        setExistingGallery(b.gallery);
+                    }
 
                     if (b.services) {
                         setServices(b.services.map((s: any) => ({ ...s, imagePreview: s.image ? `${BASE_URL}/${s.image}` : '' })));
@@ -322,16 +326,42 @@ export default function ProfilePage() {
     const handleGalleryChange = (files: FileList | null) => {
         if (!files) return;
         const arr = Array.from(files);
-        setGalleryFiles(arr);
-        const previews: string[] = [];
+        
+        // Prevent exceeding limit
+        const totalCount = existingGallery.length + galleryFiles.length + arr.length;
+        if (totalCount > 10) {
+            setError("You can only upload up to 10 photos total in the gallery.");
+            return;
+        }
+
+        const newFiles = [...galleryFiles, ...arr];
+        setGalleryFiles(newFiles);
+
+        const newPreviews: string[] = [...galleryPreviews];
+        let loadedCount = 0;
+        
         arr.forEach(f => {
             const reader = new FileReader();
             reader.onload = e => {
-                previews.push(e.target?.result as string);
-                if (previews.length === arr.length) setGalleryPreviews(previews);
+                newPreviews.push(e.target?.result as string);
+                loadedCount++;
+                if (loadedCount === arr.length) {
+                    setGalleryPreviews(newPreviews);
+                }
             };
             reader.readAsDataURL(f);
         });
+    };
+
+    const removeGalleryImage = (index: number) => {
+        // Index is in combined view: [existingGallery, galleryPreviews]
+        if (index < existingGallery.length) {
+            setExistingGallery(prev => prev.filter((_, i) => i !== index));
+        } else {
+            const adjustedIndex = index - existingGallery.length;
+            setGalleryFiles(prev => prev.filter((_, i) => i !== adjustedIndex));
+            setGalleryPreviews(prev => prev.filter((_, i) => i !== adjustedIndex));
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -352,6 +382,11 @@ export default function ProfilePage() {
         });
         if (coverImageFile) fd.append('coverImage', coverImageFile);
         if (bannerImageFile) fd.append('bannerImage', bannerImageFile);
+        
+        // Send existing gallery paths to keep
+        fd.append('existingGallery', JSON.stringify(existingGallery));
+        
+        // Append new files
         galleryFiles.forEach(f => fd.append('gallery', f));
         if (catalogFile) fd.append('catalog', catalogFile);
         if (aadhaarFile) fd.append('aadhaarCard', aadhaarFile);
@@ -454,12 +489,12 @@ export default function ProfilePage() {
                                             }
                                         </div>
                                         <button
-                                            onClick={() => coverRef.current?.click()}
+                                            onClick={() => headerCoverRef.current?.click()}
                                             className="absolute -bottom-2 -right-2 bg-primary text-white p-1.5 rounded-lg shadow-lg hover:bg-primary/80 transition"
                                         >
                                             <Camera size={14} />
                                         </button>
-                                        <input ref={coverRef} type="file" accept="image/*" className="hidden"
+                                        <input ref={headerCoverRef} type="file" accept="image/*" className="hidden"
                                             onChange={e => handleFileChange(e.target.files?.[0] || null, setCoverImageFile, setCoverImagePreview)} />
                                     </div>
 
@@ -812,22 +847,61 @@ export default function ProfilePage() {
 
                                             {/* Gallery */}
                                             <div>
-                                                <label className="block text-sm font-medium text-muted-foreground mb-3">Gallery <span className="text-xs opacity-60">(up to 10 photos)</span></label>
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <label className="block text-sm font-medium text-muted-foreground">Gallery <span className="text-xs opacity-60">(up to 10 photos)</span></label>
+                                                    <span className="text-[10px] font-bold text-muted-foreground uppercase">{existingGallery.length + galleryPreviews.length} / 10</span>
+                                                </div>
                                                 <div className="flex flex-wrap gap-3 mb-3">
-                                                    {galleryPreviews.map((p, i) => (
-                                                        <div key={i} className="relative">
-                                                            <img src={p} className="w-24 h-20 object-cover rounded-xl" alt={`gallery-${i}`} />
+                                                    {/* Existing Images */}
+                                                    {existingGallery.map((p, i) => (
+                                                        <div key={`exist-${i}`} className="relative group overflow-hidden rounded-xl bg-white/5 border border-white/10">
+                                                            <img src={`${BASE_URL}/${p}`} className="w-24 h-20 object-cover" alt={`gallery-exist-${i}`} />
+                                                            <button 
+                                                                type="button"
+                                                                onClick={() => removeGalleryImage(i)}
+                                                                className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            >
+                                                                <X size={12} />
+                                                            </button>
                                                         </div>
                                                     ))}
-                                                    <button type="button" onClick={() => galleryRef.current?.click()}
-                                                        className={`w-24 h-20 flex flex-col items-center justify-center rounded-xl border-2 border-dashed text-muted-foreground transition hover:text-primary hover:border-primary ${isLight ? 'border-slate-300' : 'border-white/10'}`}>
-                                                        <Upload size={18} />
-                                                        <span className="text-xs mt-1">Add</span>
-                                                    </button>
+
+                                                    {/* New Selection Previews */}
+                                                    {galleryPreviews.map((p, i) => (
+                                                        <div key={`new-${i}`} className="relative group overflow-hidden rounded-xl ring-2 ring-primary/30 shadow-lg shadow-primary/10">
+                                                            <img src={p} className="w-24 h-20 object-cover" alt={`gallery-new-${i}`} />
+                                                            <button 
+                                                                type="button"
+                                                                onClick={() => removeGalleryImage(existingGallery.length + i)}
+                                                                className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity font-bold shadow-xl"
+                                                            >
+                                                                <X size={12} />
+                                                            </button>
+                                                            <div className="absolute inset-x-0 bottom-0 bg-primary/80 py-0.5 text-center">
+                                                                <span className="text-[7px] font-bold text-white uppercase tracking-tighter">New Selection</span>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+
+                                                    {(existingGallery.length + galleryPreviews.length) < 10 && (
+                                                        <button 
+                                                            type="button" 
+                                                            onClick={() => {
+                                                                if (galleryRef.current) {
+                                                                    galleryRef.current.value = ""; 
+                                                                    galleryRef.current.click();
+                                                                }
+                                                            }}
+                                                            className={`w-24 h-20 flex flex-col items-center justify-center rounded-xl border-2 border-dashed text-muted-foreground transition hover:text-primary hover:border-primary ${isLight ? 'border-slate-300' : 'border-white/10'}`}
+                                                        >
+                                                            <Plus size={18} />
+                                                            <span className="text-xs mt-1">Add</span>
+                                                        </button>
+                                                    )}
                                                     <input ref={galleryRef} type="file" accept="image/*" multiple className="hidden"
                                                         onChange={e => handleGalleryChange(e.target.files)} />
                                                 </div>
-                                                {galleryFiles.length > 0 && <p className="text-xs text-primary">{galleryFiles.length} new photos selected</p>}
+                                                {galleryFiles.length > 0 && <p className="text-xs text-primary font-bold">{galleryFiles.length} new photos pending upload</p>}
                                             </div>
 
                                             {/* Catalog */}

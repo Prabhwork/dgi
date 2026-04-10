@@ -327,13 +327,20 @@ router.patch('/fssai-submissions/:id', protectAdmin, async (req, res) => {
     );
     if (!sub) return res.status(404).json({ message: 'Submission not found' });
 
-    // If approved, write fssai into the partner's Settings record
+    // If approved, write fssai into the partner's Settings record and update Partner status
     if (status === 'Approved') {
-      await Settings.findOneAndUpdate(
-        { partnerId: sub.partnerId },
-        { fssai: sub.fssaiNumber },
-        { new: true, upsert: true }
-      );
+      await Promise.all([
+        Settings.findOneAndUpdate(
+          { partnerId: sub.partnerId },
+          { fssai: sub.fssaiNumber },
+          { new: true, upsert: true }
+        ),
+        Partner.findOneAndUpdate(
+          { id: sub.partnerId },
+          { isFssaiVerified: true, fssaiNumber: sub.fssaiNumber },
+          { new: true }
+        )
+      ]);
     }
 
     res.json({ success: true, submission: sub });
