@@ -147,7 +147,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </main>
       </div>
 
-      {showFssaiPopup && (
+      {showFssaiPopup && !sessionStorage.getItem('fssai_skipped') && (
         <FSSAIPopup 
           businessName={businessName} 
           initialPending={fssaiPending}
@@ -155,6 +155,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
              // If submitted newly, it goes to pending state. We lock the screen instead of closing.
              setFssaiPending(true);
           }} 
+          onSkip={() => {
+             sessionStorage.setItem('fssai_skipped', 'true');
+             setShowFssaiPopup(false);
+          }}
         />
       )}
     </div>

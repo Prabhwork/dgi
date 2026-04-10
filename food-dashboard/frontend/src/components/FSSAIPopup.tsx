@@ -9,9 +9,10 @@ interface FSSAIPopupProps {
   businessName: string;
   initialPending?: boolean;
   onSuccess: () => void;
+  onSkip?: () => void;
 }
 
-export default function FSSAIPopup({ businessName, initialPending = false, onSuccess }: FSSAIPopupProps) {
+export default function FSSAIPopup({ businessName, initialPending = false, onSuccess, onSkip }: FSSAIPopupProps) {
   const [fssaiNumber, setFssaiNumber] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -131,6 +132,16 @@ export default function FSSAIPopup({ businessName, initialPending = false, onSuc
                >
                   {loading ? 'Submitting...' : 'Submit Verification'} <ArrowRight size={14} />
                </button>
+               
+               {onSkip && !isPending && (
+                  <button 
+                    type="button"
+                    onClick={onSkip}
+                    className="w-full text-slate-400 hover:text-slate-600 font-black uppercase tracking-widest py-2 text-[10px] transition-all"
+                  >
+                    Skip for now
+                  </button>
+               )}
             </div>
           </form>
         )}
