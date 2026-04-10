@@ -1,3 +1,5 @@
+const mongoose = require('mongoose');
+const mainDb = require('../config/mainDb');
 const Order = require('../models/Order');
 const Transaction = require('../models/Transaction');
 const sendEmail = require('../utils/sendEmail');
@@ -134,8 +136,21 @@ exports.createOrder = async (req, res) => {
         userId: userId,
         data: { orderId: saved.id, type: 'NEW_ORDER' }
       });
+
+      // Save to Database Notification (for User Inbox)
+      if (userId) {
+        await mainDb.collection('notifications').insertOne({
+          userId: new mongoose.Types.ObjectId(userId),
+          title: 'Order Received',
+          message: `Your order #${saved.id} has been received and is being processed.`,
+          type: 'Order',
+          read: false,
+          data: { orderId: saved.id },
+          createdAt: new Date()
+        });
+      }
     } catch (fcmErr) {
-      console.error("FCM New Order Error:", fcmErr);
+      console.error("New Order Notification Error:", fcmErr);
     }
 
     res.status(201).json(saved);
@@ -196,6 +211,17 @@ exports.updateOrderStatus = async (req, res) => {
               partnerId: partnerId,
               userId: saved.userId,
               data: { orderId: saved.id, status: newStatus }
+            });
+
+            // Save to Database Notification (for User Inbox)
+            await mainDb.collection('notifications').insertOne({
+              userId: new mongoose.Types.ObjectId(saved.userId),
+              title: `Order ${newStatus}`,
+              message: statusMessages[newStatus],
+              type: 'Order',
+              read: false,
+              data: { orderId: saved.id, status: newStatus },
+              createdAt: new Date()
             });
           }
         }
