@@ -1,17 +1,18 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ParticleNetwork from "@/components/ParticleNetwork";
 import { useTheme } from "@/components/ThemeProvider";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
     User, Building2, MapPin, Phone, Mail, Globe, Clock, Camera, Upload, Save,
     CheckCircle2, AlertCircle, Loader2, Tag, Image as ImageIcon, FileText,
     Shield, BadgeCheck, Edit3, ChevronDown, X, Plus, Briefcase, Package,
-    Search, Utensils, ExternalLink
+    Search, Utensils, ExternalLink, ShoppingBag, Calendar, Heart, Star, ChevronRight,
+    PackageIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,22 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const BASE_URL = (API_URL || '').replace('/api', '');
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday', 'None'];
+
+const STATUS_COLORS: Record<string, string> = {
+    'Pending': 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
+    'Confirmed': 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+    'Preparing': 'bg-orange-500/10 text-orange-500 border-orange-500/20',
+    'Ready': 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+    'Completed': 'bg-white/10 text-white/40 border-white/10',
+    'Cancelled': 'bg-red-500/10 text-red-500 border-red-500/20'
+};
+
+const BOOKING_STATUS_COLORS: Record<string, string> = {
+    'Confirmed': 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    'Pending': 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+    'Cancelled': 'bg-red-500/10 text-red-400 border-red-500/20',
+    'Completed': 'bg-white/10 text-white/40 border-white/10'
+};
 
 function ImagePreview({ src, alt, className }: { src: string; alt: string; className?: string }) {
     const [error, setError] = useState(false);
@@ -84,6 +101,13 @@ export default function ProfilePage() {
     // Services & Products State
     const [services, setServices] = useState<any[]>([]);
     const [products, setProducts] = useState<any[]>([]);
+
+    // NEW: Orders & Bookings State
+    const [orders, setOrders] = useState<any[]>([]);
+    const [bookings, setBookings] = useState<any[]>([]);
+    const [ordersLoading, setOrdersLoading] = useState(false);
+    const [bookingsLoading, setBookingsLoading] = useState(false);
+    const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
 
     const copyToAllHours = (sourceDay: string) => {
         const sourceData = form.businessHours[sourceDay as keyof typeof form.businessHours];
@@ -150,6 +174,51 @@ export default function ProfilePage() {
             }
         }));
     };
+
+    const fetchBusinessOrders = async () => {
+        const token = localStorage.getItem('businessToken');
+        if (!token) return;
+        setOrdersLoading(true);
+        try {
+            // Using the food dashboard API specifically for real-time orders
+            const res = await fetch(`${process.env.NEXT_PUBLIC_FOOD_API_URL}/orders`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data.success) {
+                // Filter for relevant business if needed, but endpoint protected by protectPartner usually returns own orders
+                setOrders(data.data.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+            }
+        } catch (err) {
+            console.error("Error fetching business orders:", err);
+        } finally {
+            setOrdersLoading(false);
+        }
+    };
+
+    const fetchBusinessBookings = async () => {
+        const token = localStorage.getItem('businessToken');
+        if (!token) return;
+        setBookingsLoading(true);
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_FOOD_API_URL}/dineout/reservations`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data.success) {
+                setBookings(data.data.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+            }
+        } catch (err) {
+            console.error("Error fetching business bookings:", err);
+        } finally {
+            setBookingsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (activeTab === 'orders') fetchBusinessOrders();
+        if (activeTab === 'bookings') fetchBusinessBookings();
+    }, [activeTab]);
 
     // File states
     const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
@@ -445,9 +514,11 @@ export default function ProfilePage() {
         { id: 'basic', label: 'Basic Info', icon: Building2 },
         { id: 'contact', label: 'Contact', icon: Phone },
         { id: 'hours', label: 'Hours & Status', icon: Clock },
-        { id: 'services', label: 'Services', icon: Briefcase },
-        { id: 'products', label: 'Products', icon: Package },
         { id: 'media', label: 'Photos & Media', icon: ImageIcon },
+        ...(isFoodRelatedLocal(form.businessCategory) ? [
+            { id: 'orders', label: 'Incoming Orders', icon: ShoppingBag },
+            { id: 'bookings', label: 'Dine-in Bookings', icon: Calendar }
+        ] : [])
     ];
 
     const cardClass = isLight
@@ -923,215 +994,247 @@ export default function ProfilePage() {
                                         </div>
                                     )}
 
-                                    {/* ─── Services ─── */}
-                                    {activeTab === 'services' && (
-                                        <div className="space-y-6">
-                                            <div className="flex items-center justify-between">
-                                                <h2 className="text-lg font-bold text-foreground flex items-center gap-2"><Briefcase size={18} /> Services Portfolio</h2>
-                                                <span className="text-xs font-medium text-muted-foreground">{services.length} / 10 Added</span>
-                                            </div>
-                                            
-                                            <div className="space-y-6">
-                                                {services.map((service, index) => (
-                                                    <div key={index} className={`relative p-5 rounded-2xl border ${isLight ? 'bg-white border-slate-200' : 'bg-white/5 border-white/10'}`}>
-                                                        <button type="button" onClick={() => setServices(services.filter((_, i) => i !== index))} className="absolute top-4 right-4 text-muted-foreground hover:text-red-400 transition" aria-label="Remove Service">
-                                                            <X size={18} />
+                                    <AnimatePresence mode="wait">
+                                        {activeTab === 'orders' && (
+                                            <motion.div 
+                                                key="orders"
+                                                initial={{ opacity: 0, y: 10 }} 
+                                                animate={{ opacity: 1, y: 0 }} 
+                                                exit={{ opacity: 0, y: -10 }}
+                                                className="space-y-6"
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <h2 className="text-xl font-bold flex items-center gap-3">
+                                                        <ShoppingBag className="text-primary" /> Incoming Orders
+                                                    </h2>
+                                                    <div className="flex items-center gap-3">
+                                                        <button 
+                                                            onClick={fetchBusinessOrders}
+                                                            className="text-[10px] font-black uppercase tracking-widest text-white/30 hover:text-primary transition-colors"
+                                                        >
+                                                            Refresh Queue
                                                         </button>
-                                                        <div className="flex flex-col md:flex-row gap-6">
-                                                            {/* Image Upload Box */}
-                                                            <div className="shrink-0 flex flex-col items-center gap-2">
-                                                                <div className={`w-32 h-32 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden transition-all relative group ${!service.imagePreview && isLight ? 'border-slate-300 hover:border-primary' : !service.imagePreview ? 'border-white/20 hover:border-primary' : 'border-transparent'}`}>
-                                                                    {service.imagePreview ? (
-                                                                        <>
-                                                                            <img src={service.imagePreview} alt="service" className="w-full h-full object-cover" />
-                                                                            <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                                <Camera size={20} className="text-white mb-1" />
-                                                                                <span className="text-[10px] text-white font-medium">Change</span>
-                                                                            </div>
-                                                                        </>
-                                                                    ) : (
-                                                                        <div className="flex flex-col items-center text-muted-foreground">
-                                                                            <Upload size={24} className="mb-2" />
-                                                                            <span className="text-xs font-medium">Add Photo</span>
-                                                                        </div>
-                                                                    )}
-                                                                    <input 
-                                                                        type="file" 
-                                                                        accept="image/*" 
-                                                                        className="absolute inset-0 opacity-0 cursor-pointer"
-                                                                        onChange={(e) => {
-                                                                            const file = e.target.files?.[0];
-                                                                            if (file) {
-                                                                                const reader = new FileReader();
-                                                                                reader.onload = (re) => {
-                                                                                    const newS = [...services];
-                                                                                    newS[index].imageFile = file;
-                                                                                    newS[index].imagePreview = re.target?.result as string;
-                                                                                    setServices(newS);
-                                                                                };
-                                                                                reader.readAsDataURL(file);
-                                                                            }
-                                                                        }}
-                                                                    />
-                                                                </div>
-                                                            </div>
-
-                                                            {/* Text Inputs */}
-                                                            <div className="flex-1 space-y-4">
-                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                    <div>
-                                                                        <label className="block text-xs font-medium text-muted-foreground mb-1">Service Name</label>
-                                                                        <Input 
-                                                                            placeholder="e.g. Website Design" 
-                                                                            className={inputClass} 
-                                                                            value={service.name}
-                                                                            onChange={(e) => { const n = [...services]; n[index].name = e.target.value; setServices(n); }}
-                                                                        />
-                                                                    </div>
-                                                                    <div>
-                                                                        <label className="block text-xs font-medium text-muted-foreground mb-1">Price (₹)</label>
-                                                                        <Input 
-                                                                            type="number"
-                                                                            placeholder="e.g. 5000" 
-                                                                            className={inputClass} 
-                                                                            value={service.price}
-                                                                            onChange={(e) => { const n = [...services]; n[index].price = e.target.value; setServices(n); }}
-                                                                        />
-                                                                    </div>
-                                                                </div>
-                                                                <div>
-                                                                    <label className="block text-xs font-medium text-muted-foreground mb-1">Description</label>
-                                                                    <textarea 
-                                                                        className={`w-full rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all ${isLight ? 'bg-slate-50 border-slate-200 text-slate-900 border' : 'bg-white/5 border border-white/10 text-white'}`}
-                                                                        rows={2}
-                                                                        placeholder="Briefly describe what this service includes..."
-                                                                        value={service.description}
-                                                                        onChange={(e) => { const n = [...services]; n[index].description = e.target.value; setServices(n); }}
-                                                                    ></textarea>
-                                                                </div>
-                                                            </div>
-                                                        </div>
+                                                        <Button 
+                                                            onClick={() => window.open(`${process.env.NEXT_PUBLIC_FOOD_DASHBOARD_URL}/?sso_token=${localStorage.getItem('businessToken')}`, '_blank')}
+                                                            variant="outline"
+                                                            className="rounded-xl border-primary/20 text-primary hover:bg-primary/5 text-xs font-bold"
+                                                        >
+                                                            Full Console <ExternalLink className="ml-2 w-3 h-3" />
+                                                        </Button>
                                                     </div>
-                                                ))}
+                                                </div>
 
-                                                {services.length < 10 && (
-                                                    <button 
-                                                        type="button" 
-                                                        onClick={() => setServices([...services, { name: '', description: '', price: '', imagePreview: '', imageFile: null }])}
-                                                        className={`w-full py-4 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition text-muted-foreground hover:text-primary ${isLight ? 'border-slate-300 hover:border-primary/50 hover:bg-primary/5' : 'border-white/10 hover:border-primary/50 hover:bg-primary/5'}`}
-                                                    >
-                                                        <Plus size={24} />
-                                                        <span className="font-bold text-sm">Add New Service</span>
-                                                    </button>
+                                                {ordersLoading ? (
+                                                    <div className="flex flex-col items-center justify-center py-16 gap-4">
+                                                        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                                                        <p className="text-white/30 text-sm font-medium">Fetching real-time orders...</p>
+                                                    </div>
+                                                ) : orders.length === 0 ? (
+                                                    <div className={`rounded-3xl p-12 text-center border ${isLight ? 'bg-white border-slate-200' : 'bg-white/5 border-white/10'}`}>
+                                                        <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                                                            <PackageIcon className="text-primary/50" size={40} />
+                                                        </div>
+                                                        <h3 className="text-lg font-bold text-foreground mb-2">Manage your sales here</h3>
+                                                        <p className="text-muted-foreground text-sm max-w-sm mx-auto mb-8">
+                                                            Track incoming takeaway and dine-in orders from your customers in real-time.
+                                                        </p>
+                                                        <Button 
+                                                            onClick={() => window.open(`${process.env.NEXT_PUBLIC_FOOD_DASHBOARD_URL}/?sso_token=${localStorage.getItem('businessToken')}`, '_blank')}
+                                                            className="bg-primary hover:bg-primary/90 rounded-2xl px-10 h-14 font-bold uppercase tracking-widest text-xs shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95 text-white"
+                                                        >
+                                                            Open Live Order Queue
+                                                        </Button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-4">
+                                                        {orders.map((order) => (
+                                                            <motion.div
+                                                                key={order._id}
+                                                                layout
+                                                                className={`border rounded-2xl overflow-hidden transition-colors ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-white/3 border-white/10 hover:bg-white/5'}`}
+                                                            >
+                                                                <button
+                                                                    onClick={() => setExpandedOrder(expandedOrder === order._id ? null : order._id)}
+                                                                    className="w-full flex items-center gap-4 p-5 text-left"
+                                                                >
+                                                                    <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                                                                        <Utensils size={18} className="text-primary" />
+                                                                    </div>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                                            <p className="text-sm font-black text-foreground">{order.orderId || order.id}</p>
+                                                                            <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${STATUS_COLORS[order.status] || "bg-white/10 text-white/40 border-white/10"}`}>
+                                                                                {order.status}
+                                                                            </span>
+                                                                            <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border bg-white/5 text-muted-foreground border-white/10">
+                                                                                {order.orderType}
+                                                                            </span>
+                                                                        </div>
+                                                                        <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                                                                            {order.customerName} · {Array.isArray(order.items) ? order.items.map((it: any) => it.name).join(", ") : order.items}
+                                                                        </p>
+                                                                    </div>
+                                                                    <div className="text-right shrink-0 ml-2">
+                                                                        <p className="text-base font-black text-foreground">₹{order.totalAmount?.toFixed(2) || order.total?.toFixed(2)}</p>
+                                                                        <p className="text-[9px] text-muted-foreground mt-0.5">
+                                                                            {order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—'}
+                                                                        </p>
+                                                                    </div>
+                                                                    <ChevronDown size={16} className={`text-muted-foreground shrink-0 transition-transform ml-2 ${expandedOrder === order._id ? 'rotate-180' : ''}`} />
+                                                                </button>
+
+                                                                <AnimatePresence>
+                                                                    {expandedOrder === order._id && (
+                                                                        <motion.div
+                                                                            initial={{ height: 0, opacity: 0 }}
+                                                                            animate={{ height: 'auto', opacity: 1 }}
+                                                                            exit={{ height: 0, opacity: 0 }}
+                                                                            className="overflow-hidden border-t border-white/5"
+                                                                        >
+                                                                            <div className="p-5 space-y-4">
+                                                                                <div>
+                                                                                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-3">Items Ordered</p>
+                                                                                    <div className="space-y-2">
+                                                                                        {order.itemsArray?.map((item: any, i: number) => (
+                                                                                            <div key={i} className="flex items-center justify-between">
+                                                                                                <div className="flex items-center gap-2">
+                                                                                                    <span className="w-5 h-5 rounded bg-primary/10 text-primary text-[10px] font-black flex items-center justify-center">
+                                                                                                        {item.quantity}x
+                                                                                                    </span>
+                                                                                                    <span className="text-sm font-medium">{item.name}</span>
+                                                                                                </div>
+                                                                                                <span className="text-sm font-bold">₹{(item.price * item.quantity).toFixed(2)}</span>
+                                                                                            </div>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className={`p-4 rounded-xl space-y-2 border ${isLight ? 'bg-white border-slate-200' : 'bg-white/5 border-white/5'}`}>
+                                                                                    <div className="flex justify-between text-xs text-muted-foreground">
+                                                                                        <span>Total Paid</span>
+                                                                                        <span className="font-black text-foreground text-sm">₹{Number(order.totalAmount || order.total).toFixed(2)}</span>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div className="flex items-center gap-3">
+                                                                                    {order.tableNumber && (
+                                                                                        <span className="text-[10px] font-bold px-3 py-1.5 rounded-full border bg-primary/5 text-primary border-primary/10">
+                                                                                            Table #{order.tableNumber}
+                                                                                        </span>
+                                                                                    )}
+                                                                                    <span className={`text-[10px] font-bold px-3 py-1.5 rounded-full border ${order.payment === 'Paid' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'}`}>
+                                                                                        {order.payment === 'Paid' ? '✓ Paid Online' : 'Cash on Delivery'}
+                                                                                    </span>
+                                                                                </div>
+                                                                            </div>
+                                                                        </motion.div>
+                                                                    )}
+                                                                </AnimatePresence>
+                                                            </motion.div>
+                                                        ))}
+                                                    </div>
                                                 )}
-                                            </div>
-                                        </div>
-                                    )}
+                                            </motion.div>
+                                        )}
 
-                                    {/* ─── Products ─── */}
-                                    {activeTab === 'products' && (
-                                        <div className="space-y-6">
-                                            <div className="flex items-center justify-between">
-                                                <h2 className="text-lg font-bold text-foreground flex items-center gap-2"><Package size={18} /> Products Catalog</h2>
-                                                <span className="text-xs font-medium text-muted-foreground">{products.length} / 10 Added</span>
-                                            </div>
-                                            
-                                            <div className="space-y-6">
-                                                {products.map((product, index) => (
-                                                    <div key={index} className={`relative p-5 rounded-2xl border ${isLight ? 'bg-white border-slate-200' : 'bg-white/5 border-white/10'}`}>
-                                                        <button type="button" onClick={() => setProducts(products.filter((_, i) => i !== index))} className="absolute top-4 right-4 text-muted-foreground hover:text-red-400 transition" aria-label="Remove Product">
-                                                            <X size={18} />
+                                        {activeTab === 'bookings' && (
+                                            <motion.div 
+                                                key="bookings"
+                                                initial={{ opacity: 0, y: 10 }} 
+                                                animate={{ opacity: 1, y: 0 }} 
+                                                exit={{ opacity: 0, y: -10 }}
+                                                className="space-y-6"
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <h2 className="text-xl font-bold flex items-center gap-3">
+                                                        <Calendar className="text-primary" /> Dine-in Bookings
+                                                    </h2>
+                                                    <div className="flex items-center gap-3">
+                                                        <button 
+                                                            onClick={fetchBusinessBookings}
+                                                            className="text-[10px] font-black uppercase tracking-widest text-white/30 hover:text-primary transition-colors"
+                                                        >
+                                                            Refresh
                                                         </button>
-                                                        <div className="flex flex-col md:flex-row gap-6">
-                                                            {/* Image Upload Box */}
-                                                            <div className="shrink-0 flex flex-col items-center gap-2">
-                                                                <div className={`w-32 h-32 rounded-2xl border-2 border-dashed flex items-center justify-center overflow-hidden transition-all relative group ${!product.imagePreview && isLight ? 'border-slate-300 hover:border-primary' : !product.imagePreview ? 'border-white/20 hover:border-primary' : 'border-transparent'}`}>
-                                                                    {product.imagePreview ? (
-                                                                        <>
-                                                                            <img src={product.imagePreview} alt="product" className="w-full h-full object-cover" />
-                                                                            <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                                <Camera size={20} className="text-white mb-1" />
-                                                                                <span className="text-[10px] text-white font-medium">Change</span>
-                                                                            </div>
-                                                                        </>
-                                                                    ) : (
-                                                                        <div className="flex flex-col items-center text-muted-foreground">
-                                                                            <Upload size={24} className="mb-2" />
-                                                                            <span className="text-xs font-medium">Add Photo</span>
-                                                                        </div>
-                                                                    )}
-                                                                    <input 
-                                                                        type="file" 
-                                                                        accept="image/*" 
-                                                                        className="absolute inset-0 opacity-0 cursor-pointer"
-                                                                        onChange={(e) => {
-                                                                            const file = e.target.files?.[0];
-                                                                            if (file) {
-                                                                                const reader = new FileReader();
-                                                                                reader.onload = (re) => {
-                                                                                    const newP = [...products];
-                                                                                    newP[index].imageFile = file;
-                                                                                    newP[index].imagePreview = re.target?.result as string;
-                                                                                    setProducts(newP);
-                                                                                };
-                                                                                reader.readAsDataURL(file);
-                                                                            }
-                                                                        }}
-                                                                    />
-                                                                </div>
-                                                            </div>
-
-                                                            {/* Text Inputs */}
-                                                            <div className="flex-1 space-y-4">
-                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                    <div>
-                                                                        <label className="block text-xs font-medium text-muted-foreground mb-1">Product Name</label>
-                                                                        <Input 
-                                                                            placeholder="e.g. Running Shoes" 
-                                                                            className={inputClass} 
-                                                                            value={product.name}
-                                                                            onChange={(e) => { const n = [...products]; n[index].name = e.target.value; setProducts(n); }}
-                                                                        />
-                                                                    </div>
-                                                                    <div>
-                                                                        <label className="block text-xs font-medium text-muted-foreground mb-1">Price (₹)</label>
-                                                                        <Input 
-                                                                            type="number"
-                                                                            placeholder="e.g. 2999" 
-                                                                            className={inputClass} 
-                                                                            value={product.price}
-                                                                            onChange={(e) => { const n = [...products]; n[index].price = e.target.value; setProducts(n); }}
-                                                                        />
-                                                                    </div>
-                                                                </div>
-                                                                <div>
-                                                                    <label className="block text-xs font-medium text-muted-foreground mb-1">Description</label>
-                                                                    <textarea 
-                                                                        className={`w-full rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all ${isLight ? 'bg-slate-50 border-slate-200 text-slate-900 border' : 'bg-white/5 border border-white/10 text-white'}`}
-                                                                        rows={2}
-                                                                        placeholder="Briefly describe the product..."
-                                                                        value={product.description}
-                                                                        onChange={(e) => { const n = [...products]; n[index].description = e.target.value; setProducts(n); }}
-                                                                    ></textarea>
-                                                                </div>
-                                                            </div>
-                                                        </div>
+                                                        <Button 
+                                                            onClick={() => window.open(`${process.env.NEXT_PUBLIC_FOOD_DASHBOARD_URL}/dineout`, '_blank')}
+                                                            variant="outline"
+                                                            className="rounded-xl border-primary/20 text-primary hover:bg-primary/5 text-xs font-bold"
+                                                        >
+                                                            Full Console <ExternalLink className="ml-2 w-3 h-3" />
+                                                        </Button>
                                                     </div>
-                                                ))}
+                                                </div>
 
-                                                {products.length < 10 && (
-                                                    <button 
-                                                        type="button" 
-                                                        onClick={() => setProducts([...products, { name: '', description: '', price: '', imagePreview: '', imageFile: null }])}
-                                                        className={`w-full py-4 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition text-muted-foreground hover:text-primary ${isLight ? 'border-slate-300 hover:border-primary/50 hover:bg-primary/5' : 'border-white/10 hover:border-primary/50 hover:bg-primary/5'}`}
-                                                    >
-                                                        <Plus size={24} />
-                                                        <span className="font-bold text-sm">Add New Product</span>
-                                                    </button>
+                                                {bookingsLoading ? (
+                                                    <div className="flex flex-col items-center justify-center py-16 gap-4">
+                                                        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                                                        <p className="text-white/30 text-sm font-medium">Loading reservations...</p>
+                                                    </div>
+                                                ) : bookings.length === 0 ? (
+                                                    <div className={`rounded-3xl p-12 text-center border ${isLight ? 'bg-white border-slate-200' : 'bg-white/5 border-white/10'}`}>
+                                                        <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                                                            <Utensils className="text-primary/50" size={40} />
+                                                        </div>
+                                                        <h3 className="text-lg font-bold text-foreground mb-2">Reservation Center</h3>
+                                                        <p className="text-muted-foreground text-sm max-w-sm mx-auto mb-8">
+                                                            Keep track of your table reservations and customer arrival times.
+                                                        </p>
+                                                        <Button 
+                                                            onClick={() => window.open(`${process.env.NEXT_PUBLIC_FOOD_DASHBOARD_URL}/dineout`, '_blank')}
+                                                            className="bg-primary hover:bg-primary/90 rounded-2xl px-10 h-14 font-bold uppercase tracking-widest text-xs shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95 text-white"
+                                                        >
+                                                            Open Booking System
+                                                        </Button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        {bookings.map((booking) => (
+                                                            <motion.div
+                                                                key={booking._id}
+                                                                whileHover={{ y: -2 }}
+                                                                className={`p-6 rounded-2xl border transition-all ${isLight ? 'bg-white border-slate-200' : 'bg-white/3 border-white/10 hover:bg-white/5'}`}
+                                                            >
+                                                                <div className="flex items-start justify-between mb-4">
+                                                                    <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center font-black text-primary text-xs">
+                                                                        ID
+                                                                    </div>
+                                                                    <span className={`text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border ${BOOKING_STATUS_COLORS[booking.status] || "bg-white/10 text-white/40 border-white/10"}`}>
+                                                                        {booking.status}
+                                                                    </span>
+                                                                </div>
+
+                                                                <h3 className="font-black text-foreground text-base">{booking.bookingId || booking._id.slice(-6).toUpperCase()}</h3>
+                                                                <p className="text-muted-foreground text-xs mt-1">{booking.customerName} · {booking.customerPhone}</p>
+
+                                                                <div className="mt-4 space-y-2.5">
+                                                                    <div className="flex items-center gap-2.5 text-[11px]">
+                                                                        <Calendar size={12} className="text-primary shrink-0" />
+                                                                        <span className="text-muted-foreground">
+                                                                            {booking.date ? new Date(booking.date).toLocaleDateString('en-IN', { weekday: 'long', day: '2-digit', month: 'long' }) : '—'}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2.5 text-[11px]">
+                                                                        <Clock size={12} className="text-primary shrink-0" />
+                                                                        <span className="text-muted-foreground">{booking.timeSlot}</span>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2.5 text-[11px]">
+                                                                        <User size={12} className="text-primary shrink-0" />
+                                                                        <span className="text-muted-foreground">{booking.guests} {booking.guests === 1 ? 'Guest' : 'Guests'}</span>
+                                                                    </div>
+                                                                </div>
+
+                                                                {booking.feeAmount > 0 && (
+                                                                    <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between">
+                                                                        <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Booking Fee</span>
+                                                                        <span className="text-sm font-black text-emerald-400">₹{booking.feeAmount} Paid</span>
+                                                                    </div>
+                                                                )}
+                                                            </motion.div>
+                                                        ))}
+                                                    </div>
                                                 )}
-                                            </div>
-                                        </div>
-                                    )}
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
 
                                     {/* Save Button */}
                                     <div className="mt-8 pt-6 border-t border-white/10 flex justify-end">

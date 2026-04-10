@@ -2,6 +2,14 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/db');
+const fs = require('fs');
+const path = require('path');
+
+// Ensure upload directory exists
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)){
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 // ── Route Imports ──────────────────────────────────────────────────────────────
 const orderRoutes = require('./routes/orderRoutes');
@@ -52,7 +60,7 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ── Health Check ───────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => res.json({
