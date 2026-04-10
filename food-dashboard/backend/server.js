@@ -41,6 +41,7 @@ app.use(cors({
     'https://www.foodadmin.digitalbookofindia.com',
     'https://admin.digitalbookofindia.com',
     'https://www.admin.digitalbookofindia.com',
+    'https://dgi-1-d7j2.onrender.com',
     'http://localhost:3000',
     'http://localhost:3001',
     'http://localhost:3002',

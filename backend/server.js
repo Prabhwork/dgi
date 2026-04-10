@@ -24,6 +24,7 @@ const allowedOrigins = [
   'https://admin.digitalbookofindia.com',
   'https://www.admin.digitalbookofindia.com',
   'https://dgi-bpu3.onrender.com',
+  'https://dgi-1-d7j2.onrender.com',
   'https://dgi-sss1.vercel.app',
   'https://dgi-r3dl.vercel.app',
   "https://coleen-unvirulent-rafael.ngrok-free.dev",
