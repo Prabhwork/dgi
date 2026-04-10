@@ -1,6 +1,6 @@
 const Order = require('../models/Order');
 const Transaction = require('../models/Transaction');
-const sendEmail = require('../../../backend/utils/sendEmail');
+const sendEmail = require('../utils/sendEmail');
 const fcmService = require('../services/fcmService');
 const FcmToken = require('../models/FcmToken');
 
