@@ -522,7 +522,7 @@ function RegisterPageContent() {
     const suggestionRef = useRef<HTMLDivElement>(null);
 
     const fetchKeywordSuggestions = async (query: string, pageNum: number = 1, append: boolean = false) => {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        const API_URL = process.env.NEXT_PUBLIC_API_URL;
         if (pageNum > 1) setIsLoadingMoreKeywords(true);
 
         try {
@@ -596,7 +596,7 @@ function RegisterPageContent() {
                 return;
             }
             setIsCatLoading(true);
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api'; // 5001 as default
+            const API_URL = process.env.NEXT_PUBLIC_API_URL; 
             try {
                 const res = await fetch(`${API_URL}/google-categories?search=${encodeURIComponent(catSearchTerm)}&limit=15`);
                 const data = await res.json();
@@ -733,7 +733,7 @@ function RegisterPageContent() {
 
     useEffect(() => {
         const fetchMainCats = async () => {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+            const API_URL = process.env.NEXT_PUBLIC_API_URL;
             try {
                 const res = await fetch(`${API_URL}/main-categories?limit=100`);
                 const data = await res.json();
@@ -750,7 +750,7 @@ function RegisterPageContent() {
                 return;
             }
 
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+            const API_URL = process.env.NEXT_PUBLIC_API_URL;
             let combinedSubs: any[] = [];
 
             try {

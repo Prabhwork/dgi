@@ -1,29 +1,51 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  CreditCard, 
   IndianRupee, 
-  ArrowUpRight, 
   TrendingUp, 
   History, 
   Download,
-  AlertCircle,
   ShieldCheck,
   ChevronRight,
   Search
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-
-const TRANSACTIONS = [
-  { id: 'TXN-9901', orderId: 'ORD-7721', amount: 649, status: 'Paid', method: 'UPI', date: '02 Apr, 12:45 PM' },
-  { id: 'TXN-9902', orderId: 'ORD-7722', amount: 399, status: 'Paid', method: 'Wallet', date: '02 Apr, 01:02 PM' },
-  { id: 'TXN-9903', orderId: 'ORD-7723', amount: 297, status: 'Pending', method: 'COD', date: '02 Apr, 01:15 PM' },
-  { id: 'TXN-9904', orderId: 'ORD-7724', amount: 150, status: 'Paid', method: 'Card', date: '02 Apr, 01:20 PM' },
-  { id: 'TXN-9905', orderId: 'ORD-7719', amount: 1240, status: 'Failed', method: 'UPI', date: '01 Apr, 08:30 PM' },
-];
+import { api } from '@/lib/api';
 
 export default function PaymentsPage() {
+  const [loading, setLoading] = useState(true);
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [walletMeta, setWalletMeta] = useState<any>(null);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [txnData, metaData] = await Promise.all([
+        api.get('/transactions'),
+        api.get('/settlements/meta/wallet')
+      ]);
+      setTransactions(txnData);
+      setWalletMeta(metaData);
+    } catch (err) {
+      console.error('Failed to fetch payments data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+       <div className="flex items-center justify-center h-[80vh]">
+         <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+       </div>
+    );
+  }
+
   return (
     <div className="space-y-8 pb-20">
       {/* Header */}
@@ -50,7 +72,7 @@ export default function PaymentsPage() {
                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Total Settlement Balance</span>
               </div>
               <div className="space-y-2">
-                 <h3 className="text-5xl font-black tracking-tight">₹14,560.00</h3>
+                 <h3 className="text-5xl font-black tracking-tight">₹{(walletMeta?.redeemableBalance || 0).toLocaleString()}</h3>
                  <div className="flex items-center gap-2 text-emerald-400 text-sm font-bold bg-emerald-400/10 w-fit px-3 py-1 rounded-lg">
                     <TrendingUp size={16} /> +12% vs last week
                  </div>
@@ -58,11 +80,11 @@ export default function PaymentsPage() {
               <div className="flex flex-wrap items-center gap-10 pt-4 border-t border-white/10">
                  <div>
                     <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-1">Today&apos;s Earnings</p>
-                    <p className="text-xl font-bold">₹2,450</p>
+                    <p className="text-xl font-bold">₹{(walletMeta?.lifetimeEarnings || 0).toLocaleString()}</p>
                  </div>
                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-1">Last Settlement</p>
-                    <p className="text-xl font-bold">₹8,900</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-1">Lifetime Earnings</p>
+                    <p className="text-xl font-bold">₹{(walletMeta?.lifetimeEarnings || 0).toLocaleString()}</p>
                  </div>
                  <div className="ml-auto">
                     <button className="bg-white text-slate-900 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 transition-all shadow-lg active:scale-95">Withdraw Now</button>
@@ -82,9 +104,8 @@ export default function PaymentsPage() {
               </div>
               <div className="space-y-4">
                  {[
-                   { label: 'Settled', percentage: 85, color: '#10b981' },
-                   { label: 'Processing', percentage: 12, color: '#f59e0b' },
-                   { label: 'Failed', percentage: 3, color: '#dc2626' },
+                   { label: 'Paid Orders', percentage: 95, color: '#10b981' },
+                   { label: 'Failed/Refunded', percentage: 5, color: '#dc2626' },
                  ].map((bar) => (
                    <div key={bar.label} className="space-y-2">
                       <div className="flex justify-between text-xs font-bold text-slate-600">
@@ -126,11 +147,11 @@ export default function PaymentsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {TRANSACTIONS.map((txn) => (
-                      <tr key={txn.id} className="hover:bg-slate-50 transition-colors group">
-                        <td className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase">{txn.id}</td>
-                        <td className="px-6 py-4 text-xs font-black text-slate-700 tracking-tight group-hover:text-primary transition-colors">{txn.orderId}</td>
-                        <td className="px-6 py-4 text-[11px] font-bold text-slate-500">{txn.date}</td>
+                    {transactions.map((txn) => (
+                      <tr key={txn._id} className="hover:bg-slate-50 transition-colors group">
+                        <td className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase">{txn.id || txn._id.substring(0,8).toUpperCase()}</td>
+                        <td className="px-6 py-4 text-xs font-black text-slate-700 tracking-tight group-hover:text-primary transition-colors">{txn.orderId || 'N/A'}</td>
+                        <td className="px-6 py-4 text-[11px] font-bold text-slate-500">{new Date(txn.createdAt).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
                         <td className="px-6 py-4 text-center">
                            <span className="text-xs font-black text-slate-800">₹{txn.amount}</span>
                         </td>
@@ -147,15 +168,14 @@ export default function PaymentsPage() {
                         </td>
                       </tr>
                     ))}
+                    {transactions.length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="py-10 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest italic">No transactions found</td>
+                      </tr>
+                    )}
                   </tbody>
                </table>
             </div>
-         </div>
-         {/* Footer Pagination Simulated */}
-         <div className="flex items-center justify-center gap-2 pt-4">
-            <button className="w-8 h-8 rounded-lg border border-slate-100 flex items-center justify-center text-slate-400 hover:bg-white transition-all bg-slate-50 shadow-sm"><ChevronRight size={16} className="rotate-180" /></button>
-            <span className="text-[11px] font-black text-slate-400 mx-2 uppercase italic tracking-widest">Page 1 of 4</span>
-            <button className="w-8 h-8 rounded-lg border border-slate-100 flex items-center justify-center text-slate-400 hover:bg-white transition-all bg-slate-50 shadow-sm"><ChevronRight size={16} /></button>
          </div>
       </div>
     </div>

@@ -64,7 +64,7 @@ export default function UpcomingFeatures() {
     useEffect(() => {
         const fetchFeatures = async () => {
             try {
-                const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
+                const API = process.env.NEXT_PUBLIC_API_URL;
                 const res = await fetch(`${API}/upcoming-categories`);
                 const data = await res.json();
                 if (data.success && data.data && data.data.length > 0) {

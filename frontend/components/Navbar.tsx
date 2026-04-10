@@ -3,9 +3,10 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Sun, Moon, ChevronDown, ChevronRight, Rocket, Map, ShieldCheck, PieChart, Search, Building2, Store, Handshake, Briefcase, Globe, Zap, Target, Sparkles, Circle, User, Settings, LogOut } from "lucide-react";
+import { Menu, X, Sun, Moon, ChevronDown, ChevronRight, Rocket, Map, ShieldCheck, PieChart, Search, Building2, Store, Handshake, Briefcase, Globe, Zap, Target, Sparkles, Circle, User, Settings, LogOut, Utensils } from "lucide-react";
 import Link from "next/link";
 import { useTheme } from "@/components/ThemeProvider";
+import NotificationBell from "./NotificationBell";
 
 const navItems = [
     { name: "Why DBI", href: "/why-dbi" },
@@ -199,6 +200,12 @@ export default function Navbar() {
     const [businessUser, setBusinessUser] = useState<any>(null);
     const [regularUser, setRegularUser] = useState<any>(null);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
+    const [foodCategoryNames, setFoodCategoryNames] = useState<Set<string>>(new Set());
+
+    const isFoodCategory = (cat: string) => {
+        if (!cat) return false;
+        return foodCategoryNames.has(cat.trim());
+    };
 
     useEffect(() => {
         const handler = () => setScrolled(window.scrollY > 50);
@@ -220,7 +227,7 @@ export default function Navbar() {
     }, []);
 
     useEffect(() => {
-        const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        const API = process.env.NEXT_PUBLIC_API_URL;
 
         const fetchData = async () => {
             try {
@@ -282,6 +289,28 @@ export default function Navbar() {
             }
         };
 
+        // Fetch food-related categories from main + google category APIs
+        const fetchFoodCategories = async () => {
+            const foodKeywords = ['restaurant', 'cafe', 'dining', 'food', 'bakery', 'bar', 'grill', 'bistro', 'pizzeria', 'steakhouse', 'caterer', 'diner', 'canteen', 'dhaba', 'kitchen', 'eatery', 'buffet', 'takeaway', 'delivery', 'hotel', 'resort', 'sweets', 'snacks', 'juice', 'tea', 'coffee', 'burger', 'biryani', 'chinese', 'italian', 'thai', 'sushi', 'seafood', 'kebab', 'tiffin', 'mess'];
+            try {
+                const [mainRes, googleRes] = await Promise.all([
+                    fetch(`${API}/main-categories?limit=5000`).then(r => r.json()),
+                    fetch(`${API}/google-categories?limit=5000`).then(r => r.json()),
+                ]);
+                const allNames: string[] = [];
+                if (mainRes.success && mainRes.data) allNames.push(...mainRes.data.map((c: any) => c.name));
+                if (googleRes.success && googleRes.data) allNames.push(...googleRes.data.map((c: any) => c.name));
+                const foodSet = new Set(
+                    allNames.filter(name =>
+                        foodKeywords.some(kw => name.toLowerCase().includes(kw))
+                    )
+                );
+                setFoodCategoryNames(foodSet);
+            } catch (err) {
+                console.error('Failed to fetch food categories:', err);
+            }
+        };
+
         const fetchUser = async () => {
             const bToken = localStorage.getItem("businessToken");
             const uToken = localStorage.getItem("userToken");
@@ -322,6 +351,7 @@ export default function Navbar() {
 
         fetchData();
         fetchUser();
+        fetchFoodCategories();
     }, []);
 
     const handleLogout = () => {
@@ -432,6 +462,7 @@ export default function Navbar() {
                     </button>
                     */}
 
+                    <NotificationBell />
                     {businessUser || regularUser ? (
                         <div className="relative isolate" ref={dropdownRef}>
                             <button
@@ -472,6 +503,16 @@ export default function Navbar() {
                                             >
                                                 <User size={16} /> {businessUser ? 'Business Profile' : 'User Profile'}
                                             </Link>
+                                            {businessUser && isFoodCategory(businessUser.businessCategory) && (
+                                                <a
+                                                    href={`${process.env.NEXT_PUBLIC_FOOD_DASHBOARD_URL}/?sso_token=${typeof window !== 'undefined' ? localStorage.getItem('businessToken') : ''}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-colors ${isLight ? 'bg-primary/10 text-primary hover:bg-primary/20' : 'bg-primary/20 text-primary hover:bg-primary/30'}`}
+                                                >
+                                                    <Utensils size={16} /> Food Dashboard
+                                                </a>
+                                            )}
                                             <Link
                                                 href="#"
                                                 className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${isLight ? 'text-slate-700 hover:bg-slate-100 hover:text-primary' : 'text-slate-300 hover:bg-white/10 hover:text-white'}`}
@@ -500,6 +541,7 @@ export default function Navbar() {
                         </div>
                     ) : (
                         <div className="flex items-center gap-3">
+                            <NotificationBell />
                             <div className={`flex items-center rounded-full p-1 border transition-all ${isLight ? 'bg-[#FFFFF0]/30 border-black/10' : 'bg-white/5 border-white/10'}`}>
                                 <Link
                                     href="/login"
@@ -549,6 +591,7 @@ export default function Navbar() {
                         }
                     </button>
                     */}
+                    <NotificationBell />
                     <button className={isLight ? 'text-slate-900' : 'text-foreground'} onClick={() => setMobileOpen(!mobileOpen)}>
                         {mobileOpen ? <X size={24} /> : <Menu size={24} />}
                     </button>
@@ -708,7 +751,7 @@ export default function Navbar() {
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-3 gap-2">
+                                        <div className={`grid ${businessUser && isFoodCategory(businessUser.businessCategory) ? 'grid-cols-4' : 'grid-cols-3'} gap-2`}>
                                             <Link href={businessUser ? "/profile" : "/user-profile"} onClick={() => setMobileOpen(false)} className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border text-center transition-colors ${isLight ? 'bg-white border-slate-200 text-slate-700 hover:border-primary/50' : 'bg-white/5 border-white/10 text-slate-300 hover:border-white/30'}`}>
                                                 <User size={18} className={isLight ? "text-primary" : "text-white/80"} />
                                                 <span className="text-[10px] font-bold leading-tight">{businessUser ? 'Business Profile' : 'User Profile'}</span>
@@ -721,6 +764,12 @@ export default function Navbar() {
                                                 <ShieldCheck size={18} className={isLight ? "text-primary" : "text-white/80"} />
                                                 <span className="text-[10px] font-bold leading-tight">2FA<br />Security</span>
                                             </Link>
+                                            {businessUser && isFoodCategory(businessUser.businessCategory) && (
+                                                <a href={`${process.env.NEXT_PUBLIC_FOOD_DASHBOARD_URL}/?sso_token=${typeof window !== 'undefined' ? localStorage.getItem('businessToken') : ''}`} target="_blank" rel="noopener noreferrer" onClick={() => setMobileOpen(false)} className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border text-center transition-colors ${isLight ? 'bg-primary/10 border-primary/20 text-primary hover:border-primary/50' : 'bg-primary/20 border-primary/30 text-primary hover:border-primary/50'}`}>
+                                                    <Utensils size={18} className="text-primary" />
+                                                    <span className="text-[10px] font-bold leading-tight">Food<br />Dash</span>
+                                                </a>
+                                            )}
                                         </div>
 
                                         <button

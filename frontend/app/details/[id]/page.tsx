@@ -28,7 +28,7 @@ export default function DetailPage() {
 
     useEffect(() => {
         const fetchDetail = async () => {
-            const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
+            const API = process.env.NEXT_PUBLIC_API_URL;
             try {
                 const res = await fetch(`${API}/page-details/${id}`);
                 const data = await res.json();
@@ -69,7 +69,7 @@ export default function DetailPage() {
     }
 
     const title = detail.subcategory?.name || detail.category.name;
-    const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5001';
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '');
 
     let imageUrl = null;
     if (detail.image && detail.image !== 'no-photo.jpg') {

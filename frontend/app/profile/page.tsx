@@ -10,7 +10,8 @@ import { motion } from "framer-motion";
 import {
     User, Building2, MapPin, Phone, Mail, Globe, Clock, Camera, Upload, Save,
     CheckCircle2, AlertCircle, Loader2, Tag, Image as ImageIcon, FileText,
-    Shield, BadgeCheck, Edit3, ChevronDown, X, Plus, Briefcase, Package
+    Shield, BadgeCheck, Edit3, ChevronDown, X, Plus, Briefcase, Package,
+    Search, Utensils, ExternalLink
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +22,6 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const BASE_URL = (API_URL || '').replace('/api', '');
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday', 'None'];
-const CATEGORIES = ['Tech', 'Retail', 'Food', 'Fashion', 'Automobile', 'Salon', 'Restaurant', 'Logistics', 'Health', 'Education', 'Finance', 'Real Estate', 'Other'];
 
 function ImagePreview({ src, alt, className }: { src: string; alt: string; className?: string }) {
     const [error, setError] = useState(false);
@@ -44,6 +44,17 @@ export default function ProfilePage() {
     const [success, setSuccess] = useState("");
     const [error, setError] = useState("");
     const [activeTab, setActiveTab] = useState("basic");
+    const [categories, setCategories] = useState<string[]>([]);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [isCatOpen, setIsCatOpen] = useState(false);
+    const catRef = useRef<HTMLDivElement>(null);
+
+    const isFoodRelatedLocal = (cat: string) => {
+        if (!cat) return false;
+        const keywords = ['Restaurant', 'Cafe', 'Dining', 'Food', 'Bakery', 'Bar', 'Grill', 'Bistro', 'Kitchen', 'Hotel', 'Resort', 'Sweets', 'Snacks', 'Pizzeria', 'Steakhouse', 'Caterer', 'Diner', 'Canteen', 'Dhabba'];
+        const lower = cat.toLowerCase();
+        return keywords.some(k => lower.includes(k.toLowerCase()));
+    };
 
     // Form fields
     const [form, setForm] = useState({
@@ -161,6 +172,17 @@ export default function ProfilePage() {
     const estabRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
+        fetch(`${API_URL}/google-categories`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    setCategories(data.data.map((c: any) => c.name));
+                }
+            })
+            .catch(err => console.error("Error fetching categories:", err));
+    }, []);
+
+    useEffect(() => {
         const token = localStorage.getItem('businessToken');
         if (!token) { router.push('/community/login'); return; }
         fetch(`${API_URL}/business/me`, {
@@ -253,7 +275,40 @@ export default function ProfilePage() {
             })
             .catch(() => router.push('/community/login'))
             .finally(() => setLoading(false));
+
+        const handleClickOutside = (e: MouseEvent) => {
+            if (catRef.current && !catRef.current.contains(e.target as Node)) {
+                setIsCatOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    // NEW: Server-side search for categories (Merged Main + Google)
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            const query = `search=${searchTerm}&limit=5000&sort=name`;
+            
+            Promise.all([
+                fetch(`${API_URL}/main-categories?${query}`).then(r => r.json()),
+                fetch(`${API_URL}/google-categories?${query}`).then(r => r.json())
+            ])
+            .then(([resMain, resGoogle]) => {
+                let combined: string[] = [];
+                if (resMain.success) combined.push(...resMain.data.map((c: any) => c.name));
+                if (resGoogle.success) combined.push(...resGoogle.data.map((c: any) => c.name));
+                
+                // Remove duplicates and sort
+                const unique = Array.from(new Set(combined)).sort();
+                setCategories(unique);
+            })
+            .catch(err => console.error("Error searching categories:", err));
+        }, 300); // 300ms debounce
+        return () => clearTimeout(timeoutId);
+    }, [searchTerm]);
+
+    const filteredCategories = categories; // Now filtered by server
 
     const handleFileChange = (file: File | null, setter: any, previewSetter?: any) => {
         setter(file);
@@ -503,19 +558,94 @@ export default function ProfilePage() {
                                                     <label className="block text-sm font-medium text-muted-foreground mb-1.5">Brand Name</label>
                                                     <Input value={form.brandName} onChange={e => setForm({ ...form, brandName: e.target.value })} className={inputClass} />
                                                 </div>
-                                                <div>
+                                                <div className="relative" ref={catRef}>
                                                     <label className="block text-sm font-medium text-muted-foreground mb-1.5">Category *</label>
-                                                    <select value={form.businessCategory} onChange={e => setForm({ ...form, businessCategory: e.target.value })}
-                                                        className={`w-full rounded-lg border px-3 py-2 text-sm transition-colors ${inputClass}`} required>
-                                                        <option value="" className={isLight ? '' : 'bg-[#020631] text-white'}>Select category</option>
-                                                        {CATEGORIES.map(c => <option key={c} value={c} className={isLight ? '' : 'bg-[#020631] text-white'}>{c}</option>)}
-                                                    </select>
+                                                    <div 
+                                                        onClick={() => setIsCatOpen(!isCatOpen)}
+                                                        className={`w-full rounded-lg border px-3 py-2 text-sm transition-colors cursor-pointer flex items-center justify-between ${inputClass}`}
+                                                    >
+                                                        <span className={form.businessCategory ? 'text-foreground' : 'text-muted-foreground'}>
+                                                            {form.businessCategory || 'Select category'}
+                                                        </span>
+                                                        <ChevronDown size={14} className={`transition-transform ${isCatOpen ? 'rotate-180' : ''}`} />
+                                                    </div>
+
+                                                    {isCatOpen && (
+                                                        <div className={`absolute z-[100] mt-2 w-full rounded-xl border shadow-2xl backdrop-blur-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 ${isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-white/10'}`}>
+                                                            <div className="p-2 border-b border-white/5">
+                                                                <div className="relative">
+                                                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
+                                                                    <input 
+                                                                        type="text"
+                                                                        autoFocus
+                                                                        placeholder="Search categories..."
+                                                                        value={searchTerm}
+                                                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                                                        className={`w-full bg-white/5 border-none rounded-lg py-2 pl-9 pr-4 text-xs focus:ring-1 focus:ring-primary outline-none ${isLight ? 'text-slate-900' : 'text-white'}`}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                            <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                                                                {filteredCategories.length > 0 ? (
+                                                                    filteredCategories.map(c => (
+                                                                        <div 
+                                                                            key={c}
+                                                                            onClick={() => {
+                                                                                setForm({ ...form, businessCategory: c });
+                                                                                setIsCatOpen(false);
+                                                                                setSearchTerm("");
+                                                                            }}
+                                                                            className={`px-4 py-2.5 text-sm cursor-pointer transition-colors flex items-center justify-between group ${
+                                                                                form.businessCategory === c 
+                                                                                    ? 'bg-primary text-white' 
+                                                                                    : 'hover:bg-primary/10'
+                                                                            }`}
+                                                                        >
+                                                                            {c}
+                                                                            {form.businessCategory === c && <CheckCircle2 size={14} />}
+                                                                        </div>
+                                                                    ))
+                                                                ) : (
+                                                                    <div className="px-4 py-8 text-center text-xs text-muted-foreground">
+                                                                        No categories found
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <div>
                                                     <label className="block text-sm font-medium text-muted-foreground mb-1.5">Website</label>
                                                     <Input value={form.website} onChange={e => setForm({ ...form, website: e.target.value })} className={inputClass} placeholder="example.com" />
                                                 </div>
                                             </div>
+
+                                            {/* Restaurant SSO Link */}
+                                            {isFoodRelatedLocal(form.businessCategory) && (
+                                                <motion.div 
+                                                    initial={{ opacity: 0, height: 0 }}
+                                                    animate={{ opacity: 1, height: 'auto' }}
+                                                    className="p-4 rounded-xl bg-primary/10 border border-primary/20 flex flex-col md:flex-row items-center justify-between gap-4 mt-2"
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                                                            <Utensils size={20} />
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="text-sm font-bold text-foreground">Restaurant Dashboard Ready</h4>
+                                                            <p className="text-xs text-muted-foreground line-clamp-1">Manage your menu, bookings, and dine-in settings instantly.</p>
+                                                        </div>
+                                                    </div>
+                                                    <a 
+                                                        href={`${process.env.NEXT_PUBLIC_FOOD_DASHBOARD_URL}/?sso_token=${typeof window !== 'undefined' ? localStorage.getItem('businessToken') : ''}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex items-center gap-2 px-4 py-2 bg-primary text-white text-xs font-bold rounded-lg shadow-lg hover:scale-105 transition-transform"
+                                                    >
+                                                        Go to Food Dashboard <ExternalLink size={14} />
+                                                    </a>
+                                                </motion.div>
+                                            )}
                                             <div>
                                                 <label className="block text-sm font-medium text-muted-foreground mb-1.5">Description</label>
                                                 <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={4}

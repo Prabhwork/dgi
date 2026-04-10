@@ -52,7 +52,7 @@ export default function BusinessGrowthFunnel() {
     const [submitting, setSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
 
-    const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
+    const API = process.env.NEXT_PUBLIC_API_URL;
 
     useEffect(() => {
         const fetchSteps = async () => {

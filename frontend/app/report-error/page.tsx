@@ -47,7 +47,7 @@ export default function ReportErrorPage() {
                                     <input 
                                         type="text" 
                                         required
-                                        placeholder="e.g. techentia or URL of the page" 
+                                        placeholder="e.g. Business Name or URL of the page" 
                                         className={`w-full rounded-lg border px-4 py-2 text-sm outline-none transition-colors ${
                                             isLight ? 'bg-white border-slate-300 focus:border-primary text-slate-900' : 'bg-white/5 border-white/10 focus:border-primary/50 text-white'
                                         }`} 

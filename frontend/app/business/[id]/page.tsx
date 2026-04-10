@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { useTheme } from "@/components/ThemeProvider";
 import ParticleNetwork from "@/components/ParticleNetwork";
+import RestaurantMenu from "@/components/RestaurantMenu";
+import { useCart } from "@/context/CartContext";
 
 function format12Hour(time24: string) {
     if (!time24) return "";
@@ -32,6 +34,7 @@ function BusinessDetail() {
     const params = useParams();
     const router = useRouter();
     const { theme } = useTheme();
+    const { cart } = useCart();
     const id = params.id as string;
 
     const [business, setBusiness] = useState<any>(null);
@@ -481,134 +484,13 @@ function BusinessDetail() {
 
                     {/* Services & Products - Full Width Below Info */}
                     <div className="mt-10 space-y-10">
-                        {/* Services */}
-                        {business.services && business.services.length > 0 && (
-                            <motion.div
-                                initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-                                className={`rounded-3xl p-6 backdrop-blur-3xl border border-solid shadow-xl relative overflow-hidden ${isLight ? 'bg-white/95 border-slate-200' : 'bg-slate-900/90 border-white/10'
-                                    }`}
-                            >
-                                <div className={`absolute -top-16 -right-16 w-40 h-40 rounded-full blur-[80px] opacity-20 pointer-events-none ${isLight ? 'bg-primary/30' : 'bg-primary/20'}`} />
 
-                                <div className="flex items-center justify-between gap-4 mb-6">
-                                    <h3 className={`text-xl font-black flex items-center gap-3 font-display tracking-tight ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                                        <div className="p-2.5 rounded-2xl bg-primary/10 text-primary">
-                                            <Briefcase size={20} />
-                                        </div>
-                                        Professional Services
-                                    </h3>
-
-                                </div>
-
-                                <div className="grid gap-4 lg:grid-cols-3">
-                                    {business.services.map((svc: any, i: number) => (
-                                        <div key={i} className={`flex flex-col rounded-2xl border transition-all duration-300 hover:-translate-y-1 hover:shadow-xl group/card overflow-hidden ${isLight
-                                                ? 'bg-white border-slate-100 hover:border-primary/40 shadow-sm'
-                                                : 'bg-slate-800/40 border-white/5 hover:border-primary/30'
-                                            }`}>
-                                            <div className="w-full h-40 overflow-hidden relative">
-                                                <img
-                                                    src={svc.image ? (svc.image.startsWith('http') ? svc.image : `${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}/${svc.image}`) : `https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800`}
-                                                    alt={svc.name}
-                                                    className="w-full h-full object-cover transition-transform duration-700 group-hover/card:scale-105"
-                                                />
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                                            </div>
-
-                                            <div className="flex flex-col flex-1 p-4">
-                                                <h4 className={`font-black text-base font-display leading-tight mb-1.5 group-hover/card:text-primary transition-colors ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                                                    {svc.name}
-                                                </h4>
-
-                                                <p className={`text-xs leading-relaxed mb-4 ${isLight ? 'text-slate-500' : 'text-slate-400/90'}`}>
-                                                    {svc.description}
-                                                </p>
-
-                                                <div className="mt-auto pt-3 border-t border-dashed border-slate-200 dark:border-white/10 flex items-center justify-between gap-3">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-[9px] uppercase tracking-widest font-black opacity-50">Starting From</span>
-                                                        <span className={`text-base font-black ${isLight ? 'text-slate-900' : 'text-white'}`}>₹{svc.price}</span>
-                                                    </div>
-
-                                                    <button
-                                                        onClick={() => window.open(`https://wa.me/${business.whatsapp || ''}?text=I'm interested in ${svc.name}`, '_blank')}
-                                                        className={`flex items-center gap-1.5 px-4 py-2 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 ${isLight
-                                                                ? 'bg-primary text-white hover:bg-primary/90'
-                                                                : 'bg-primary text-black hover:bg-primary/90'
-                                                            }`}
-                                                    >
-                                                        <MessageCircle size={13} />
-                                                        Enquire Now
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </motion.div>
-                        )}
-
-                        {/* Products */}
-                        {business.products && business.products.length > 0 && (
-                            <motion.div
-                                initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-                                className={`rounded-3xl p-6 backdrop-blur-3xl border border-solid shadow-xl relative overflow-hidden ${isLight ? 'bg-white/95 border-slate-200' : 'bg-slate-900/90 border-white/10'
-                                    }`}
-                            >
-                                <div className={`absolute -top-16 -right-16 w-40 h-40 rounded-full blur-[80px] opacity-20 pointer-events-none ${isLight ? 'bg-amber-500/30' : 'bg-amber-500/20'}`} />
-
-                                <div className="flex items-center justify-between gap-4 mb-6">
-                                    <h3 className={`text-xl font-black flex items-center gap-3 font-display tracking-tight ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                                        <div className="p-2.5 rounded-2xl bg-amber-500/10 text-amber-500">
-                                            <Package size={20} />
-                                        </div>
-                                        Available Products
-                                    </h3>
-                                </div>
-
-                                <div className="grid gap-4 lg:grid-cols-3">
-                                    {business.products.map((prod: any, i: number) => (
-                                        <div key={i} className={`flex flex-col rounded-2xl border transition-all duration-300 hover:-translate-y-1 hover:shadow-xl group/card overflow-hidden ${isLight
-                                                ? 'bg-white border-slate-100 hover:border-amber-500/40 shadow-sm'
-                                                : 'bg-slate-800/40 border-white/5 hover:border-amber-500/30'
-                                            }`}>
-                                            <div className="w-full h-40 overflow-hidden relative">
-                                                <img
-                                                    src={prod.image ? (prod.image.startsWith('http') ? prod.image : `${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}/${prod.image}`) : `https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&q=80&w=800`}
-                                                    alt={prod.name}
-                                                    className="w-full h-full object-cover transition-transform duration-700 group-hover/card:scale-105"
-                                                />
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                                            </div>
-
-                                            <div className="flex flex-col flex-1 p-4">
-                                                <h4 className={`font-black text-base font-display leading-tight mb-1.5 group-hover/card:text-amber-500 transition-colors ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                                                    {prod.name}
-                                                </h4>
-                                                <p className={`text-xs leading-relaxed mb-4 ${isLight ? 'text-slate-500' : 'text-slate-400/90'}`}>
-                                                    {prod.description}
-                                                </p>
-
-                                                <div className="mt-auto pt-3 border-t border-dashed border-slate-200 dark:border-white/10 flex items-center justify-between gap-3">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-[9px] uppercase tracking-widest font-black opacity-50">Price</span>
-                                                        <span className={`text-base font-black ${isLight ? 'text-slate-900' : 'text-white'}`}>₹{prod.price}</span>
-                                                    </div>
-
-                                                    <button
-                                                        onClick={() => window.open(`https://wa.me/${business.whatsapp || ''}?text=I'm interested in buying ${prod.name}`, '_blank')}
-                                                        className="flex items-center gap-1.5 px-4 py-2 rounded-lg font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 bg-amber-500 text-white hover:bg-amber-600"
-                                                    >
-                                                        <ShoppingBag size={13} />
-                                                        cart
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </motion.div>
-                        )}
+                        {/* Dynamic Restaurant Menu Integration */}
+                        <RestaurantMenu 
+                            partnerId={id} 
+                            businessName={business.brandName || business.businessName}
+                            isLight={isLight}
+                        />
                     </div>
                 </main>
 

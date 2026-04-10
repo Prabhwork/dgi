@@ -26,7 +26,7 @@ export default function MainCategories() {
 
     useEffect(() => {
         const fetchMainCategories = async () => {
-            const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+            const API = process.env.NEXT_PUBLIC_API_URL;
             try {
                 const res = await fetch(`${API}/main-categories`);
                 const data = await res.json();
@@ -41,8 +41,7 @@ export default function MainCategories() {
         fetchMainCategories();
     }, []);
 
-    const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000';
-
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ;
     return (
         <section className="py-24 relative overflow-hidden z-10 bg-[#020631]" id="main-categories">
             <div className="container mx-auto px-4">

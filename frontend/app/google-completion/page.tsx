@@ -58,7 +58,8 @@ function GoogleCompletionContent() {
                 setSuccess(true);
                 localStorage.setItem("userToken", data.token);
                 setTimeout(() => {
-                    router.push("/");
+                    const redirectUrl = searchParams.get("redirect") || "/";
+                    router.push(redirectUrl);
                 }, 2000);
             } else {
                 setError(data.error || "Failed to complete profile.");

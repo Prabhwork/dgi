@@ -168,6 +168,8 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
     const markersRef = useRef<mapboxgl.Marker[]>([]);
     const animationFrameRef = useRef<number | null>(null);
     const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+    const [isMounted, setIsMounted] = useState(false);
+    useEffect(() => { setIsMounted(true); }, []);
     const [mapInitialCenter, setMapInitialCenter] = useState<{ lat: number; lng: number } | null>(null);
     const [businesses, setBusinesses] = useState<Business[]>([]);
     const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
@@ -1325,11 +1327,13 @@ export default function NearbyMap({ onClose }: { onClose: () => void }) {
                                         <div className="flex flex-col">
                                             <span className="text-white/30 text-[7px] font-black uppercase tracking-widest leading-none mb-1 text-primary/60">Arrival</span>
                                             <span className="text-primary text-base font-black leading-none whitespace-nowrap">
-                                                {(() => {
+                                                {isMounted && routeInfo && (() => {
                                                     const d = new Date();
                                                     d.setMinutes(d.getMinutes() + routeInfo.duration);
                                                     const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-                                                    const [time, period] = timeStr.split(' ');
+                                                    const parts = timeStr.split(' ');
+                                                    const time = parts[0];
+                                                    const period = parts[1] || '';
                                                     return (
                                                         <>
                                                             {time} <span className="text-[9px] opacity-70 ml-0.5">{period}</span>

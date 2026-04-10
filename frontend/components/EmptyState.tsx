@@ -17,7 +17,7 @@ export default function EmptyState({ categoryName }: { categoryName?: string }) 
     useEffect(() => {
         const fetchSettingsAndMainCategories = async () => {
             try {
-                const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
+                const API = process.env.NEXT_PUBLIC_API_URL;
                 
                 // Fetch settings
                 const resSettings = await fetch(`${API}/global-settings`);

@@ -12,7 +12,7 @@ interface Customer {
 }
 
 const BASE_URL = (
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api"
+  process.env.NEXT_PUBLIC_API_URL || ""
 ).replace("/api", "");
 
 function LogoCard({ customer, idx }: { customer: Customer; idx: number }) {

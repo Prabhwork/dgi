@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Poppins, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import AppShell from "@/components/AppShell";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const poppins = Poppins({
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
+  variable: "--font-poppins",
   subsets: ["latin"],
 });
 
@@ -18,6 +19,8 @@ export const metadata: Metadata = {
   description: "Modern Food Business Dashboard for managing orders, menu, and payments.",
 };
 
+import { Suspense } from "react";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -27,10 +30,12 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${poppins.variable} ${geistMono.variable} h-full antialiased font-sans`}
     >
-      <body className="min-h-full flex flex-col">
-          <AppShell>{children}</AppShell>
+      <body className="min-h-full flex flex-col font-sans" style={{ fontFamily: 'var(--font-poppins), sans-serif' }}>
+          <Suspense fallback={<div className="h-screen w-screen flex items-center justify-center bg-slate-50">Loding...</div>}>
+            <AppShell>{children}</AppShell>
+          </Suspense>
       </body>
     </html>
   );

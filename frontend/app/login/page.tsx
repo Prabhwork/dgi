@@ -90,7 +90,8 @@ function LoginContent() {
                 } else {
                     localStorage.setItem("businessToken", data.token);
                 }
-                router.push("/");
+                const redirectUrl = searchParams.get("redirect") || "/";
+                router.push(redirectUrl);
             } else {
                 setError(data.error || "Login failed. Please check your credentials.");
             }
@@ -125,7 +126,8 @@ function LoginContent() {
                 } else {
                     localStorage.setItem("businessToken", data.token);
                 }
-                router.push("/");
+                const redirectUrl = searchParams.get("redirect") || "/";
+                router.push(redirectUrl);
             } else {
                 setError(data.error || "Invalid verification code.");
             }
@@ -151,11 +153,14 @@ function LoginContent() {
 
                 if (data.success) {
                     if (data.isNewUser) {
-                        router.push(`/google-completion?email=${data.email}&name=${data.name}`);
+                        const redirectParam = searchParams.get("redirect");
+                        const redirectQuery = redirectParam ? `&redirect=${encodeURIComponent(redirectParam)}` : "";
+                        router.push(`/google-completion?email=${data.email}&name=${data.name}${redirectQuery}`);
                         return;
                     }
                     localStorage.setItem("userToken", data.token);
-                    router.push("/");
+                    const redirectUrl = searchParams.get("redirect") || "/";
+                    router.push(redirectUrl);
                 } else {
                     setError(data.error || "Google login failed.");
                 }

@@ -27,7 +27,7 @@ export default function TwoFactorAuthPage() {
             return;
         }
 
-        const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        const API = process.env.NEXT_PUBLIC_API_URL;
         fetch(`${API}/business/me`, {
             headers: { Authorization: `Bearer ${token}` }
         })
@@ -47,7 +47,7 @@ export default function TwoFactorAuthPage() {
         setActionLoading(true);
         setError('');
         const token = localStorage.getItem("businessToken");
-        const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        const API = process.env.NEXT_PUBLIC_API_URL;
         
         try {
             const res = await fetch(`${API}/business/2fa/generate`, {
@@ -78,7 +78,7 @@ export default function TwoFactorAuthPage() {
         setActionLoading(true);
         setError('');
         const token = localStorage.getItem("businessToken");
-        const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        const API = process.env.NEXT_PUBLIC_API_URL;
         
         try {
             const res = await fetch(`${API}/business/2fa/verify-enable`, {
@@ -112,7 +112,7 @@ export default function TwoFactorAuthPage() {
         setActionLoading(true);
         setError('');
         const token = localStorage.getItem("businessToken");
-        const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        const API = process.env.NEXT_PUBLIC_API_URL;
         
         try {
             const res = await fetch(`${API}/business/2fa/disable`, {

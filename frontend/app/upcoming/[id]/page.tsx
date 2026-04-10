@@ -33,7 +33,7 @@ export default function UpcomingDetailPage() {
 
     useEffect(() => {
         const fetchDetail = async () => {
-            const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
+            const API = process.env.NEXT_PUBLIC_API_URL;
             try {
                 const res = await fetch(`${API}/upcoming-categories/${id}`);
                 const data = await res.json();
@@ -73,7 +73,7 @@ export default function UpcomingDetailPage() {
         );
     }
 
-    const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5001';
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '');
     const hasImage = detail.image && detail.image !== 'no-photo.jpg';
     const imageUrl = hasImage ? `${API_BASE}/uploads/${detail.image}` : null;
 

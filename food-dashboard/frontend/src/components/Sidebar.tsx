@@ -16,18 +16,30 @@ import {
   MessageSquare,
   Ticket,
   Users,
-  HelpCircle
+  HelpCircle,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { api } from '@/lib/api';
 
-const menuItems = [
+import { LucideIcon } from 'lucide-react';
+
+interface MenuItem {
+  name: string;
+  icon: LucideIcon;
+  path: string;
+  external?: boolean;
+}
+
+const menuItems: MenuItem[] = [
   { name: 'Dashboard', icon: LayoutDashboard, path: '/' },
   { name: 'Menu', icon: UtensilsCrossed, path: '/menu' },
   { name: 'Orders', icon: ShoppingBag, path: '/orders' },
   { name: 'Payments', icon: CreditCard, path: '/payments' },
   { name: 'Wallet', icon: IndianRupee, path: '/wallet' },
   { name: 'Analytics', icon: BarChart3, path: '/analytics' },
+  { name: 'Dineout', icon: Users, path: '/dineout' },
   { name: 'Reviews', icon: MessageSquare, path: '/reviews' },
+  { name: 'Team', icon: Users, path: '/team' },
   { name: 'Promotions', icon: Ticket, path: '/promotions' },
   { name: 'Support', icon: HelpCircle, path: '/support' },
   { name: 'Settings', icon: Settings, path: '/settings' },
@@ -35,6 +47,19 @@ const menuItems = [
 
 export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsOpen: (val: boolean) => void }) {
   const pathname = usePathname();
+  const [businessName, setBusinessName] = React.useState('Restaurant Partner');
+
+  React.useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const settings = await api.get('/settings');
+        setBusinessName(settings.businessName || 'Restaurant Partner');
+      } catch (err) {
+        console.error('Failed to fetch sidebar profile');
+      }
+    };
+    fetchProfile();
+  }, []);
 
   return (
     <>
@@ -66,12 +91,13 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
 
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-2 overflow-y-auto mt-4">
-            {menuItems.map((item) => {
+            {menuItems.map((item: MenuItem) => {
               const isActive = pathname === item.path;
               return (
                 <Link 
                   key={item.name}
                   href={item.path}
+                  target={item.external ? "_blank" : undefined}
                   onClick={() => setIsOpen(false)}
                   className={`flex items-center justify-between px-4 py-3.5 rounded-xl transition-all group ${isActive ? 'bg-primary/5 text-primary' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'}`}
                 >
@@ -89,8 +115,8 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean, setIsO
           {/* Business Context */}
           <div className="p-6 border-t border-slate-100 bg-slate-50/50">
             <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Digital Book of India</div>
-              <div className="text-xs font-bold text-slate-600 truncate">Suman Lata Bhadola Marg Restaurant</div>
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Partner Business</div>
+              <div className="text-xs font-bold text-slate-600 truncate">{businessName}</div>
             </div>
           </div>
         </div>

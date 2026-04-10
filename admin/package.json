@@ -11,6 +11,9 @@
   "dependencies": {
     "@ckeditor/ckeditor5-build-classic": "^41.4.2",
     "@ckeditor/ckeditor5-react": "^11.0.1",
+    "axios": "^1.15.0",
+    "firebase": "^12.11.0",
+    "framer-motion": "^12.38.0",
     "lucide-react": "^0.577.0",
     "next": "14.2.14",
     "react": "^18",

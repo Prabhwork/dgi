@@ -9,6 +9,8 @@ const { getOTPTemplate, getUserNotificationTemplate, getResetOTPTemplate } = req
 const speakeasy = require('speakeasy');
 const qrcode = require('qrcode');
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const fcmService = require('../services/fcmService');
+const FcmToken = require('../models/FcmToken');
 
 // Helper to check if email exists in any model
 const checkEmailExists = async (email) => {
@@ -58,6 +60,19 @@ exports.registerUser = async (req, res, next) => {
         }
 
         sendTokenResponse(user, 201, res);
+
+        // Trigger FCM Notification for New Registration (to Main Admin)
+        try {
+            await fcmService.sendToTopic('dbi-admin-alerts', {
+                title: '👤 New User Joined!',
+                body: `${user.name} just signed up on DBI Community.`,
+                adminId: 'MASTER_ADMIN_ID_PLACEHOLDER', // Persist for admins
+                type: 'User',
+                data: { userId: user._id.toString(), type: 'NEW_USER' }
+            });
+        } catch (fcmErr) {
+            console.error("FCM New User Error:", fcmErr);
+        }
     } catch (err) {
         res.status(400).json({ success: false, error: err.message });
     }
@@ -107,6 +122,23 @@ exports.loginUser = async (req, res, next) => {
         }
 
         sendTokenResponse(user, 200, res);
+
+        // Trigger FCM Notification for Login (to User's other devices)
+        try {
+            const userTokens = await FcmToken.find({ userId: user._id });
+            if (userTokens.length > 0) {
+                const tokens = userTokens.map(t => t.token);
+                await fcmService.sendMulticast(tokens, {
+                    title: '🔐 New Login Detected',
+                    body: `Your account was logged into at ${new Date().toLocaleTimeString()}.`,
+                    userId: user._id, // For persistence
+                    type: 'Security',
+                    data: { type: 'LOGIN_ALERT' }
+                });
+            }
+        } catch (fcmErr) {
+            console.error("FCM Login Alert Error:", fcmErr);
+        }
 
         // Send Login Notification
         try {

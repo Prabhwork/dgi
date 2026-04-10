@@ -15,7 +15,7 @@ export default function BrowseByNeed() {
 
     useEffect(() => {
         const fetchCategories = async () => {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
             const BASE_URL = API_URL.replace('/api', '');
             try {
                 const res = await fetch(`${API_URL}/main-categories?sort=createdAt&limit=100`);

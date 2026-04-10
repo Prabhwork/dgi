@@ -51,7 +51,7 @@ export default function Footer() {
     const [solutions, setSolutions] = useState<string[]>([]);
 
     useEffect(() => {
-        const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+        const API = process.env.NEXT_PUBLIC_API_URL;
         fetch(`${API}/solutions`)
             .then(r => r.json())
             .then(res => {

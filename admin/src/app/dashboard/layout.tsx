@@ -1,9 +1,10 @@
 "use client";
 
 import Sidebar from '@/components/Sidebar';
+import Header from '@/components/Header';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Menu } from 'lucide-react';
+// import { Menu } from 'lucide-react';
 
 export default function DashboardLayout({
     children,
@@ -45,19 +46,7 @@ export default function DashboardLayout({
             <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
 
             <main className="flex-1 flex flex-col xl:ml-64 min-h-screen w-full transition-all duration-300">
-                {/* Mobile Header */}
-                <header className="xl:hidden flex items-center justify-between px-4 h-16 bg-white border-b border-slate-200 sticky top-0 z-10 w-full">
-                    <div className="flex items-center gap-2 font-bold text-lg text-slate-800">
-                        <span className="w-8 h-8 rounded bg-teal-500 flex items-center justify-center text-sm text-white shadow-sm">DBI</span>
-                        Admin
-                    </div>
-                    <button
-                        onClick={() => setIsSidebarOpen(true)}
-                        className="p-2 text-slate-600 hover:bg-slate-100 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-inset"
-                    >
-                        <Menu size={24} />
-                    </button>
-                </header>
+                <Header setIsSidebarOpen={setIsSidebarOpen} />
 
                 <div className="p-4 md:p-8 flex-1 overflow-x-hidden w-full max-w-[100vw]">
                     <div className="w-full max-w-7xl mx-auto space-y-8">

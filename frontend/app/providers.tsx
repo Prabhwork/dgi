@@ -8,20 +8,24 @@ import { useState } from "react";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import GoogleAuthProviderWrapper from "@/components/GoogleAuthProvider";
 
+import { CartProvider } from "@/context/CartContext";
+
 export default function Providers({ children }: { children: React.ReactNode }) {
     const [queryClient] = useState(() => new QueryClient());
 
     return (
         <ThemeProvider>
-            <QueryClientProvider client={queryClient}>
-                <GoogleAuthProviderWrapper>
-                    <TooltipProvider>
-                        <Toaster />
-                        <Sonner />
-                        {children}
-                    </TooltipProvider>
-                </GoogleAuthProviderWrapper>
-            </QueryClientProvider>
+            <CartProvider>
+                <QueryClientProvider client={queryClient}>
+                    <GoogleAuthProviderWrapper>
+                        <TooltipProvider>
+                            <Toaster />
+                            <Sonner />
+                            {children}
+                        </TooltipProvider>
+                    </GoogleAuthProviderWrapper>
+                </QueryClientProvider>
+            </CartProvider>
         </ThemeProvider>
     );
 }

@@ -13,14 +13,24 @@ const app = express();
 
 
 const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:3001',
+  process.env.NEXT_PUBLIC_FRONTEND_URL,
+  process.env.NEXT_PUBLIC_COMMUNITY_URL,
   'https://www.digitalbookofindia.com',
   'https://digitalbookofindia.com',
+  'https://food.digitalbookofindia.com',
+  'https://www.food.digitalbookofindia.com',
+  'https://foodadmin.digitalbookofindia.com',
+  'https://www.foodadmin.digitalbookofindia.com',
+  'https://admin.digitalbookofindia.com',
+  'https://www.admin.digitalbookofindia.com',
   'https://dgi-bpu3.onrender.com',
   'https://dgi-sss1.vercel.app',
   'https://dgi-r3dl.vercel.app',
-  "https://coleen-unvirulent-rafael.ngrok-free.dev"
+  "https://coleen-unvirulent-rafael.ngrok-free.dev",
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://localhost:3002",
+  "http://localhost:3003"
 ];
 
 app.use(cors({
@@ -56,6 +66,7 @@ const mainSubcategories = require('./routes/mainSubcategoryRoutes');
 const googleCategories = require('./routes/googleCategoryRoutes');
 const globalSettings = require('./routes/globalSettingsRoutes');
 const funnel = require('./routes/funnelRoutes');
+const suggestions = require('./routes/suggestionRoutes');
 const { startLiveListingWorker } = require('./utils/liveListingWorker');
 
 
@@ -83,6 +94,8 @@ app.use('/api/existing-customers', existingCustomers);
 app.use('/api/google-categories', googleCategories);
 app.use('/api/global-settings', globalSettings);
 app.use('/api/funnel', funnel);
+app.use('/api/suggestions', suggestions);
+app.use('/api/notifications', require('./routes/notificationRoutes'));
 
 app.get('/', (req, res) => {
   res.send('Digital Book of India Admin API');

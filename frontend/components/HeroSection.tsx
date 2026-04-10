@@ -52,7 +52,7 @@ export default function HeroSection() {
     useEffect(() => {
         const fetchLiveListing = async () => {
             try {
-                const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+                const API_URL = process.env.NEXT_PUBLIC_API_URL;
                 const res = await fetch(`${API_URL}/global-settings/live-listing`);
                 const data = await res.json();
                 if (data.success) {
@@ -83,7 +83,7 @@ export default function HeroSection() {
 
     useEffect(() => {
         const fetchCategories = async () => {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
             const BASE_URL = API_URL.replace('/api', '');
             try {
                 const res = await fetch(`${API_URL}/main-categories?sort=createdAt&limit=100`);
@@ -193,7 +193,7 @@ export default function HeroSection() {
 
             setIsSearchingSuggestions(true);
             try {
-                const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+                const API_URL = process.env.NEXT_PUBLIC_API_URL;
                 const res = await fetch(`${API_URL}/suggestions?q=${encodeURIComponent(searchInput)}`);
                 const data = await res.json();
                 if (data.success) {
@@ -494,6 +494,7 @@ export default function HeroSection() {
                                 {/* Voice Search Button */}
                                 <button
                                     onClick={toggleVoiceInput}
+                                    suppressHydrationWarning
                                     className={`absolute right-8 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-all ${isListening ? 'animate-pulse text-red-500 bg-red-500/10 scale-110' : 'text-muted-foreground hover:text-primary hover:bg-primary/10'
                                         }`}
                                     title="Voice Search"

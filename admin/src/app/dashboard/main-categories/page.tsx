@@ -30,7 +30,7 @@ export default function MainCategoriesPage() {
     const [createPreview, setCreatePreview] = useState<string | null>(null);
     const [editPreview, setEditPreview] = useState<string | null>(null);
 
-    const ASSET_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000';
+    const ASSET_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '');
 
     const fetchMainCategories = useCallback(async () => {
         try {
