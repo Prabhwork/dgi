@@ -105,14 +105,17 @@ exports.getSettings = async (req, res) => {
 
     // Check if there is an active FSSAI submission pending review
     const FSSAISubmission = require('../models/FSSAISubmission');
-    const pendingFssai = await FSSAISubmission.findOne({ 
-       partnerId, 
-       status: 'Pending' 
-    });
+    const fssaiEntry = await FSSAISubmission.findOne({ partnerId });
+    
+    // Self-Healing: If approved but missing in settings, update it now
+    if (!settings.fssai && fssaiEntry?.status === 'Approved' && fssaiEntry.fssaiNumber) {
+        settings.fssai = fssaiEntry.fssaiNumber;
+        await settings.save();
+    }
 
     // Convert Mongoose document to plain object to inject custom property
     const responseData = settings.toObject ? settings.toObject() : settings;
-    responseData.fssaiSubmissionPending = !!pendingFssai;
+    responseData.fssaiSubmissionPending = fssaiEntry?.status === 'Pending';
 
     res.json(responseData);
   } catch (err) {
