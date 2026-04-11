@@ -280,14 +280,12 @@ exports.sendOTP = async (req, res, next) => {
         const message = `Your DBI Community verification code is: ${otp}. It will expire in 10 minutes.`;
         const html = getOTPTemplate(otp);
 
-        // Send email in background - Don't await it to ensure instant API response
-        sendEmail({
+        // Send email
+        await sendEmail({
             email,
             subject: 'Email Verification Code - DBI Community',
-            message,
+            message: message,
             html
-        }).catch(err => {
-            console.error('Background Email Dispatch Failed:', err);
         });
 
         // Respond instantly
