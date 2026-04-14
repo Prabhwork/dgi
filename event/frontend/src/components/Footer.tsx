@@ -5,7 +5,7 @@ import Link from "next/link";
 
 export default function Footer() {
   return (
-    <footer className="py-12 md:py-24 bg-[#020617] text-white border-t border-white/5 relative overflow-hidden">
+    <footer className="pt-12 md:pt-24 pb-8 md:pb-12 bg-[#020617] text-white border-t border-white/5 relative overflow-hidden">
       {/* Decorative Dots Grid - Same as About Us sections */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
            style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
