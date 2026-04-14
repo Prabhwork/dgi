@@ -135,7 +135,7 @@ export default function EventLandingPage() {
             </div>
 
             {/* Hero Section */}
-            <section className="relative min-h-screen flex flex-col items-center justify-center pt-20 pb-32 overflow-hidden">
+            <section className="relative min-h-screen flex flex-col items-center justify-center pt-28 pb-16 md:pt-20 md:pb-32 overflow-hidden">
                 {/* 3D Canvas Container */}
                 <div className="absolute inset-0 z-0 scale-125 md:scale-100">
                     <Canvas camera={{ position: [0, 0, 60], fov: 45 }}>
@@ -208,7 +208,7 @@ export default function EventLandingPage() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.5, duration: 1 }}
-                        className="text-slate-400 font-medium text-lg md:text-xl max-w-2xl text-center mb-12 italic"
+                        className="text-slate-400 font-medium text-lg md:text-xl max-w-2xl text-center mb-8 md:mb-12 italic"
                     >
                         The ultimate destination for India's high-potential enterprises to meet strategic capital.
                     </motion.p>
@@ -232,10 +232,10 @@ export default function EventLandingPage() {
                     <motion.div 
                         initial={{ opacity: 0 }}
                         whileInView={{ opacity: 1 }}
-                        className="mt-24 pt-12 border-t border-slate-100 w-full flex flex-col items-center"
+                        className="mt-12 md:mt-24 pt-8 md:pt-12 border-t border-slate-100 w-full flex flex-col items-center"
                     >
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.5em] mb-10">Supported by Verified Ecosystems</p>
-                        <div className="flex flex-wrap justify-center items-center gap-12 md:gap-20 opacity-30 grayscale hover:grayscale-0 transition-all duration-700">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.5em] mb-6 md:mb-10">Supported by Verified Ecosystems</p>
+                        <div className="flex flex-wrap justify-center items-center gap-8 md:gap-20 opacity-30 grayscale hover:grayscale-0 transition-all duration-700">
                              {/* Placeholder generic partner look */}
                              <div className="flex items-center gap-2 font-black text-2xl italic tracking-tighter">
                                 <ShieldCheck size={32} /> VERIFY-ID
@@ -258,27 +258,27 @@ export default function EventLandingPage() {
             {/* Keeping the content but refining it for higher density */}
 
             {/* Stats Overview */}
-            <section className="py-20 px-4 relative z-10">
-                <div className="max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-8">
-                    <div className="text-center p-10 rounded-[3rem] bg-white border border-slate-100 shadow-sm transition-all hover:shadow-xl hover:-translate-y-2 group">
+            <section className="py-10 md:py-20 px-4 relative z-10">
+                <div className="max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
+                    <div className="text-center p-6 md:p-10 rounded-[2.5rem] md:rounded-[3rem] bg-white border border-slate-100 shadow-sm transition-all hover:shadow-xl hover:-translate-y-2 group">
                         <h3 className="text-4xl font-black text-slate-900 mb-2 italic tracking-tighter group-hover:text-sky-600 transition-colors">
                             <CountUp end={500} prefix="₹" suffix="Cr+" />
                         </h3>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Valuation</p>
                     </div>
-                    <div className="text-center p-10 rounded-[3rem] bg-white border border-slate-100 shadow-sm transition-all hover:shadow-xl hover:-translate-y-2 group">
+                    <div className="text-center p-6 md:p-10 rounded-[2.5rem] md:rounded-[3rem] bg-white border border-slate-100 shadow-sm transition-all hover:shadow-xl hover:-translate-y-2 group">
                         <h3 className="text-4xl font-black text-slate-900 mb-2 italic tracking-tighter group-hover:text-sky-600 transition-colors">
                             <CountUp end={250} suffix="+" />
                         </h3>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Active Investors</p>
                     </div>
-                    <div className="text-center p-10 rounded-[3rem] bg-white border border-slate-100 shadow-sm transition-all hover:shadow-xl hover:-translate-y-2 group">
+                    <div className="text-center p-6 md:p-10 rounded-[2.5rem] md:rounded-[3rem] bg-white border border-slate-100 shadow-sm transition-all hover:shadow-xl hover:-translate-y-2 group">
                         <h3 className="text-4xl font-black text-slate-900 mb-2 italic tracking-tighter group-hover:text-sky-600 transition-colors">
                             <CountUp end={1200} suffix="+" />
                         </h3>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Business Listed</p>
                     </div>
-                    <div className="text-center p-10 rounded-[3rem] bg-white border border-slate-100 shadow-sm transition-all hover:shadow-xl hover:-translate-y-2 group">
+                    <div className="text-center p-6 md:p-10 rounded-[2.5rem] md:rounded-[3rem] bg-white border border-slate-100 shadow-sm transition-all hover:shadow-xl hover:-translate-y-2 group">
                         <h3 className="text-4xl font-black text-slate-900 mb-2 italic tracking-tighter group-hover:text-sky-600 transition-colors">
                             <CountUp end={92} suffix="%" />
                         </h3>
@@ -288,8 +288,8 @@ export default function EventLandingPage() {
             </section>
 
             {/* About Section - Refined */}
-            <section className="pt-12 pb-40 px-4 bg-white relative z-10">
-                <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
+            <section className="pt-8 pb-16 md:pt-12 md:pb-40 px-4 bg-white relative z-10">
+                <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 md:gap-24 items-center">
                     <motion.div
                         initial={{ opacity: 0, x: -50 }}
                         whileInView={{ opacity: 1, x: 0 }}
@@ -354,12 +354,12 @@ export default function EventLandingPage() {
             </section>
 
              {/* Core Highlights - Premium Redesign */}
-             <section className="pt-8 pb-10 px-4 bg-[#f8fafc] relative overflow-hidden">
+             <section className="pt-6 pb-6 md:pt-8 md:pb-10 px-4 bg-[#f8fafc] relative overflow-hidden">
                 {/* Background decorative element */}
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-sky-100/30 rounded-full blur-[120px] -z-10" />
 
                 <div className="max-w-7xl mx-auto">
-                    <div className="flex flex-col md:flex-row justify-between items-end mb-20 gap-8">
+                    <div className="flex flex-col md:flex-row justify-between items-end mb-10 md:mb-20 gap-8">
                         <div className="max-w-2xl">
                             <motion.div 
                                 initial={{ opacity: 0, scale: 0.9 }}
@@ -369,7 +369,7 @@ export default function EventLandingPage() {
                                 <Rocket size={12} />
                                 Innovation Engine
                             </motion.div>
-                            <h2 className="text-6xl md:text-8xl font-black mb-6 text-slate-900 italic uppercase tracking-tighter leading-none pr-4">
+                            <h2 className="text-5xl sm:text-6xl md:text-8xl font-black mb-6 text-slate-900 italic uppercase tracking-tighter leading-none pr-4">
                                 The <span className="text-sky-600">Core.</span>
                             </h2>
                             <p className="text-slate-400 text-xl italic font-semibold max-w-md leading-relaxed">
@@ -411,7 +411,7 @@ export default function EventLandingPage() {
                                 whileInView={{ opacity: 1, y: 0 }}
                                 transition={{ delay: i * 0.1 }}
                                 whileHover={{ y: -12 }}
-                                className="group relative bg-white p-10 rounded-[4rem] border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.03)] hover:shadow-[0_40px_80px_rgba(14,165,233,0.1)] transition-all duration-500 overflow-hidden"
+                                className="group relative bg-white p-6 md:p-10 rounded-[2.5rem] md:rounded-[4rem] border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.03)] hover:shadow-[0_40px_80px_rgba(14,165,233,0.1)] transition-all duration-500 overflow-hidden"
                             >
                                 {/* Decorative Gradient Blobs */}
                                 <div className={`absolute -top-24 -right-24 w-48 h-48 bg-gradient-to-br ${item.color} opacity-0 group-hover:opacity-10 rounded-full blur-3xl transition-opacity duration-500`} />
@@ -431,17 +431,17 @@ export default function EventLandingPage() {
             </section>
 
             {/* Why Choose Us Section */}
-            <section className="pt-10 pb-40 px-4 bg-white relative">
+            <section className="pt-8 pb-16 md:pt-10 md:pb-40 px-4 bg-white relative">
                 <div className="max-w-7xl mx-auto">
-                    <div className="text-center mb-24">
+                    <div className="text-center mb-12 md:mb-24">
                         <motion.div 
                             initial={{ opacity: 0, y: 10 }}
                             whileInView={{ opacity: 1, y: 0 }}
-                            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-50 text-sky-600 text-[10px] font-black uppercase tracking-[0.3em] mb-6"
+                            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-50 text-sky-600 text-[10px] font-black uppercase tracking-[0.3em] mb-4 md:mb-6"
                         >
                             The DBI Advantage
                         </motion.div>
-                        <h2 className="text-5xl md:text-8xl font-black text-slate-900 italic uppercase tracking-tighter leading-none pr-4">
+                        <h2 className="text-4xl md:text-8xl font-black text-slate-900 italic uppercase tracking-tighter leading-none pr-4">
                             Why Choose <span className="text-sky-600">Us.</span>
                         </h2>
                     </div>
@@ -473,14 +473,14 @@ export default function EventLandingPage() {
                                 key={i}
                                 initial={{ opacity: 0, x: i % 2 === 0 ? -20 : 20 }}
                                 whileInView={{ opacity: 1, x: 0 }}
-                                className="flex gap-8 items-start p-10 rounded-[3rem] bg-[#f8fafc] border border-slate-100 hover:border-sky-200 transition-all hover:shadow-2xl hover:shadow-sky-100 group"
+                                className="flex flex-col md:flex-row gap-6 md:gap-8 items-start p-6 md:p-10 rounded-[2.5rem] md:rounded-[3rem] bg-[#f8fafc] border border-slate-100 hover:border-sky-200 transition-all hover:shadow-2xl hover:shadow-sky-100 group"
                             >
-                                <div className="w-16 h-16 rounded-2xl bg-white border border-slate-100 flex items-center justify-center shrink-0 group-hover:bg-sky-600 transition-all duration-500 shadow-sm">
-                                    <item.icon size={28} className="text-sky-600 group-hover:text-white transition-colors" />
+                                <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-white border border-slate-100 flex items-center justify-center shrink-0 group-hover:bg-sky-600 transition-all duration-500 shadow-sm">
+                                    <item.icon size={24} className="text-sky-600 group-hover:text-white transition-colors" />
                                 </div>
                                 <div>
-                                    <h3 className="text-2xl font-black mb-4 text-slate-900 italic uppercase tracking-tighter leading-none group-hover:text-sky-700 transition-colors">{item.title}</h3>
-                                    <p className="text-slate-500 leading-relaxed italic font-medium">
+                                    <h3 className="text-xl md:text-2xl font-black mb-3 md:mb-4 text-slate-900 italic uppercase tracking-tighter leading-none group-hover:text-sky-700 transition-colors">{item.title}</h3>
+                                    <p className="text-slate-500 text-sm md:text-base leading-relaxed italic font-medium">
                                         {item.desc}
                                     </p>
                                 </div>
@@ -489,8 +489,8 @@ export default function EventLandingPage() {
                     </div>
 
                     {/* Final Minimal CTA */}
-                    <div className="mt-32 flex flex-col items-center">
-                        <p className="text-slate-400 font-bold italic mb-10 text-center uppercase tracking-widest text-xs">Ready to grow your enterprise?</p>
+                    <div className="mt-16 md:mt-32 flex flex-col items-center">
+                        <p className="text-slate-400 font-bold italic mb-6 md:mb-10 text-center uppercase tracking-widest text-xs">Ready to grow your enterprise?</p>
                         <div className="flex flex-col sm:flex-row gap-6">
                             <Link href="/apply/business">
                                 <button className="bg-sky-600 text-white font-black text-lg px-12 py-5 rounded-full shadow-xl shadow-sky-200 hover:scale-105 active:scale-95 transition-all">

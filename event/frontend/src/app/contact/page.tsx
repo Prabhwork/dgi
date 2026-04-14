@@ -40,7 +40,7 @@ export default function ContactPage() {
     };
 
   return (
-    <div className="bg-[#f8fafc] min-h-screen pt-32 pb-24 font-poppins">
+    <div className="bg-[#f8fafc] min-h-screen pt-24 md:pt-32 pb-24 font-poppins">
       <div className="max-w-7xl mx-auto px-4">
         {/* Hero Section */}
         <div className="text-center mb-20">
@@ -54,9 +54,9 @@ export default function ContactPage() {
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-5xl md:text-8xl font-black text-slate-900 mb-6 italic uppercase tracking-tighter leading-none"
+            className="text-4xl sm:text-6xl md:text-8xl font-black text-slate-900 mb-6 italic uppercase tracking-tighter leading-none"
           >
-            Let's <span className="text-sky-600">Connect.</span>
+            Let&apos;s <span className="text-sky-600">Connect.</span>
           </motion.h1>
           <p className="text-slate-500 font-medium italic text-lg max-w-2xl mx-auto">Whether you're looking for funding, deal flow, or just have a question, our team is ready to assist you.</p>
         </div>
@@ -113,7 +113,7 @@ export default function ContactPage() {
           <motion.div 
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="lg:col-span-7 bg-white p-10 md:p-16 rounded-[4rem] border border-slate-100 shadow-2xl shadow-sky-100/30"
+            className="lg:col-span-7 bg-white p-6 md:p-16 rounded-[2.5rem] md:rounded-[4rem] border border-slate-100 shadow-2xl shadow-sky-100/30"
           >
             <h3 className="text-3xl font-black italic uppercase tracking-tighter text-slate-900 mb-10 flex items-center gap-4">
                 <MessageSquare className="text-sky-600" size={32} /> Send a Message
@@ -236,14 +236,14 @@ function ContactInfoCard({ icon: Icon, title, value, delay }: any) {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay }}
-            className="flex items-center gap-6 p-8 rounded-[3rem] bg-white border border-slate-100 shadow-xl shadow-sky-100/20 group hover:border-sky-600 transition-all cursor-pointer"
+            className="flex items-center gap-4 md:gap-6 p-6 md:p-8 rounded-[2.5rem] md:rounded-[3rem] bg-white border border-slate-100 shadow-xl shadow-sky-100/20 group hover:border-sky-600 transition-all cursor-pointer"
         >
-            <div className="w-16 h-16 bg-sky-50 rounded-2xl flex items-center justify-center group-hover:bg-sky-600 transition-all shrink-0">
-                <Icon className="text-sky-600 group-hover:text-white transition-all underline-offset-4" size={28} />
+            <div className="w-12 h-12 md:w-16 md:h-16 bg-sky-50 rounded-2xl flex items-center justify-center group-hover:bg-sky-600 transition-all shrink-0">
+                <Icon className="text-sky-600 group-hover:text-white transition-all underline-offset-4" size={24} />
             </div>
             <div>
                 <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{title}</h4>
-                <p className="text-lg font-black italic uppercase tracking-tighter text-slate-900 leading-tight">{value}</p>
+                <p className="text-sm md:text-lg font-black italic uppercase tracking-tighter text-slate-900 leading-tight">{value}</p>
             </div>
         </motion.div>
     );

@@ -6,9 +6,9 @@ import { Users, Target, ShieldCheck, Rocket, ChevronRight, Briefcase, TrendingUp
 
 export default function AboutPage() {
   return (
-    <div className="bg-[#f8fafc] min-h-screen">
+    <div className="bg-[#f8fafc] min-h-screen pt-24 md:pt-32 pb-24 font-poppins">
       {/* Hero Section - Refined */}
-      <section className="relative pt-32 pb-8 px-4 overflow-hidden">
+      <section className="relative pt-12 md:pt-32 pb-8 px-4 overflow-hidden">
         {/* Background decorative element */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-sky-100/30 rounded-full blur-[120px] -z-10" />
 
