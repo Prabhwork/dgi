@@ -188,31 +188,15 @@ export default function DetailPage() {
                                     <div
                                         className="prose prose-invert prose-lg md:prose-xl max-w-none text-white/90 font-medium leading-snug text-left
                                             prose-headings:font-display prose-headings:font-black prose-headings:tracking-tight prose-headings:text-white prose-headings:mt-4 prose-headings:mb-1
-                                            prose-h2:text-3xl md:text-5xl prose-h2:text-cyber-multi
-                                            prose-h3:text-2xl md:text-3xl prose-h3:text-cyber-yellow
-                                            prose-p:text-lg md:text-xl prose-p:mb-4
-                                            prose-strong:font-black prose-strong:text-xl md:prose-strong:text-2xl
-                                            prose-a:text-cyan-400 prose-a:underline-offset-4 hover:prose-a:text-white transition-all
-                                            prose-li:marker:text-primary prose-li:my-1 prose-li:text-lg md:text-xl
+                                            prose-h2:text-3xl prose-h2:text-white
+                                            prose-h3:text-2xl prose-h3:text-white
+                                            prose-p:text-lg prose-p:mb-4 prose-p:text-white/90
+                                            prose-strong:font-black prose-strong:text-white
+                                            prose-a:text-white/80 prose-a:underline-offset-4 hover:prose-a:text-white transition-all
+                                            prose-li:marker:text-white/60 prose-li:my-1 prose-li:text-lg prose-li:text-white/90
                                             prose-hr:border-white/10 prose-hr:my-6
                                         "
-                                        dangerouslySetInnerHTML={{ 
-                                            __html: (() => {
-                                                const colors = ['text-cyber-red', 'text-cyber-green', 'text-cyber-yellow', 'text-cyber-purple', 'text-cyber-multi'];
-                                                let count = 0;
-                                                return detail.description.replace(/<strong>(.*?)<\/strong>|<h3>(.*?)<\/h3>/g, (match, strongContent, h3Content) => {
-                                                    if (strongContent) {
-                                                        const color = colors[count % colors.length];
-                                                        count++;
-                                                        return `<strong class="${color}">${strongContent}</strong>`;
-                                                    }
-                                                    if (h3Content) {
-                                                        return `<h3 class="text-cyber-multi">${h3Content}</h3>`;
-                                                    }
-                                                    return match;
-                                                });
-                                            })() 
-                                        }}
+                                        dangerouslySetInnerHTML={{ __html: detail.description }}
                                     />
                                 </div>
                             </div>

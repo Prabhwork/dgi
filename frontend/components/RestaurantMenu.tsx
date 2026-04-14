@@ -484,7 +484,7 @@ export default function RestaurantMenu({ partnerId, businessName, isLight }: Res
                         name: reservationData.name,
                         contact: reservationData.phone
                     },
-                    theme: { color: "#E03546" }
+                    theme: { color: "#4894fe" }
                 };
 
                 const rzp = new (window as any).Razorpay(options);
@@ -651,7 +651,7 @@ export default function RestaurantMenu({ partnerId, businessName, isLight }: Res
                 }
             },
             prefill: { name: "Customer Name", email: "customer@example.com", contact: "9999999999" },
-            theme: { color: "#E03546" }
+            theme: { color: "#4894fe" }
         };
 
         const rzp = new (window as any).Razorpay(options);
@@ -661,7 +661,7 @@ export default function RestaurantMenu({ partnerId, businessName, isLight }: Res
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center py-20 min-h-[400px]">
-                <Loader2 size={40} className="text-[#E03546] animate-spin mb-4" />
+                <Loader2 size={40} className="text-[#4894fe] animate-spin mb-4" />
                 <p className="text-sm font-medium opacity-50">Preparing your personalized menu...</p>
             </div>
         );
@@ -673,12 +673,12 @@ export default function RestaurantMenu({ partnerId, businessName, isLight }: Res
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 md:gap-10 mb-12 md:mb-20">
                 <div className="space-y-3 md:space-y-4">
                     <div className="flex items-center gap-2 md:gap-3">
-                        <div className="w-8 md:w-12 h-0.5 bg-[#E03546]" />
-                        <span className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.3em] md:tracking-[0.4em] text-[#E03546]">Digital Book of India â€” Official Partner</span>
+                        <div className="w-8 md:w-12 h-0.5 bg-[#4894fe]" />
+                        <span className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.3em] md:tracking-[0.4em] text-[#4894fe]">Digital Book of India â€” Official Partner</span>
                     </div>
                     <h2 className={`text-3xl md:text-6xl font-black italic uppercase tracking-tighter leading-[0.8] ${isLight ? 'text-slate-900' : 'text-white'}`}>
                         {viewMode === 'Menu' ? (orderType === 'Takeaway' ? 'Express' : 'Premium') : 'Premium'}<br />
-                        <span className="text-[#E03546]">{viewMode === 'Menu' ? (orderType === 'Takeaway' ? 'Takeaway Menu' : 'Dine-in Menu') : 'Dining Experience'}</span>
+                        <span className="text-[#4894fe]">{viewMode === 'Menu' ? (orderType === 'Takeaway' ? 'Takeaway Menu' : 'Dine-in Menu') : 'Dining Experience'}</span>
                     </h2>
                 </div>
 
@@ -687,19 +687,19 @@ export default function RestaurantMenu({ partnerId, businessName, isLight }: Res
                     <div className="p-1.5 bg-white/5 backdrop-blur-3xl rounded-[2rem] border border-white/10 flex items-center relative gap-1">
                         <button
                             onClick={() => { setViewMode('Menu'); setOrderType('Takeaway'); }}
-                            className={`flex-1 flex items-center justify-center gap-2 py-3 md:py-4 rounded-xl md:rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all z-10 ${viewMode === 'Menu' && orderType === 'Takeaway' ? 'bg-[#E03546] text-white shadow-xl' : 'text-slate-400 hover:text-white'}`}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 md:py-4 rounded-xl md:rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all z-10 ${viewMode === 'Menu' && orderType === 'Takeaway' ? 'bg-[#4894fe] text-white shadow-xl' : 'text-slate-400 hover:text-white'}`}
                         >
                             <Utensils size={12} className="md:w-3.5 md:h-3.5" /> Takeaway
                         </button>
                         <button
                             onClick={() => { setViewMode('Menu'); setOrderType('Dine-in'); }}
-                            className={`flex-1 flex items-center justify-center gap-2 py-3 md:py-4 rounded-xl md:rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all z-10 ${viewMode === 'Menu' && orderType === 'Dine-in' ? 'bg-[#E03546] text-white shadow-xl' : 'text-slate-400 hover:text-white'}`}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 md:py-4 rounded-xl md:rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all z-10 ${viewMode === 'Menu' && orderType === 'Dine-in' ? 'bg-[#4894fe] text-white shadow-xl' : 'text-slate-400 hover:text-white'}`}
                         >
                             <ShoppingBag size={12} className="md:w-3.5 md:h-3.5" /> Dine-in
                         </button>
                         <button
                             onClick={() => { setViewMode('Reservation'); setOrderType('Dine-in'); }}
-                            className={`flex-1 flex items-center justify-center gap-2 py-3 md:py-4 rounded-xl md:rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all z-10 ${viewMode === 'Reservation' ? 'bg-[#E03546] text-white shadow-xl' : 'text-slate-400 hover:text-white'}`}
+                            className={`flex-1 flex items-center justify-center gap-2 py-3 md:py-4 rounded-xl md:rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all z-10 ${viewMode === 'Reservation' ? 'bg-[#4894fe] text-white shadow-xl' : 'text-slate-400 hover:text-white'}`}
                         >
                             <Clock size={12} className="md:w-3.5 md:h-3.5" /> Dineout
                         </button>
@@ -714,11 +714,11 @@ export default function RestaurantMenu({ partnerId, businessName, isLight }: Res
                         >
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-2xl bg-[#E03546]/10 flex items-center justify-center border border-[#E03546]/20">
-                                        <Clock size={24} className="text-[#E03546]" />
+                                    <div className="w-12 h-12 rounded-2xl bg-[#4894fe]/10 flex items-center justify-center border border-[#4894fe]/20">
+                                        <Clock size={24} className="text-[#4894fe]" />
                                     </div>
                                     <div>
-                                        <p className="text-xs font-black uppercase tracking-[0.2em] text-[#E03546]">Schedule Arrival</p>
+                                        <p className="text-xs font-black uppercase tracking-[0.2em] text-[#4894fe]">Schedule Arrival</p>
                                         <p className={`text-[10px] font-bold uppercase opacity-50 ${isLight ? 'text-slate-900' : 'text-white'}`}>Choose your dining slot</p>
                                     </div>
                                 </div>
@@ -728,7 +728,7 @@ export default function RestaurantMenu({ partnerId, businessName, isLight }: Res
                                         <button
                                             key={shift}
                                             onClick={() => setActiveShift(shift)}
-                                            className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeShift === shift ? 'bg-[#E03546] text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                                            className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeShift === shift ? 'bg-[#4894fe] text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
                                         >
                                             {shift}
                                         </button>
@@ -759,7 +759,7 @@ export default function RestaurantMenu({ partnerId, businessName, isLight }: Res
 
                     <div className="flex items-center gap-6 md:gap-8 px-4 md:px-0">
                         <div className="flex flex-col gap-1">
-                            <span className="text-[8px] font-black text-[#E03546] uppercase tracking-[0.2em]">Status</span>
+                            <span className="text-[8px] font-black text-[#4894fe] uppercase tracking-[0.2em]">Status</span>
                             <div className="flex items-center gap-2">
                                 <div className={`w-2 h-2 rounded-full ${isOperational ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'} `} />
                                 <span className={`text-[10px] font-black uppercase ${isLight ? 'text-slate-900' : 'text-white'}`}>
@@ -769,7 +769,7 @@ export default function RestaurantMenu({ partnerId, businessName, isLight }: Res
                         </div>
                         <div className="w-[1px] h-8 bg-white/10" />
                         <div className="flex flex-col gap-1">
-                            <span className="text-[8px] font-black text-[#E03546] uppercase tracking-[0.2em]">Today's Timing</span>
+                            <span className="text-[8px] font-black text-[#4894fe] uppercase tracking-[0.2em]">Today's Timing</span>
                             <span className={`text-[10px] font-black uppercase ${isLight ? 'text-slate-900' : 'text-white'}`}>
                                 {statusObj.todayHours}
                             </span>
@@ -805,7 +805,7 @@ export default function RestaurantMenu({ partnerId, businessName, isLight }: Res
                                 <button
                                     onClick={() => setActiveCategory("All")}
                                     className={`px-6 md:px-8 py-2 md:py-2.5 rounded-full font-black text-[10px] md:text-xs uppercase tracking-widest transition-all whitespace-nowrap border-2 ${activeCategory === "All"
-                                            ? "bg-[#E03546] text-white border-[#E03546] shadow-lg shadow-red-600/20"
+                                            ? "bg-[#4894fe] text-white border-[#4894fe] shadow-lg shadow-red-600/20"
                                             : isLight ? "bg-white border-slate-100 text-slate-500 hover:border-slate-200" : "bg-white/5 border-white/5 text-slate-400 hover:border-white/10"
                                         }`}
                                 >
@@ -816,7 +816,7 @@ export default function RestaurantMenu({ partnerId, businessName, isLight }: Res
                                         key={cat._id}
                                         onClick={() => setActiveCategory(cat.name)}
                                         className={`px-6 md:px-8 py-2 md:py-2.5 rounded-full font-black text-[10px] md:text-xs uppercase tracking-widest transition-all whitespace-nowrap border-2 ${activeCategory === cat.name
-                                                ? "bg-[#E03546] text-white border-[#E03546] shadow-lg shadow-red-600/20"
+                                                ? "bg-[#4894fe] text-white border-[#4894fe] shadow-lg shadow-red-600/20"
                                                 : isLight ? "bg-white border-slate-100 text-slate-500 hover:border-slate-200" : "bg-white/5 border-white/5 text-slate-400 hover:border-white/10"
                                             }`}
                                     >
@@ -829,15 +829,15 @@ export default function RestaurantMenu({ partnerId, businessName, isLight }: Res
                         {/* Search Bar for Menu */}
                         <div className="mb-8 md:mb-12">
                             <div className={`relative flex-1 group`}>
-                                <Search className="absolute left-5 md:left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#E03546] transition-colors" size={18} />
+                                <Search className="absolute left-5 md:left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#4894fe] transition-colors" size={18} />
                                 <input
                                     type="text"
                                     placeholder="Search cravings..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     className={`w-full pl-14 md:pl-16 pr-6 md:pr-8 py-4 md:py-5 rounded-2xl md:rounded-[2rem] border-2 outline-none transition-all font-bold text-base md:text-lg ${isLight
-                                            ? "bg-white border-slate-100 focus:border-[#E03546] text-slate-900 shadow-xl"
-                                            : "bg-white/5 border-white/5 focus:border-[#E03546] text-white"
+                                            ? "bg-white border-slate-100 focus:border-[#4894fe] text-slate-900 shadow-xl"
+                                            : "bg-white/5 border-white/5 focus:border-[#4894fe] text-white"
                                         }`}
                                 />
                             </div>
@@ -890,7 +890,7 @@ export default function RestaurantMenu({ partnerId, businessName, isLight }: Res
 
                                                                 <div className="flex flex-wrap items-center gap-x-2 md:gap-x-4 gap-y-1">
                                                                     <div className="flex items-center gap-1.5 md:gap-2">
-                                                                        <span className={`text-lg md:text-2xl font-black ${isLight ? 'text-[#E03546]' : 'text-[#ff4d61]'}`}>{prod.price}</span>
+                                                                        <span className={`text-lg md:text-2xl font-black ${isLight ? 'text-[#4894fe]' : 'text-[#ff4d61]'}`}>{prod.price}</span>
                                                                         {hasDiscount && (
                                                                             <div className="flex items-center gap-2">
                                                                                 <span className={`text-xs md:text-base font-bold opacity-30 line-through ${isLight ? 'text-slate-900' : 'text-white'}`}>
@@ -904,7 +904,7 @@ export default function RestaurantMenu({ partnerId, businessName, isLight }: Res
                                                                     </div>
                                                                     {prod.prepTime && (
                                                                         <div className={`flex items-center gap-1 text-[7px] md:text-[10px] font-black uppercase tracking-widest px-1 md:px-2 py-0.5 md:py-1 rounded-md border ${isLight ? 'bg-slate-100 border-slate-200 text-slate-900' : 'bg-white/5 border-white/10 text-white'}`}>
-                                                                            <Timer size={8} className="text-[#E03546] fill-current md:w-3 md:h-3" />
+                                                                            <Timer size={8} className="text-[#4894fe] fill-current md:w-3 md:h-3" />
                                                                             {prod.prepTime} min
                                                                         </div>
                                                                     )}
@@ -948,7 +948,7 @@ export default function RestaurantMenu({ partnerId, businessName, isLight }: Res
                                                                             <span className="opacity-90">OWNER</span>
                                                                         </div>
                                                                     ) : cartItem ? (
-                                                                        <div className="bg-white text-[#E03546] font-black flex items-center justify-between px-2 md:px-4 py-1.5 md:py-3 rounded-lg md:rounded-2xl border-2 border-[#E03546]/10 shadow-[0_15px_40px_rgba(224,53,70,0.2)]">
+                                                                        <div className="bg-white text-[#4894fe] font-black flex items-center justify-between px-2 md:px-4 py-1.5 md:py-3 rounded-lg md:rounded-2xl border-2 border-[#4894fe]/10 shadow-[0_15px_40px_rgba(224,53,70,0.2)]">
                                                                             <button onClick={() => updateQuantity(prod._id, -1)} className="p-0.5 md:p-1 hover:bg-slate-50 rounded-lg transition-colors"><Minus size={12} className="md:w-[18px] md:h-[18px]" /></button>
                                                                             <span className="text-sm md:text-lg w-4 md:w-6 text-center">{cartItem.quantity}</span>
                                                                             <button onClick={() => updateQuantity(prod._id, 1)} className="p-0.5 md:p-1 hover:bg-slate-50 rounded-lg transition-colors"><Plus size={12} className="md:w-[18px] md:h-[18px]" /></button>
@@ -956,10 +956,10 @@ export default function RestaurantMenu({ partnerId, businessName, isLight }: Res
                                                                     ) : (
                                                                         <button
                                                                             disabled={!isOperational}
-                                                                            onClick={() => addToCart(prod)}
+                                                                            onClick={() => addToCart({ ...prod, partnerId, restaurantName: businessName })}
                                                                             className={`w-full font-black uppercase text-[8px] md:text-xs tracking-widest py-2 md:py-4 rounded-lg md:rounded-2xl border-2 transition-all shadow-[0_15px_40px_rgba(224,53,70,0.2)] 
                                                                                 ${isOperational
-                                                                                    ? "bg-white text-[#E03546] border-[#E03546]/10 hover:bg-slate-50 hover:-translate-y-1 active:scale-95"
+                                                                                    ? "bg-white text-[#4894fe] border-[#4894fe]/10 hover:bg-slate-50 hover:-translate-y-1 active:scale-95"
                                                                                     : "bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-70 shadow-none"
                                                                                 }`}
                                                                         >
@@ -1000,18 +1000,18 @@ export default function RestaurantMenu({ partnerId, businessName, isLight }: Res
                         )}
                         <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                             <div className="space-y-8">
-                                <div className="inline-block px-4 py-1.5 bg-[#E03546]/10 border border-[#E03546]/20 rounded-full">
-                                    <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#E03546]">Fine Dining Reservations</span>
+                                <div className="inline-block px-4 py-1.5 bg-[#4894fe]/10 border border-[#4894fe]/20 rounded-full">
+                                    <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#4894fe]">Fine Dining Reservations</span>
                                 </div>
                                 <h3 className={`text-4xl md:text-5xl font-black italic uppercase tracking-tighter leading-[0.8] ${isLight ? 'text-slate-900' : 'text-white'}`}>
                                     Reserve Your<br />
-                                    <span className="text-[#E03546]">Dineout Service</span>
+                                    <span className="text-[#4894fe]">Dineout Service</span>
                                 </h3>
                                 <p className={`text-lg leading-relaxed ${isLight ? 'text-slate-600' : 'text-white/60'}`}>Skip the waiting line. Pre-book your table for a seamless dining experience with premium hospitality.</p>
 
                                 <div className="grid grid-cols-2 gap-6">
                                     <div className="bg-white/5 p-6 rounded-3xl border border-white/10">
-                                        <Utensils className="text-[#E03546] mb-4" size={24} />
+                                        <Utensils className="text-[#4894fe] mb-4" size={24} />
                                         <h5 className="font-black text-xs uppercase tracking-widest mb-1">Premium Seating</h5>
                                         <p className="text-[10px] opacity-40">Choose from indoor or garden views.</p>
                                     </div>
@@ -1032,7 +1032,7 @@ export default function RestaurantMenu({ partnerId, businessName, isLight }: Res
                                                 required
                                                 type="text"
                                                 placeholder="Your Name"
-                                                className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-[#E03546] transition-all font-bold"
+                                                className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-[#4894fe] transition-all font-bold"
                                                 value={reservationData.name}
                                                 onChange={(e) => setReservationData({ ...reservationData, name: e.target.value })}
                                             />
@@ -1043,7 +1043,7 @@ export default function RestaurantMenu({ partnerId, businessName, isLight }: Res
                                                 required
                                                 type="tel"
                                                 placeholder="+91 00000 00000"
-                                                className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-[#E03546] transition-all font-bold"
+                                                className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-[#4894fe] transition-all font-bold"
                                                 value={reservationData.phone}
                                                 onChange={(e) => setReservationData({ ...reservationData, phone: e.target.value })}
                                             />
@@ -1053,7 +1053,7 @@ export default function RestaurantMenu({ partnerId, businessName, isLight }: Res
                                         <div className="space-y-1.5">
                                             <label className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 ml-4">Guests</label>
                                             <select
-                                                className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-[#E03546] transition-all font-bold appearance-none"
+                                                className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-[#4894fe] transition-all font-bold appearance-none"
                                                 value={reservationData.guests}
                                                 onChange={(e) => setReservationData({ ...reservationData, guests: parseInt(e.target.value) })}
                                             >
@@ -1066,7 +1066,7 @@ export default function RestaurantMenu({ partnerId, businessName, isLight }: Res
                                                 <input
                                                     required
                                                     type="date"
-                                                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-[#E03546] transition-all font-bold [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:left-0 [&::-webkit-calendar-picker-indicator]:top-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                                                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-[#4894fe] transition-all font-bold [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:left-0 [&::-webkit-calendar-picker-indicator]:top-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                                                     value={reservationData.date}
                                                     onChange={(e) => setReservationData({ ...reservationData, date: e.target.value })}
                                                 />
@@ -1101,7 +1101,7 @@ export default function RestaurantMenu({ partnerId, businessName, isLight }: Res
                                                         type="button"
                                                         disabled={isShiftDisabled}
                                                         onClick={() => setActiveShift(shift)}
-                                                        className={`py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${isShiftDisabled ? 'opacity-20 cursor-not-allowed grayscale' : ''} ${activeShift === shift ? 'bg-[#E03546] text-white shadow-xl' : 'text-white/40 hover:text-white'}`}
+                                                        className={`py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${isShiftDisabled ? 'opacity-20 cursor-not-allowed grayscale' : ''} ${activeShift === shift ? 'bg-[#4894fe] text-white shadow-xl' : 'text-white/40 hover:text-white'}`}
                                                     >
                                                         {shift}
                                                     </button>
@@ -1118,7 +1118,7 @@ export default function RestaurantMenu({ partnerId, businessName, isLight }: Res
                                                     key={slot}
                                                     type="button"
                                                     onClick={() => setReservationData({ ...reservationData, timeSlot: slot })}
-                                                    className={`py-3 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all ${reservationData.timeSlot === slot ? 'bg-[#E03546] border-[#E03546] text-white' : 'bg-white/5 border-white/10 text-white/40 hover:text-white hover:border-white/20'}`}
+                                                    className={`py-3 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all ${reservationData.timeSlot === slot ? 'bg-[#4894fe] border-[#4894fe] text-white' : 'bg-white/5 border-white/10 text-white/40 hover:text-white hover:border-white/20'}`}
                                                 >
                                                     {slot}
                                                 </button>
@@ -1159,7 +1159,7 @@ export default function RestaurantMenu({ partnerId, businessName, isLight }: Res
                                         ) : (
                                         <Button
                                             disabled={isSubmittingReservation || !isOperational}
-                                            className="w-full bg-[#E03546] hover:bg-[#c32d3d] h-auto p-6 rounded-2xl font-black uppercase tracking-[0.2em] text-sm shadow-2xl transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            className="w-full bg-[#4894fe] hover:bg-[#c32d3d] h-auto p-6 rounded-2xl font-black uppercase tracking-[0.2em] text-sm shadow-2xl transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             {isSubmittingReservation ? (
                                                 <Loader2 className="animate-spin" />
@@ -1183,14 +1183,14 @@ export default function RestaurantMenu({ partnerId, businessName, isLight }: Res
                 <div className="mt-32 pb-20 overflow-hidden px-6 md:px-12 max-w-7xl mx-auto">
                     <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-6">
                         <div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#E03546] mb-3">Authentic Feedbacks</p>
+                            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#4894fe] mb-3">Authentic Feedbacks</p>
                             <h3 className={`text-4xl font-black flex items-center gap-4 ${isLight ? 'text-slate-900' : 'text-white'}`}>
                                 What foodies say
                             </h3>
                         </div>
                         <button
                             onClick={() => setIsReviewsModalOpen(true)}
-                            className="bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest px-8 py-3 rounded-full hover:bg-[#E03546] hover:text-white transition-all shadow-xl"
+                            className="bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest px-8 py-3 rounded-full hover:bg-[#4894fe] hover:text-white transition-all shadow-xl"
                         >
                             View All {reviews.length} Reviews
                         </button>
@@ -1200,7 +1200,7 @@ export default function RestaurantMenu({ partnerId, businessName, isLight }: Res
                         {reviews.slice(0, 3).map((rev) => (
                             <div key={rev._id} className={`p-8 rounded-[3rem] border transition-all hover:-translate-y-2 ${isLight ? 'bg-white border-slate-100 shadow-sm' : 'bg-white/5 border-white/5'}`}>
                                 <div className="flex items-center gap-4 mb-6">
-                                    <div className="w-14 h-14 rounded-[1.25rem] bg-gradient-to-br from-[#E03546] to-pink-500 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-red-500/20">
+                                    <div className="w-14 h-14 rounded-[1.25rem] bg-gradient-to-br from-[#4894fe] to-pink-500 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-red-500/20">
                                         {rev.customer.charAt(0)}
                                     </div>
                                     <div>
@@ -1219,36 +1219,8 @@ export default function RestaurantMenu({ partnerId, businessName, isLight }: Res
                 </div>
             )}
 
-            {/* Cart Floating Indicator */}
-            <AnimatePresence>
-                {cart.length > 0 && !(isBusinessAccount && loggedUserId === partnerId) && (
-                    <motion.div
-                        initial={{ y: 100, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: 100, opacity: 0 }}
-                        className="fixed bottom-6 left-0 right-0 z-[60] px-4 flex justify-center pointer-events-none"
-                    >
-                        <div className="bg-[#1a1a1a] text-white p-3 md:p-5 rounded-2xl md:rounded-3xl shadow-[0_40px_80px_rgba(0,0,0,0.5)] flex items-center justify-between border border-white/10 backdrop-blur-3xl overflow-hidden relative w-full max-w-lg pointer-events-auto">
-                            <div className="absolute top-0 left-0 w-1/2 h-full bg-gradient-to-r from-emerald-600/10 to-transparent pointer-events-none" />
-                            <div className="flex items-center gap-3 md:gap-4 relative">
-                                <div className="w-10 h-10 md:w-14 md:h-14 bg-emerald-600 rounded-xl md:rounded-2xl flex items-center justify-center text-white shadow-xl shadow-emerald-600/30">
-                                    <ShoppingBag size={20} className="md:w-[28px] md:h-[28px]" />
-                                </div>
-                                <div className="min-w-0">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500 mb-0.5 truncate">{cart.length} Added</p>
-                                    <p className="text-lg md:text-2xl font-black">{grandTotal}</p>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => router.push('/checkout')}
-                                className="bg-[#E03546] hover:bg-[#c32d3d] text-white px-4 py-3 md:px-8 md:py-4 rounded-xl md:rounded-2xl font-black uppercase text-[10px] md:text-sm tracking-[0.1em] shadow-xl shadow-red-600/20 transition-all active:scale-95 flex items-center gap-2 group"
-                            >
-                                <span className="hidden xs:inline">Order</span> <ArrowRight size={16} className="md:w-[20px] md:h-[20px] group-hover:translate-x-1 transition-transform" />
-                            </button>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+
+
 
 
 
@@ -1265,13 +1237,13 @@ export default function RestaurantMenu({ partnerId, businessName, isLight }: Res
                             onClick={() => setIsTrackingOpen(true)}
                             className="bg-slate-900 text-white p-3 md:p-4 rounded-2xl shadow-2xl flex items-center justify-between border border-white/10 backdrop-blur-3xl overflow-hidden relative w-full max-w-lg pointer-events-auto cursor-pointer group hover:bg-slate-800 transition-colors"
                         >
-                            <div className="absolute top-0 left-0 w-1/3 h-full bg-gradient-to-r from-[#E03546]/10 to-transparent pointer-events-none" />
+                            <div className="absolute top-0 left-0 w-1/3 h-full bg-gradient-to-r from-[#4894fe]/10 to-transparent pointer-events-none" />
                             <div className="flex items-center gap-3 relative">
-                                <div className="w-10 h-10 bg-[#E03546] rounded-xl flex items-center justify-center animate-pulse">
+                                <div className="w-10 h-10 bg-[#4894fe] rounded-xl flex items-center justify-center animate-pulse">
                                     <Clock size={20} className="text-white" />
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-[#E03546] mb-0.5">Live Tracking</p>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-[#4894fe] mb-0.5">Live Tracking</p>
                                     <p className="text-sm font-black italic uppercase truncate">
                                         {placedOrder.status === 'Pending' ? 'Waiting for Acceptance...' :
                                             placedOrder.status === 'Completed' ? 'Delivered!' :
@@ -1281,7 +1253,7 @@ export default function RestaurantMenu({ partnerId, businessName, isLight }: Res
                             </div>
                             <div className="flex items-center gap-3 px-4 border-l border-white/10 ml-4 group-hover:translate-x-1 transition-transform">
                                 <span className="text-[10px] font-black uppercase tracking-widest opacity-50">View Details</span>
-                                <ChevronRight size={16} className="text-[#E03546]" />
+                                <ChevronRight size={16} className="text-[#4894fe]" />
                             </div>
                         </div>
                     </motion.div>
@@ -1354,10 +1326,10 @@ export default function RestaurantMenu({ partnerId, businessName, isLight }: Res
                             </div>
                             <div className="flex-1 overflow-y-auto pr-4 scrollbar-hide space-y-6">
                                 {reviews.map((rev) => (
-                                    <div key={rev._id} className="p-8 md:p-10 rounded-[2.5rem] bg-slate-50 border border-slate-100 hover:border-[#E03546]/20 transition-all group">
+                                    <div key={rev._id} className="p-8 md:p-10 rounded-[2.5rem] bg-slate-50 border border-slate-100 hover:border-[#4894fe]/20 transition-all group">
                                         <div className="flex items-center justify-between mb-6">
                                             <div className="flex items-center gap-5">
-                                                <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-[#E03546] flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-red-500/10">
+                                                <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-[#4894fe] flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-red-500/10">
                                                     {rev.customer.charAt(0)}
                                                 </div>
                                                 <div>
@@ -1425,7 +1397,7 @@ export default function RestaurantMenu({ partnerId, businessName, isLight }: Res
                             <div className="p-5 md:p-8 space-y-6 md:space-y-8 overflow-y-auto scrollbar-hide max-h-[60vh]">
                                 {selectedProduct.ingredients && (
                                     <div className="space-y-2 md:space-y-3">
-                                        <h4 className="flex items-center gap-3 text-[9px] md:text-[10px] font-black uppercase tracking-[0.4em] text-[#E03546]">
+                                        <h4 className="flex items-center gap-3 text-[9px] md:text-[10px] font-black uppercase tracking-[0.4em] text-[#4894fe]">
                                             <Utensils size={12} /> Ingredients
                                         </h4>
                                         <p className="text-sm md:text-lg font-bold text-slate-700 leading-relaxed italic">
@@ -1451,7 +1423,7 @@ export default function RestaurantMenu({ partnerId, businessName, isLight }: Res
                                 )}
                                 <div className="flex items-center gap-2">
                                     <div className="flex-1 bg-slate-50/80 backdrop-blur-sm p-3 rounded-2xl border border-slate-100 flex items-center justify-center gap-3">
-                                        <Timer className="text-[#E03546]" size={16} />
+                                        <Timer className="text-[#4894fe]" size={16} />
                                         <div className="flex flex-col">
                                             <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Prep Time</p>
                                             <p className="text-sm font-black text-slate-900">{selectedProduct.prepTime} Mins</p>

@@ -68,6 +68,7 @@ const googleCategories = require('./routes/googleCategoryRoutes');
 const globalSettings = require('./routes/globalSettingsRoutes');
 const funnel = require('./routes/funnelRoutes');
 const suggestions = require('./routes/suggestionRoutes');
+const wallet = require('./routes/walletRoutes');
 const { startLiveListingWorker } = require('./utils/liveListingWorker');
 
 
@@ -96,6 +97,7 @@ app.use('/api/google-categories', googleCategories);
 app.use('/api/global-settings', globalSettings);
 app.use('/api/funnel', funnel);
 app.use('/api/suggestions', suggestions);
+app.use('/api/wallet', wallet);
 app.use('/api/notifications', require('./routes/notificationRoutes'));
 
 app.get('/', (req, res) => {

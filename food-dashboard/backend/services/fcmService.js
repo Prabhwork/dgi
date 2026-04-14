@@ -94,7 +94,10 @@ exports.sendToTopic = async (topic, payload) => {
  */
 exports.sendMulticast = async (tokens, payload) => {
   const app = getFirebaseApp();
-  if (!app) return;
+  if (!app) {
+    console.warn('[FCM] Skipping multicast - Firebase not initialized');
+    return;
+  }
 
   if (!tokens || tokens.length === 0) return;
 
@@ -110,6 +113,26 @@ exports.sendMulticast = async (tokens, payload) => {
 
     const response = await admin.messaging(app).sendEachForMulticast(message);
     console.log(`[FCM] Successfully sent ${response.successCount} messages; ${response.failureCount} errors.`);
+
+    // Cleanup expired tokens
+    if (response.failureCount > 0) {
+        const mainDb = require('../config/mainDb');
+        response.responses.forEach(async (resp, idx) => {
+            if (!resp.success) {
+                const error = resp.error;
+                if (error.code === 'messaging/invalid-registration-token' || 
+                    error.code === 'messaging/registration-token-not-registered') {
+                    try {
+                        await mainDb.collection('fcmtokens').deleteOne({ token: tokens[idx] });
+                        console.log(`[FCM] Cleaned up invalid token: ${tokens[idx].slice(0, 10)}...`);
+                    } catch (dbErr) {
+                        console.error('[FCM] Failed to cleanup token from DB:', dbErr);
+                    }
+                }
+            }
+        });
+    }
+
     return response;
   } catch (error) {
     console.error('[FCM] Error sending multicast message:', error);

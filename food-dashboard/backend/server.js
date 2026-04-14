@@ -30,6 +30,7 @@ const uploadRoutes = require('./routes/uploadRoutes');
 const bankRoutes = require('./routes/bankRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const dineoutRoutes = require('./routes/dineoutRoutes');
+const cartRoutes = require('./routes/cartRoutes');
 
 // ── App Setup ──────────────────────────────────────────────────────────────────
 const app = express();
@@ -138,6 +139,7 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/bank-details', bankRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/dineout', dineoutRoutes);
+app.use('/api/cart', cartRoutes);
 
 // ── 404 Handler ────────────────────────────────────────────────────────────────
 app.use((req, res) => {

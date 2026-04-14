@@ -10,7 +10,7 @@ interface Notification {
     _id: string;
     title: string;
     message: string;
-    type: 'Order' | 'System' | 'Audit' | 'Security' | 'User';
+    type: 'Order' | 'System' | 'Audit' | 'Security' | 'User' | 'Payment';
     read: boolean;
     createdAt: string;
 }

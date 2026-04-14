@@ -239,7 +239,7 @@ function SearchResults() {
 
     return (
         <div className={`min-h-screen relative transition-colors duration-500 overflow-hidden ${
-            isLight ? 'bg-slate-50' : 'bg-[#020631]'
+            isLight ? 'bg-slate-50' : 'bg-background'
         }`}>
             {/* Background elements */}
             <div className={`absolute top-0 inset-x-0 h-[500px] bg-gradient-to-b opacity-50 pointer-events-none transition-colors duration-500 ${
@@ -374,7 +374,7 @@ function SearchResults() {
                                     className={`group flex flex-col rounded-none overflow-hidden backdrop-blur-2xl border transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(0,0,0,0.3)] cursor-pointer ${
                                         isLight 
                                             ? 'bg-white/95 border-slate-200 hover:border-primary/30' 
-                                            : 'bg-slate-900/80 border-white/10 hover:border-primary/40'
+                                            : 'bg-card/80 border-white/10 hover:border-primary/40'
                                     }`}
                                     onClick={() => router.push(`/business/${item._id}`)}
                                 >

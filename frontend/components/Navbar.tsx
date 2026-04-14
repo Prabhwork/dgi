@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, Sun, Moon, ChevronDown, ChevronRight, Rocket, Map, ShieldCheck, PieChart, Search, Building2, Store, Handshake, Briefcase, Globe, Zap, Target, Sparkles, Circle, User, Settings, LogOut, Utensils } from "lucide-react";
+import { Menu, X, Sun, Moon, ChevronDown, ChevronRight, Rocket, Map, ShieldCheck, PieChart, Search, Building2, Store, Handshake, Briefcase, Globe, Zap, Target, Sparkles, Circle, User, Settings, LogOut, Utensils, CreditCard } from "lucide-react";
 import Link from "next/link";
 import { useTheme } from "@/components/ThemeProvider";
 import NotificationBell from "./NotificationBell";
@@ -368,7 +368,7 @@ export default function Navbar() {
             animate={{ y: 0 }}
             transition={{ duration: 0.6 }}
             className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled
-                ? isLight ? "bg-[#FFFFF0]/80 border-b border-blue-100 backdrop-blur-md shadow-lg shadow-blue-500/5" : "bg-[#020631]/80 border-b border-white/5 backdrop-blur-xl shadow-2xl"
+                ? isLight ? "bg-[#FFFFF0]/80 border-b border-blue-100 backdrop-blur-md shadow-lg shadow-blue-500/5" : "bg-background/80 border-b border-white/5 backdrop-blur-xl shadow-2xl"
                 : "bg-transparent border-b border-white/0"
                 }`}
         >
@@ -503,6 +503,14 @@ export default function Navbar() {
                                             >
                                                 <User size={16} /> {businessUser ? 'Business Profile' : 'User Profile'}
                                             </Link>
+                                            {regularUser && (
+                                                <Link
+                                                    href="/wallet"
+                                                    className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-bold transition-colors ${isLight ? 'bg-blue-500/10 text-blue-600 hover:bg-blue-500/20' : 'bg-blue-500/10 text-blue-400 hover:bg-blue-500/20'}`}
+                                                >
+                                                    <CreditCard size={16} /> Digital Wallet
+                                                </Link>
+                                            )}
                                             {businessUser && isFoodCategory(businessUser.businessCategory) && (
                                                 <a
                                                     href={`${process.env.NEXT_PUBLIC_FOOD_DASHBOARD_URL}/?sso_token=${typeof window !== 'undefined' ? localStorage.getItem('businessToken') : ''}&partner_id=${businessUser._id}`}
@@ -756,6 +764,12 @@ export default function Navbar() {
                                                 <User size={18} className={isLight ? "text-primary" : "text-white/80"} />
                                                 <span className="text-[10px] font-bold leading-tight">{businessUser ? 'Business Profile' : 'User Profile'}</span>
                                             </Link>
+                                            {regularUser && (
+                                                <Link href="/wallet" onClick={() => setMobileOpen(false)} className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border text-center transition-colors ${isLight ? 'bg-blue-500/5 border-blue-200 text-blue-600 hover:border-blue-400' : 'bg-blue-500/10 border-blue-500/20 text-blue-400 hover:border-blue-500/40'}`}>
+                                                    <CreditCard size={18} />
+                                                    <span className="text-[10px] font-bold leading-tight uppercase">Wallet</span>
+                                                </Link>
+                                            )}
                                             <Link href="#" onClick={() => setMobileOpen(false)} className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border text-center transition-colors ${isLight ? 'bg-white border-slate-200 text-slate-700 hover:border-primary/50' : 'bg-white/5 border-white/10 text-slate-300 hover:border-white/30'}`}>
                                                 <Settings size={18} className={isLight ? "text-primary" : "text-white/80"} />
                                                 <span className="text-[10px] font-bold leading-tight">Settings</span>

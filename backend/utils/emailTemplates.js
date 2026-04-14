@@ -610,6 +610,55 @@ const getResetOTPTemplate = (userName, otp) => {
     `;
 };
 
+const getWalletPinResetOTPTemplate = (userName, otp) => {
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Wallet Security Alert - DBI</title>
+        <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #020617; margin: 0; padding: 0; color: #ffffff; }
+            .container { max-width: 600px; margin: 40px auto; background: #0f172a; border-radius: 32px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 30px 60px rgba(0,0,0,0.5); }
+            .header { background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); padding: 50px 20px; text-align: center; }
+            .header h1 { margin: 0; font-size: 26px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; color: #ffffff; italic: true; }
+            .content { padding: 50px 40px; text-align: center; }
+            .content h2 { color: #f8fafc; margin-bottom: 12px; font-size: 22px; font-weight: 800; }
+            .content p { color: #94a3b8; line-height: 1.6; font-size: 15px; margin-bottom: 30px; }
+            .otp-box { background: rgba(37, 99, 235, 0.1); border: 2px solid rgba(37, 99, 235, 0.3); border-radius: 20px; padding: 30px; margin: 20px 0; display: inline-block; width: 85%; }
+            .otp-code { font-size: 44px; font-weight: 900; color: #3b82f6; letter-spacing: 14px; margin: 0; padding-left: 14px; text-shadow: 0 0 20px rgba(59, 130, 246, 0.4); }
+            .footer { padding: 30px; background: rgba(0, 0, 0, 0.2); text-align: center; border-top: 1px solid rgba(255, 255, 255, 0.05); }
+            .footer p { margin: 5px 0; font-size: 11px; color: #475569; text-transform: uppercase; letter-spacing: 1px; }
+            .warn { font-size: 13px; color: #ef4444; font-weight: 700; margin-top: 25px; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 20px; text-transform: uppercase; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>Wallet <span style="font-style: italic; opacity: 0.8;">Security</span></h1>
+            </div>
+            <div class="content">
+                <h2>Security Verification Code</h2>
+                <p>Hello ${userName}, someone requested to reset your 4-digit Wallet PIN. If this was you, use the code below to authorize the change:</p>
+                
+                <div class="otp-box">
+                    <div class="otp-code">${otp}</div>
+                    <div style="font-size: 10px; color: #475569; margin-top: 15px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px;">Valid for 10 Minutes</div>
+                </div>
+
+                <p class="warn">If you did not request this OTP, DO NOT share it with anyone. Your wallet balance is secure.</p>
+            </div>
+            <div class="footer">
+                <p>© 2026—2027 <b>DBI</b> — Digital Book of India</p>
+                <p>The Most Secure Way to Pay</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+};
+
 module.exports = { 
     getOTPTemplate, 
     getRegistrationSuccessTemplate, 
@@ -619,5 +668,6 @@ module.exports = {
     getClaimApprovedOwnerAlertTemplate,
     getClaimRejectedOwnerAlertTemplate,
     getUserNotificationTemplate,
-    getResetOTPTemplate
+    getResetOTPTemplate,
+    getWalletPinResetOTPTemplate
 };

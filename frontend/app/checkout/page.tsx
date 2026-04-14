@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, X, CheckCircle2, Gift, Loader2, MessageSquare, AlertCircle, CreditCard, Banknote, ArrowRight, Clock } from "lucide-react";
+import { ShoppingBag, X, CheckCircle2, Gift, Loader2, MessageSquare, AlertCircle, CreditCard, Banknote, ArrowRight, Clock, Utensils, Wallet, Plus, ShieldCheck, Info } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -13,12 +13,14 @@ import CursorGlow from "@/components/CursorGlow";
 import ParticleNetworkWrapper from "@/components/ParticleNetworkWrapper";
 import { useTheme } from "@/components/ThemeProvider";
 import OrderSuccess from "@/components/OrderSuccess";
+import WalletPinModal from "@/components/WalletPinModal";
 
 const FOOD_BACKEND = process.env.NEXT_PUBLIC_FOOD_API_URL;
+const MAIN_API = process.env.NEXT_PUBLIC_API_URL;
 
 export default function CheckoutPage() {
     const router = useRouter();
-    const { cart, clearCart, isHydrated } = useCart();
+    const { cart, clearCart, removeFromCart, isHydrated } = useCart();
     const { theme } = useTheme();
     const isLight = theme === "light";
 
@@ -42,7 +44,11 @@ export default function CheckoutPage() {
     const [scheduledTime, setScheduledTime] = useState("");
     const [activeShift, setActiveShift] = useState<'Lunch' | 'Dinner'>('Dinner');
     const [wasPreSelected, setWasPreSelected] = useState(false);
-    const [paymentMethod, setPaymentMethod] = useState<'Online' | 'Cash'>('Online');
+    const [paymentMethod, setPaymentMethod] = useState<'Online' | 'Cash' | 'Wallet'>('Wallet');
+    const [wallet, setWallet] = useState<{ balance: number; isPinSet: boolean } | null>(null);
+    const [isBalanceLoading, setIsBalanceLoading] = useState(true);
+    const [isRecharging, setIsRecharging] = useState(false);
+    const [showPinModal, setShowPinModal] = useState(false);
 
     useEffect(() => {
         // Wait for cart to hydrate before making any redirect decisions
@@ -56,6 +62,14 @@ export default function CheckoutPage() {
 
         // Hydrate order settings from localStorage
         const partnerId = cart[0]?.partnerId;
+        
+        // Safety Redirect: Multi-restaurant carts MUST go through /review-orders
+        const uniquePartners = new Set(cart.map(item => item.partnerId));
+        if (uniquePartners.size > 1) {
+            router.push("/review-orders");
+            return;
+        }
+
         if (partnerId) {
             const savedType = localStorage.getItem(`dbi_order_type_${partnerId}`);
             const savedTime = localStorage.getItem(`dbi_scheduled_time_${partnerId}`);
@@ -89,19 +103,34 @@ export default function CheckoutPage() {
         const fetchUser = async () => {
             if (uToken) {
                 try {
-                    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
-                        headers: { "Authorization": `Bearer ${uToken}` }
-                    });
-                    const d = await res.json();
-                    if (d.success) {
-                        setLoggedUser(d.data);
-                        setLoggedUserId(d.data._id);
-                        checkPendingReviews(d.data._id);
+                    const [userRes, walletRes] = await Promise.all([
+                        fetch(`${MAIN_API}/auth/me`, {
+                            headers: { "Authorization": `Bearer ${uToken}` }
+                        }),
+                        fetch(`${MAIN_API}/wallet/balance`, {
+                            headers: { "Authorization": `Bearer ${uToken}` }
+                        })
+                    ]);
+                    
+                    const userData = await userRes.json();
+                    const walletData = await walletRes.json();
+
+                    if (userData.success) {
+                        setLoggedUser(userData.data);
+                        setLoggedUserId(userData.data._id);
+                        checkPendingReviews(userData.data._id);
                     }
-                } catch { }
+                    if (walletData.success) {
+                        setWallet(walletData);
+                    }
+                } catch (err) {
+                    console.error("Failed to fetch user/wallet", err);
+                } finally {
+                    setIsBalanceLoading(false);
+                }
             } else if (bToken) {
                 try {
-                    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/business/me`, {
+                    const res = await fetch(`${MAIN_API}/business/me`, {
                         headers: { "Authorization": `Bearer ${bToken}` }
                     });
                     const d = await res.json();
@@ -111,6 +140,9 @@ export default function CheckoutPage() {
                         checkPendingReviews(d.data._id);
                     }
                 } catch { }
+                setIsBalanceLoading(false);
+            } else {
+                setIsBalanceLoading(false);
             }
         };
 
@@ -145,9 +177,97 @@ export default function CheckoutPage() {
             setLoading(false);
         };
 
-        fetchUser();
         fetchData();
-    }, [cart, router]);
+        fetchUser();
+    }, [isHydrated, cart.length]);
+
+    const handleQuickRecharge = async () => {
+        const rechargeAmount = Math.ceil(grandTotal - (wallet?.balance || 0));
+        if (rechargeAmount <= 0) return;
+
+        setIsRecharging(true);
+        const token = localStorage.getItem("userToken");
+
+        try {
+            if (!(window as any).Razorpay) {
+                const script = document.createElement("script");
+                script.src = "https://checkout.razorpay.com/v1/checkout.js";
+                script.async = true;
+                document.body.appendChild(script);
+                await new Promise((resolve) => {
+                    script.onload = resolve;
+                });
+            }
+
+            const orderRes = await fetch(`${MAIN_API}/wallet/recharge/order`, {
+                method: "POST",
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ amount: rechargeAmount })
+            });
+
+            const orderData = await orderRes.json();
+            if (!orderData.success) throw new Error(orderData.error);
+
+            const options = {
+                key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+                amount: orderData.amount * 100,
+                currency: "INR",
+                name: "DBI Quick Recharge",
+                description: `Top up for your order`,
+                image: "/assets/DLOGO.png",
+                order_id: orderData.orderId,
+                handler: async function (response: any) {
+                    try {
+                        const verifyRes = await fetch(`${MAIN_API}/wallet/recharge/verify`, {
+                            method: "POST",
+                            headers: { 
+                                "Content-Type": "application/json",
+                                "Authorization": `Bearer ${token}`
+                            },
+                            body: JSON.stringify({
+                                razorpayOrderId: response.razorpay_order_id,
+                                razorpayPaymentId: response.razorpay_payment_id,
+                                razorpaySignature: response.razorpay_signature
+                            })
+                        });
+
+                        const verifyData = await verifyRes.json();
+                        if (verifyData.success) {
+                            toast.success(`Wallet Top-up Successful! ₹${rechargeAmount} added.`);
+                            // Refresh balance
+                            const walletRes = await fetch(`${MAIN_API}/wallet/balance`, {
+                                headers: { "Authorization": `Bearer ${token}` }
+                            });
+                            const wData = await walletRes.json();
+                            if (wData.success) setWallet(wData);
+                        } else {
+                            toast.error(verifyData.error || "Payment verification failed");
+                        }
+                    } catch (err) {
+                        toast.error("Error verifying payment");
+                    }
+                },
+                prefill: {
+                    name: loggedUser?.name || "",
+                    email: loggedUser?.email || "",
+                    contact: loggedUser?.phone || ""
+                },
+                theme: { color: "#3066FF" }
+            };
+
+            const rzp = new (window as any).Razorpay(options);
+            rzp.open();
+
+        } catch (err: any) {
+            console.error("Quick recharge error:", err);
+            toast.error(err.message || "Recharge failed");
+        } finally {
+            setIsRecharging(false);
+        }
+    };
 
     const getSlotsForShift = () => {
         if (!settings?.dineoutSettings) {
@@ -398,9 +518,113 @@ export default function CheckoutPage() {
         }
     };
 
+    const handleWalletCheckout = async () => {
+        if (!wallet) return;
+
+        if (wallet.balance < grandTotal) {
+            toast.error("Insufficient Wallet Balance", {
+                description: `You need ₹${(grandTotal - wallet.balance).toFixed(2)} more.`
+            });
+            return;
+        }
+
+        if (!wallet.isPinSet) {
+            toast.error("Security PIN Required", {
+                description: "Go to Wallet to set your 4-digit PIN first.",
+                action: {
+                    label: "Go to Wallet",
+                    onClick: () => router.push("/wallet")
+                }
+            });
+            return;
+        }
+
+        setShowPinModal(true);
+    };
+
+    const handlePlaceWalletOrder = async (pin: string) => {
+        setIsSubmitting(true);
+        try {
+            const token = localStorage.getItem("userToken");
+            const partnerId = cart[0]?.partnerId;
+            if (!partnerId) throw new Error("Partner missing");
+
+            // 1. Process Wallet Payment
+            const payRes = await fetch(`${MAIN_API}/wallet/pay`, {
+                method: "POST",
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ 
+                    amount: grandTotal, 
+                    pin,
+                    description: `Order at ${settings?.businessName || 'Restaurant'}`
+                })
+            });
+
+            const payData = await payRes.json();
+            if (!payData.success) {
+                throw new Error(payData.error || "Payment Failed");
+            }
+
+            // 2. Place Restaurant Order
+            const itemsProcessed = cart.map(item => ({
+                menuItem: item._id,
+                quantity: item.quantity,
+                price: item.price,
+                name: item.name
+            }));
+
+            const payload = {
+                items: itemsProcessed,
+                itemsArray: itemsProcessed,
+                subtotal: subtotal,
+                tax: tax,
+                discount: finalDiscount,
+                total: grandTotal,
+                couponCode: appliedCoupon ? appliedCoupon.code : null,
+                paymentMethod: "Wallet",
+                payment: "Paid",
+                userId: loggedUserId,
+                customer: loggedUser?.name || 'Guest',
+                customerEmail: loggedUser?.email || '',
+                customerPhone: loggedUser?.displayPhone || loggedUser?.phone || '',
+                orderType: orderType,
+                restaurantCharges: restaurantCharges,
+                time: orderType === 'Dine-in' ? scheduledTime : 'ASAP'
+            };
+
+            const res = await fetch(`${FOOD_BACKEND}/orders`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "x-partner-id": partnerId },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                clearCart();
+                if (typeof window !== "undefined") {
+                    window.dispatchEvent(new Event("cartSync"));
+                }
+                setShowPinModal(false);
+                toast.success("Payment & Order Success!");
+                router.push("/user-profile?tab=orders");
+            } else {
+                const errData = await res.json();
+                throw new Error(errData.message || 'Payment deducted but order placement failed. Contact support.');
+            }
+        } catch (err: any) {
+            toast.error("Ordering Error", { description: err.message });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     const onCheckoutClick = () => {
         if (paymentMethod === 'Cash') {
             handleCashCheckout();
+        } else if (paymentMethod === 'Wallet') {
+            handleWalletCheckout();
         } else {
             handleCheckout();
         }
@@ -464,15 +688,69 @@ export default function CheckoutPage() {
                     </motion.div>
                 )}
 
+                {/* Wallet Info Box */}
+                {!isBusinessAccount && (
+                    <motion.div 
+                        initial={{ opacity: 0, scale: 0.95 }} 
+                        animate={{ opacity: 1, scale: 1 }} 
+                        className={`p-8 rounded-[2.5rem] bg-gradient-to-br border shadow-2xl relative overflow-hidden group transition-all ${
+                            isLight 
+                            ? 'from-blue-50 to-indigo-50 border-blue-100' 
+                            : 'from-indigo-500/10 to-purple-500/10 border-white/10'
+                        }`}
+                    >
+                        <div className={`absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity ${isLight ? 'text-blue-500' : 'text-white'}`}>
+                            <Wallet size={120} />
+                        </div>
+                        <div className="relative z-10 flex justify-between items-center">
+                            <div className="space-y-1">
+                                <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${isLight ? 'text-blue-600' : 'text-indigo-400'}`}>DBI Digital Wallet</p>
+                                <p className={`text-3xl font-black tracking-tight italic ${isLight ? 'text-slate-900' : 'text-white'}`}>₹{wallet?.balance?.toFixed(2) || '0.00'}</p>
+                            </div>
+                            <div className="text-right">
+                                <p className={`text-[10px] font-black uppercase tracking-widest ${isLight ? 'text-slate-400' : 'text-white/40'}`}>Bill Total</p>
+                                <p className={`text-2xl font-black tracking-tight italic ${wallet !== null && wallet.balance < grandTotal ? 'text-red-500' : 'text-emerald-500'}`}>
+                                    ₹{grandTotal.toFixed(2)}
+                                </p>
+                            </div>
+                        </div>
+                        {wallet !== null && wallet.balance < grandTotal && (
+                            <div className={`mt-6 pt-6 border-t flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${isLight ? 'border-blue-100' : 'border-white/5'}`}>
+                                <div className="flex items-center gap-2 text-red-500">
+                                    <AlertCircle size={16} />
+                                    <p className="text-[11px] font-black uppercase italic tracking-wider">Insufficient funds. Recharge to proceed.</p>
+                                </div>
+                                <button
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        handleQuickRecharge();
+                                    }}
+                                    disabled={isRecharging}
+                                    className="relative z-50 bg-[#E03546] hover:bg-[#c42e3c] active:scale-95 text-white rounded-xl px-6 py-4 flex items-center gap-2 font-black uppercase text-[10px] tracking-widest transition-all shadow-xl shadow-red-600/30 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isRecharging ? (
+                                        <Loader2 className="animate-spin w-4 h-4" />
+                                    ) : (
+                                        <>
+                                            <Plus size={14} strokeWidth={3} />
+                                            <span>Add ₹{Math.ceil(grandTotal - (wallet?.balance || 0))}</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        )}
+                    </motion.div>
+                )}
+
                 {/* Items Section */}
                 <motion.div 
                     initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
                     className={`rounded-[2rem] p-6 md:p-8 backdrop-blur-xl border shadow-xl ${isLight ? 'bg-white/90 border-slate-200 shadow-slate-200/50' : 'bg-slate-900/60 border-white/10 shadow-black/50'}`}
                 >
                     <h3 className={`text-xs font-black uppercase tracking-widest mb-6 pb-4 border-b border-dashed ${isLight ? 'text-slate-400 border-slate-200' : 'text-white/30 border-white/10'}`}>Order Items</h3>
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                         {cart.map((item) => (
-                            <div key={item._id} className="flex items-start gap-4">
+                            <div key={item._id} className="flex items-start gap-4 group">
                                 <div className={`w-4 h-4 mt-1 rounded border-2 flex items-center justify-center shrink-0 ${item.isVeg ? 'border-emerald-600' : 'border-red-600'}`}>
                                     <div className={`w-1.5 h-1.5 rounded-full ${item.isVeg ? 'bg-emerald-600' : 'bg-red-600'}`} />
                                 </div>
@@ -484,109 +762,19 @@ export default function CheckoutPage() {
                                         <span className="text-xs font-bold uppercase tracking-wider opacity-50">₹{item.price} each</span>
                                     </div>
                                 </div>
-                                <div className="font-bold text-lg">₹{item.price * item.quantity}</div>
+                                <div className="flex items-center gap-3">
+                                    <div className="font-bold text-lg">₹{item.price * item.quantity}</div>
+                                    <button
+                                        onClick={() => removeFromCart(item._id)}
+                                        className="w-7 h-7 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/50 hover:bg-red-500/20 hover:border-red-500/40 hover:text-red-400 transition-all ml-2"
+                                        title="Remove item"
+                                    >
+                                        <X size={12} />
+                                    </button>
+                                </div>
                             </div>
                         ))}
                     </div>
-                </motion.div>
-
-                {/* Service Selection: Takeaway vs Dine-in */}
-                <motion.div 
-                    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-                    className={`rounded-[2rem] p-6 md:p-8 backdrop-blur-xl border shadow-xl ${isLight ? 'bg-white/90 border-slate-200 shadow-slate-200/50' : 'bg-slate-900/60 border-white/10 shadow-black/50'}`}
-                >
-                    <h3 className={`text-xs font-black uppercase tracking-widest mb-6 pb-4 border-b border-dashed ${isLight ? 'text-slate-400 border-slate-200' : 'text-white/30 border-white/10'}`}>Service Selection</h3>
-                    
-                    {wasPreSelected && orderType === 'Dine-in' ? (
-                        <div className="space-y-6">
-                            <div className={`p-6 rounded-[1.5rem] border-2 flex items-center justify-between gap-4 bg-slate-900 border-slate-900 text-white shadow-xl`}>
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-2xl bg-primary/20 flex items-center justify-center border border-white/10">
-                                        <MessageSquare size={24} className="text-primary" />
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-primary">Dine-in Scheduled</p>
-                                        <p className="text-sm font-black italic uppercase leading-tight mt-0.5">Reservation Locked</p>
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Arrival Slot</p>
-                                    <p className="text-lg font-black text-primary italic uppercase leading-none mt-1">{scheduledTime}</p>
-                                </div>
-                            </div>
-                            <p className="text-[9px] font-bold text-white/30 italic px-2">
-                                * To change this reservation, please return to the restaurant menu.
-                            </p>
-                        </div>
-                    ) : (
-                        <>
-                            <div className="grid grid-cols-2 gap-4">
-                                {[
-                                    { id: 'Takeaway', label: 'Takeaway', icon: ShoppingBag, color: 'text-orange-500' },
-                                    { id: 'Dine-in', label: 'Dine-in', icon: MessageSquare, color: 'text-primary' }
-                                ].map((type) => (
-                                    <button
-                                        key={type.id}
-                                        onClick={() => setOrderType(type.id as any)}
-                                        className={`p-6 rounded-[1.5rem] border-2 transition-all flex flex-col items-center gap-3 ${orderType === type.id 
-                                            ? `bg-slate-900 border-slate-900 text-white shadow-xl scale-[1.02]` 
-                                            : isLight ? 'bg-slate-50 border-slate-100 text-slate-400 hover:border-slate-200' : 'bg-white/5 border-white/10 text-white/30 hover:border-white/20'
-                                        }`}
-                                    >
-                                        <type.icon size={24} className={orderType === type.id ? 'text-white' : type.color} />
-                                        <span className="text-[10px] font-black uppercase tracking-[0.2em]">{type.label}</span>
-                                    </button>
-                                ))}
-                            </div>
-
-                            {orderType === 'Dine-in' && (
-                                <motion.div 
-                                    initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
-                                    className="mt-8 space-y-6"
-                                >
-                                    <div className="flex items-center justify-between gap-4 pl-2">
-                                        <label className={`text-[10px] font-black uppercase tracking-widest block ${isLight ? 'text-slate-400' : 'text-white/30'}`}>Arrival Slot</label>
-                                        <div className="flex bg-white/5 p-1 rounded-xl border border-white/10">
-                                            {['Lunch', 'Dinner'].map((s: any) => (
-                                                <button
-                                                    key={s}
-                                                    type="button"
-                                                    onClick={() => setActiveShift(s)}
-                                                    className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${activeShift === s ? 'bg-primary text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
-                                                >
-                                                    {s}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="grid grid-cols-3 md:grid-cols-4 gap-3 max-h-[160px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10">
-                                        {getSlotsForShift().map((slot) => (
-                                            <button
-                                                key={slot}
-                                                type="button"
-                                                onClick={() => setScheduledTime(slot)}
-                                                className={`py-3 rounded-xl border-2 text-[10px] font-black uppercase tracking-widest transition-all ${scheduledTime === slot 
-                                                    ? 'bg-primary border-primary text-white shadow-lg scale-[1.02]' 
-                                                    : isLight ? 'bg-slate-50 border-slate-100 text-slate-400 hover:border-slate-200' : 'bg-white/5 border-white/10 text-white/30 hover:border-white/20'}`}
-                                            >
-                                                {slot}
-                                            </button>
-                                        ))}
-                                        {getSlotsForShift().length === 0 && (
-                                            <div className="col-span-full py-8 text-center opacity-30 text-[9px] font-black uppercase tracking-widest">
-                                                No slots available
-                                            </div>
-                                        )}
-                                    </div>
-                                    
-                                    <p className={`text-[9px] font-bold italic tracking-wide opacity-50 pl-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                                        Tip: Pre-ordering helps the kitchen prepare your meal exactly for your selected slot.
-                                    </p>
-                                </motion.div>
-                            )}
-                        </>
-                    )}
                 </motion.div>
 
                 {/* Offers & Coupons - ONLY FOR TAKEAWAY */}
@@ -655,8 +843,9 @@ export default function CheckoutPage() {
                 >
                     <h3 className={`text-xs font-black uppercase tracking-widest mb-6 pb-4 border-b border-dashed ${isLight ? 'text-slate-400 border-slate-200' : 'text-white/30 border-white/10'}`}>Payment Method</h3>
                     
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         {[
+                            { id: 'Wallet', label: 'Digital Wallet', icon: Wallet, color: 'text-indigo-500' },
                             { id: 'Online', label: 'Pay Online', icon: CreditCard, color: 'text-emerald-500' },
                             { id: 'Cash', label: 'Cash / COD', icon: Banknote, color: 'text-amber-500' }
                         ].map((method) => (
@@ -755,23 +944,30 @@ export default function CheckoutPage() {
                             </Button>
                         ) : (
                             <Button
-                                onClick={onCheckoutClick}
-                                disabled={isSubmitting}
-                                className="w-full py-8 rounded-[1.5rem] bg-[#E03546] hover:bg-[#c32d3d] text-white font-black uppercase tracking-widest shadow-xl shadow-red-600/20 flex items-center justify-center gap-3 text-sm transition-all active:scale-[0.98]"
-                            >
-                                {isSubmitting ? (
-                                    <Loader2 className="animate-spin w-5 h-5" />
-                                ) : (
-                                    <>
-                                        {paymentMethod === 'Cash' ? <Banknote size={20} /> : <ShoppingBag size={20} />}
-                                        {paymentMethod === 'Cash' ? 'Confirm Cash Order' : `Pay ₹${grandTotal.toFixed(2)} & Confirm`}
-                                    </>
-                                )}
-                            </Button>
+                        onClick={onCheckoutClick}
+                        disabled={isSubmitting}
+                        className="w-full py-8 rounded-[1.5rem] bg-[#E03546] hover:bg-[#c32d3d] text-white font-black uppercase tracking-widest shadow-xl shadow-red-600/20 flex items-center justify-center gap-3 text-sm transition-all active:scale-[0.98]"
+                    >
+                        {isSubmitting ? (
+                            <Loader2 className="animate-spin w-5 h-5" />
+                        ) : (
+                            <>
+                                {paymentMethod === 'Cash' ? <Banknote size={20} /> : paymentMethod === 'Wallet' ? <Wallet size={20} /> : <ShoppingBag size={20} />}
+                                {paymentMethod === 'Cash' ? 'Confirm Cash Order' : paymentMethod === 'Wallet' ? 'Pay via Wallet & Confirm' : `Pay ₹${grandTotal.toFixed(2)} & Confirm`}
+                            </>
                         )}
-                    </div>
-                </motion.div>
-            </main>
-        </div>
+                    </Button>
+                )}
+            </div>
+        </motion.div>
+    </main>
+
+    <WalletPinModal 
+        isOpen={showPinModal} 
+        onClose={() => setShowPinModal(false)} 
+        onVerify={handlePlaceWalletOrder} 
+        isVerifying={isSubmitting} 
+    />
+</div>
     );
 }

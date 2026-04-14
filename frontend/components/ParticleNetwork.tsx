@@ -22,12 +22,13 @@ export default function ParticleNetwork({ className = "" }: { className?: string
 
         // Colors based on theme
         const particleColor = theme === "light" 
-            ? "rgba(30, 100, 220, 0.7)"   // vivid blue dots for light mode
-            : "rgba(255, 255, 255, 1)";
+            ? "rgba(100, 150, 255, 0.3)"   // Subtle blue dots for light mode
+            : "rgba(255, 255, 255, 0.4)";  // Even lighter dots for dark mode
         const strokeColorBase = theme === "light" 
-            ? "rgba(30, 100, 220, "        // blue connections in light mode
+            ? "rgba(100, 150, 255, "        // Subtle blue connections in light mode
             : "rgba(255, 255, 255, ";
-        const baseOpacityMultiplier = theme === "light" ? 0.22 : 0.15;
+        const baseOpacityMultiplier = theme === "light" ? 0.08 : 0.08;
+        const particleRadius = theme === "light" ? 1.5 : 2.0; 
 
         const resize = () => {
             canvas.width = window.innerWidth;
@@ -63,7 +64,7 @@ export default function ParticleNetwork({ className = "" }: { className?: string
                 ctx.beginPath();
                 ctx.shadowBlur = 10;
                 ctx.shadowColor = particleColor;
-                ctx.arc(p.x, p.y, 2.8, 0, Math.PI * 2);
+                ctx.arc(p.x, p.y, particleRadius, 0, Math.PI * 2);
                 ctx.fillStyle = particleColor;
                 ctx.fill();
                 

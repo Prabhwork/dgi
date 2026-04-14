@@ -139,6 +139,7 @@ exports.createOrder = async (req, res) => {
 
       // Save to Database Notification (for User Inbox)
       if (userId) {
+        // 1. Save to DB
         await mainDb.collection('notifications').insertOne({
           userId: new mongoose.Types.ObjectId(userId),
           title: 'Order Received',
@@ -148,6 +149,18 @@ exports.createOrder = async (req, res) => {
           data: { orderId: saved.id },
           createdAt: new Date()
         });
+
+        // 2. Send Push Notification
+        const userTokens = await mainDb.collection('fcmtokens').find({ userId: new mongoose.Types.ObjectId(userId) }).toArray();
+        if (userTokens.length > 0) {
+          const tokens = userTokens.map(t => t.token);
+          await fcmService.sendMulticast(tokens, {
+            title: 'Order Confirmed! 🍔',
+            body: `Your order #${saved.id} at ${saved.restaurantName || 'Restaurant'} has been received.`,
+            type: 'Order',
+            data: { orderId: saved.id, type: 'NEW_ORDER' }
+          });
+        }
       }
     } catch (fcmErr) {
       console.error("New Order Notification Error:", fcmErr);
@@ -163,7 +176,7 @@ exports.createOrder = async (req, res) => {
 exports.updateOrderStatus = async (req, res) => {
   try {
     const partnerId = getPartnerId(req);
-    const statusFlow = ['Pending', 'Accepted', 'Preparing', 'Ready', 'Completed'];
+    const statusFlow = ['Pending', 'Accepted', 'Preparing', 'Ready', 'Completed', 'Rejected', 'Cancelled'];
     const order = await Order.findOne({ id: req.params.id, partnerId });
     if (!order) return res.status(404).json({ message: 'Order logic violation or access denied' });
 
@@ -201,7 +214,9 @@ exports.updateOrderStatus = async (req, res) => {
             'Accepted': 'Your order has been accepted and is joining the queue! 👨‍🍳',
             'Preparing': `The chef has started preparing your meal! 🥘 (Est: ${saved.prepTime} mins)`,
             'Ready': 'Your order is ready for pickup! 🗳️ Enjoy your meal!',
-            'Completed': 'Order handed over successfully. Hope you enjoy it! ❤️'
+            'Completed': 'Order handed over successfully. Hope you enjoy it! ❤️',
+            'Rejected': 'Unfortunately, the restaurant cannot fulfill your order at this time. ❌',
+            'Cancelled': 'Your order has been cancelled. 🛑 Connect with DBI support for details.'
           };
           
           if (statusMessages[newStatus]) {

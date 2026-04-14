@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const orderSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
   partnerId: { type: String, required: true, index: true },
+  restaurantName: { type: String },
   userId: { type: String, index: true }, // ID of the logged-in user who placed the order
   customer: { type: String, required: true },
   customerEmail: { type: String },
@@ -16,7 +17,7 @@ const orderSchema = new mongoose.Schema({
   discount: { type: Number, default: 0 },
   couponCode: { type: String },
   prepTime: { type: Number, default: 0 }, // Max prepTime of items
-  status: { type: String, enum: ['Pending','Accepted','Preparing','Ready','Completed'], default: 'Pending' },
+  status: { type: String, enum: ['Pending','Accepted','Preparing','Ready','Completed', 'Rejected', 'Cancelled'], default: 'Pending' },
   acceptedAt: { type: Date }, // Timestamp when partner accepts
   preparingAt: { type: Date }, // Timestamp when preparation starts
   readyAt: { type: Date }, // Timestamp when order is marked as Ready

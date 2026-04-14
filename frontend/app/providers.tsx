@@ -9,6 +9,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import GoogleAuthProviderWrapper from "@/components/GoogleAuthProvider";
 
 import { CartProvider } from "@/context/CartContext";
+import FloatingCartBar from "@/components/FloatingCartBar";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
     const [queryClient] = useState(() => new QueryClient());
@@ -22,6 +23,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
                             <Toaster />
                             <Sonner />
                             {children}
+                            <FloatingCartBar />
                         </TooltipProvider>
                     </GoogleAuthProviderWrapper>
                 </QueryClientProvider>

@@ -337,7 +337,10 @@ function UserProfileContent() {
         try {
             const res = await fetch(`${FOOD_API}/reviews/public`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json",
+                    "x-partner-id": reviewData.partnerId 
+                },
                 body: JSON.stringify({
                     ...reviewData,
                     customer: user.name || "Customer"
@@ -667,7 +670,7 @@ function UserProfileContent() {
                                                                 <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
                                                                     <Utensils size={18} className="text-primary" />
                                                                 </div>
-                                                                <div className="flex-1 min-w-0">
+                                                                 <div className="flex-1 min-w-0">
                                                                     <div className="flex items-center gap-2 flex-wrap">
                                                                         <p className="text-sm font-black text-white">{order.id}</p>
                                                                         <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${STATUS_COLORS[order.status] || "bg-white/10 text-white/40 border-white/10"}`}>
@@ -685,9 +688,16 @@ function UserProfileContent() {
                                                                             <PickupCountdownBadge readyAt={order.readyAt} />
                                                                         )}
                                                                     </div>
-                                                                    <p className="text-[11px] text-white/40 mt-0.5 truncate">
-                                                                        {Array.isArray(order.items) ? order.items.map((it: any) => it.name).join(", ") : order.items}
-                                                                    </p>
+                                                                    <div className="flex flex-col mt-0.5">
+                                                                        {order.restaurantName && (
+                                                                            <p className="text-[10px] font-black text-primary uppercase tracking-widest italic">
+                                                                                {order.restaurantName}
+                                                                            </p>
+                                                                        )}
+                                                                        <p className="text-[11px] text-white/40 truncate">
+                                                                            {Array.isArray(order.items) ? order.items.map((it: any) => it.name).join(", ") : order.items}
+                                                                        </p>
+                                                                    </div>
                                                                 </div>
                                                                 <div className="text-right shrink-0 ml-2">
                                                                     <p className="text-base font-black text-white">₹{order.total?.toFixed(2)}</p>

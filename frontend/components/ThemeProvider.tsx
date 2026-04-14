@@ -13,10 +13,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const [theme, setTheme] = useState<Theme>("dark");
 
     useEffect(() => {
-        // Force dark mode for now as requested
-        // const saved = localStorage.getItem("dbi-theme") as Theme | null;
-        // if (saved) setTheme(saved);
-        setTheme("dark");
+        const saved = localStorage.getItem("dbi-theme") as Theme | null;
+        if (saved) {
+            setTheme(saved);
+        } else {
+            setTheme("dark");
+        }
     }, []);
 
     useEffect(() => {
@@ -32,8 +34,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }, [theme]);
 
     const toggle = () => {
-        // Toggle disabled as per user request to stay on dark theme
-        // setTheme(t => (t === "dark" ? "light" : "dark"));
+        setTheme(t => (t === "dark" ? "light" : "dark"));
     };
 
     return (

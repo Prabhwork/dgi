@@ -1,0 +1,20 @@
+{
+  "name": "digital-book-of-india",
+  "version": "1.0.0",
+  "description": "Root package to manage all services",
+  "main": "index.js",
+  "scripts": {
+    "start": "concurrently \"npm run backend\" \"npm run frontend\" \"npm run admin\" \"npm run food-backend\" \"npm run food-frontend\" \"npm run food-admin\"",
+    "dev": "npm start",
+    "backend": "npm run dev --prefix backend",
+    "frontend": "npm run dev --prefix frontend -- -p 3000",
+    "admin": "npm run dev --prefix admin -- -p 3001",
+    "food-backend": "npm run dev --prefix food-dashboard/backend",
+    "food-frontend": "npm run dev --prefix food-dashboard/frontend",
+    "food-admin": "npm run dev --prefix food-dashboard/admin",
+    "install-all": "concurrently \"npm install\" \"npm install --prefix backend\" \"npm install --prefix frontend\" \"npm install --prefix admin\" \"npm install --prefix food-dashboard/backend\" \"npm install --prefix food-dashboard/frontend\" \"npm install --prefix food-dashboard/admin\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

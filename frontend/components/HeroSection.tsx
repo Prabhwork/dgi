@@ -459,7 +459,7 @@ export default function HeroSection() {
                                             exit={{ opacity: 0, y: 10, scale: 0.95 }}
                                             className={`absolute top-full left-0 right-[-1px] mt-2 rounded-xl border border-solid shadow-2xl overflow-hidden z-[100] backdrop-blur-2xl ${theme === 'light'
                                                 ? 'bg-[#FCF8EB]/95 border-slate-900/10'
-                                                : 'bg-[#020631]/95 border-white/10'
+                                                : 'bg-card/95 border-white/10'
                                                 }`}
                                         >
                                             <div className="py-2 max-h-[300px] overflow-y-auto custom-scrollbar">
