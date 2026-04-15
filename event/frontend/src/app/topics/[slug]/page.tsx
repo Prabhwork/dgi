@@ -7,6 +7,8 @@ import { Users, Handshake, TrendingUp, Briefcase, Calendar, MapPin, Target } fro
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
+
+
 export default function TopicPage() {
     const params = useParams();
     const slug = (params.slug as string) || "topic";
@@ -18,31 +20,131 @@ export default function TopicPage() {
         .join(' ')
         .replace(' And ', ' & ');
         
-    const getCategoryImage = (s: string) => {
-        if (s.includes('food') || s.includes('beverage')) return '1504674900247-0877df9cc836';
-        if (s.includes('travel') || s.includes('tourism') || s.includes('aviation')) return '1436491865332-7a6baeb5220f';
-        if (s.includes('real') || s.includes('prop') || s.includes('architect') || s.includes('construct')) return '1512917774080-9991f1c4c750';
-        if (s.includes('health') || s.includes('medical') || s.includes('bio')) return '1505751172876-fa1923c5c528';
-        if (s.includes('edu')) return '1523050854058-8df90110c9f1';
-        if (s.includes('commerce') || s.includes('retail')) return '1472851294608-061145a8e0e4';
-        if (s.includes('financ') || s.includes('insur')) return '1590283603385-17ffb3a7f29f';
-        if (s.includes('auto') || s.includes('transport')) return '1492144534655-ae79c964c9d7';
-        if (s.includes('fashion') || s.includes('beauty')) return '1445205170230-053b83016050';
-        if (s.includes('enter') || s.includes('gaming') || s.includes('media') || s.includes('pr')) return '1511512578047-dfb367046420';
-        if (s.includes('logistics') || s.includes('import')) return '1566576912321-573007545eb1'; // boxes/warehouse
-        if (s.includes('agri')) return '1500937386664-56d1dfef3854'; // farming tractor
-        if (s.includes('energy') || s.includes('clean') || s.includes('environ')) return '1466611653911-95081537e5b7';
-        if (s.includes('manu') || s.includes('hard')) return '1581091226825-a6a2a5aee158';
-        if (s.includes('art') || s.includes('design') || s.includes('photo')) return '1499892477393-f675841bc283';
-        if (s.includes('sport') || s.includes('fitness')) return '1517836357463-d25dfeac3438';
-        if (s.includes('cloud') || s.includes('data')) return '1558485984-5f11cc7c50a1';
-        if (s.includes('ai') || s.includes('robotic')) return '1485827404703-89b55fcc595e';
-        if (s.includes('tech') || s.includes('software') || s.includes('web')) return '1518770660439-4636190af475';
-        if (s.includes('event')) return '1505373877841-8d25f7d46678';
+    // Exact slug → unique Unsplash photo ID mapping (no fallbacks needed)
+    const PHOTO_MAP: Record<string, string> = {
+        // Food & Beverage
+        'food-beverage':         '1414235077428-338989a2e8c0', // restaurant kitchen
+        'food':                  '1414235077428-338989a2e8c0',
+        'beverage':              '1558618666-fcd25c85cd64', // coffee drinks
+        // Travel & Tourism
+        'travel-tourism':        '1469854523086-cc02b6f0cdbb', // airplane window
+        'travel':                '1469854523086-cc02b6f0cdbb',
+        'tourism':               '1506905925346-21bde3fa0e7f', // mountain landscape
+        // Real Estate
+        'real-estate':           '1560518883-ce09059eeffa', // luxury house
+        'proptech':              '1570129477492-45c003edd2be', // smart home
+        'architecture':          '1487958449943-2429e8be8625', // modern architecture
+        'construction':          '1504307651254-35680f356dfd', // construction site
+        // Technology
+        'technology':            '1518770660439-4636190af475', // dark tech circuit
+        'it-services':           '1451187580459-43490279c0fa', // server room
+        'software-dev':          '1461749280684-dccba630e2f6', // code on screen
+        'web-development':       '1547658719-da2b51169166', // web design
+        'seo-services':          '1432888622747-4eb9a8f5a07d', // analytics charts
+        // Health & Wellness
+        'health-wellness':       '1559757148-5c350d0d3c56', // medical modern
+        'healthtech':            '1576091160399-112ba8d25d1d', // health tech
+        'biotechnology':         '1530026405845-9a81c1e1bb91', // lab biotech
+        // Education
+        'education':             '1523050854058-8df90110c9f1', // university campus
+        'edtech':                '1584697964190-b7a7e82b3e9d', // online learning
+        // E-commerce & Retail
+        'e-commerce':            '1472851294608-061145a8e0e4', // shopping bags
+        'retail':                '1555529669-e69b28c5a89f', // retail store
+        // Finance
+        'finance':               '1611974789855-9c2a0a7236a3', // stock market
+        'fintech':               '1563013544-824ae1b704d3', // fintech app
+        'insurance':             '1450101499163-c8848c66ca85', // insurance docs
+        'insurtech':             '1565514020179-026b92b84bb6', // digital insurance
+        // Automotive & Transport
+        'automotive':            '1492144534655-ae79c964c9d7', // luxury car
+        'transport':             '1544620347-c4fd4a3d5957', // transport highway
+        'aviation':              '1436491865332-7a6baeb5220f', // airplane in sky
+        // Fashion & Apparel
+        'fashion-apparel':       '1445205170230-053b83016050', // fashion runway
+        'fashion':               '1445205170230-053b83016050',
+        'beauty-care':           '1522335789203-aabd1fc54bc9', // beauty makeup
+        'beauty':                '1522335789203-aabd1fc54bc9',
+        // Entertainment & Media
+        'entertainment':         '1511512578047-dfb367046420', // concert stage
+        'media-pr':              '1557804506-669a67965ba0', // media broadcast
+        'gaming':                '1542751371-adc38448a05e', // gaming setup
+        // Logistics & Import/Export
+        'logistics':             '1566576912321-573007545eb1', // warehouse
+        'import-export':         '1578575437130-527eed3abbec', // shipping containers port
+        // Agriculture
+        'agriculture':           '1500937386664-56d1dfef3854', // farming tractor field
+        'agritech':              '1574943320219-553eb213f72d', // smart farming drone
+        // Energy & Environment
+        'energy-power':          '1473341304170-971dccb5ac1e', // wind turbines
+        'cleantech':             '1466611653911-95081537e5b7', // solar panels green
+        'environment':           '1441974231531-c6227db76b6e', // green nature forest
+        // Manufacturing & Hardware
+        'manufacturing':         '1581091226825-a6a2a5aee158', // factory robots
+        'hardware':              '1518770660439-4636190af475', // computer hardware
+        // Hospitality
+        'hospitality':           '1542314831-068cd1dbfeeb', // luxury hotel lobby
+        // Consulting & Marketing
+        'consulting':            '1454165804606-c3d57bc86b40', // business meeting
+        'marketing':             '1533750349088-cd871a92f312', // marketing campaign
+        // HR & Staffing
+        'hr-staffing':           '1521737604893-d14cc237f11d', // team people working
+        // Event Management
+        'event-management':      '1505373877841-8d25f7d46678', // event conference
+        // Photography
+        'photography':           '1516035069371-29a1b244cc32', // camera photography
+        // Fitness
+        'fitness':               '1517836357463-d25dfeac3438', // gym workout
+        // Printing
+        'printing':              '1558618048-b3b3f0f3a7e4', // printing press
+        // Sports
+        'sports':                '1461896836374-6e5cfc5ba8ac', // sports stadium
+        // Art & Crafts
+        'art-crafts':            '1499892477393-f675841bc283', // painting art studio
+        'design':                '1541746972996-4e0b0f43e02a', // design workspace
+        // AI & Advanced Tech
+        'ai-robotics':           '1485827404703-89b55fcc595e', // robot AI
+        'vr-ar':                 '1593508512255-86ab42a8e620', // VR headset
+        'blockchain':            '1639762681485-074b7f938ba0', // blockchain crypto
+        'cybersecurity':         '1550751827-4bd374c3f58b', // cybersecurity lock
+        'cloud-computing':       '1544197150-b99a580bb7a8', // cloud data center
+        // Other Tech
+        'spacetech':             '1451187580459-43490279c0fa', // space satellite
+        'defense-aerospace':     '1541185933-ef5d3c7b7f29', // aerospace jet
+        'data-analytics':        '1551288049-bebda4e38f71', // data dashboard
+        'drones':                '1473968512647-3e447244af8f', // drone flying
+        'iot':                   '1558618048-b3b3f0f3a7e4', // connected devices iot
+        'nanotechnology':        '1504711434489-ff32f4a8b1f3', // science nano lab
+        // Legal
+        'legal-services':        '1589829545856-d10d557cf95f', // law books gavel
+        'legaltech':             '1450101499163-c8848c66ca85', // legal tech
+        // Non-profit
+        'non-profit':            '1469571486292-0ba58a3f068b', // community helping hands
+        // Telecom
+        'telecom':               '1516321318423-f06f85e504b3', // telecom towers
+    };
+
+    const getCategoryImage = (s: string): string => {
+        // Try exact slug match first
+        if (PHOTO_MAP[s]) return PHOTO_MAP[s];
         
-        // Solid professional fallbacks
-        const fallbacks = ['1556761175-5973dc0f32d7', '1454165804606-c3d57bc86b40', '1522202176988-66273c2fd55f'];
-        return fallbacks[s.split('').reduce((a, b) => a + b.charCodeAt(0), 0) % fallbacks.length];
+        // Try partial slug match
+        for (const [key, val] of Object.entries(PHOTO_MAP)) {
+            const keyParts = key.split('-');
+            if (keyParts.some(part => part.length > 3 && s.includes(part))) {
+                return val;
+            }
+        }
+        
+        // Category-specific unique fallbacks (no generic business man!)
+        const uniqueFallbacks = [
+            '1551288049-bebda4e38f71', // data charts
+            '1533750349088-cd871a92f312', // colorful marketing
+            '1521737604893-d14cc237f11d', // collaborative team
+            '1486312338219-ce68d2c6f44d', // person typing laptop
+            '1454165804606-c3d57bc86b40', // professional meeting
+        ];
+        return uniqueFallbacks[s.split('').reduce((a, b) => a + b.charCodeAt(0), 0) % uniqueFallbacks.length];
     };
 
     const imageUrl = `https://images.unsplash.com/photo-${getCategoryImage(slug.toLowerCase())}?q=80&w=1200&h=800&auto=format&fit=crop`;

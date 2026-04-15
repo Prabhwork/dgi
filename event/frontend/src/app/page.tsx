@@ -704,6 +704,8 @@ export default function EventLandingPage() {
                             { name: "D B Prabhu", role: "CEO", org: "Respose India Pvt Ltd", img: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=300&h=350&auto=format&fit=crop" },
                             { name: "Anand Verma", role: "Director", org: "Invest India", img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=300&h=350&auto=format&fit=crop" },
                             { name: "Meera Krishnan", role: "Partner", org: "Deloitte India", img: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=300&h=350&auto=format&fit=crop" },
+                            { name: "Vikram Bose", role: "Managing Director", org: "SIDBI Venture Capital Ltd.", img: "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=300&h=350&auto=format&fit=crop" },
+                            { name: "Nandita Sharma", role: "Chief Strategy Officer", org: "NASSCOM Foundation", img: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=300&h=350&auto=format&fit=crop" },
                         ].map((a, i) => (
                             <motion.div
                                 key={i}
