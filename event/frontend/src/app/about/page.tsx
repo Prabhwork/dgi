@@ -3,6 +3,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Users, Target, ShieldCheck, Rocket, ChevronRight, Briefcase, TrendingUp } from "lucide-react";
+import Link from "next/link";
 
 export default function AboutPage() {
   return (
@@ -56,23 +57,24 @@ export default function AboutPage() {
               color: "from-slate-900 to-slate-800"
             }
           ].map((item, i) => (
-            <motion.div 
-              key={i}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              whileHover={{ y: -10 }}
-              className="p-12 rounded-[4rem] bg-white border border-slate-100 hover:shadow-2xl hover:shadow-sky-100 transition-all group overflow-hidden relative"
-            >
-               <div className={`absolute -top-24 -right-24 w-48 h-48 bg-gradient-to-br ${item.color} opacity-0 group-hover:opacity-10 rounded-full blur-3xl transition-opacity duration-500`} />
-               
-              <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center mb-10 shadow-lg shadow-sky-100 group-hover:scale-110 transition-transform duration-500`}>
-                <item.icon className="text-white" size={28} />
-              </div>
-              <h3 className="text-2xl font-black text-slate-900 mb-6 italic uppercase tracking-tighter leading-none">{item.title}</h3>
-              <p className="text-slate-500 font-medium italic leading-relaxed">{item.desc}</p>
-            </motion.div>
+            <Link key={i} href={`/${item.title.toLowerCase()}`} className="block focus:outline-none">
+                <motion.div 
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  whileHover={{ y: -10 }}
+                  className="p-12 rounded-[4rem] bg-white border border-slate-100 hover:shadow-2xl hover:shadow-sky-100 transition-all group overflow-hidden relative h-full cursor-pointer"
+                >
+                   <div className={`absolute -top-24 -right-24 w-48 h-48 bg-gradient-to-br ${item.color} opacity-0 group-hover:opacity-10 rounded-full blur-3xl transition-opacity duration-500`} />
+                   
+                  <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center mb-10 shadow-lg shadow-sky-100 group-hover:scale-110 transition-transform duration-500`}>
+                    <item.icon className="text-white" size={28} />
+                  </div>
+                  <h3 className="text-2xl font-black text-slate-900 mb-6 italic uppercase tracking-tighter leading-none">{item.title}</h3>
+                  <p className="text-slate-500 font-medium italic leading-relaxed">{item.desc}</p>
+                </motion.div>
+            </Link>
           ))}
         </div>
       </section>
