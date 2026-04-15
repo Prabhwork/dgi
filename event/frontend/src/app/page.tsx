@@ -1,18 +1,18 @@
 "use client";
 
 import React, { useRef, useMemo, useState, useEffect } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { Float, Html } from "@react-three/drei";
 import { motion } from "framer-motion";
 import {
-    Rocket, ShieldCheck, Users, Handshake,  Calendar,
+    Rocket, ShieldCheck, Users, Handshake, Calendar,
     MapPin, Search, Globe, ChevronRight,
     Briefcase, Wallet,
-    Activity,Bitcoin, Cpu, Database,
-    Network, Sparkles, Zap,Banknote, 
+    Activity, Bitcoin, Cpu, Database,
+    Network, Sparkles, Zap, Banknote,
     GraduationCap, Microscope, Monitor,
-    Palette,  Scale,  Truck,
+    Palette, Scale, Truck,
     Utensils, Plane, Building2, Heart, ShoppingCart,
     Car, Shirt, Music, Sprout, HardHat, Megaphone,
     Store, Code2, Hotel, Factory, Ship, Phone,
@@ -78,7 +78,7 @@ function GlobeSurface() {
             const v = Math.random();
             const phi = Math.acos(2 * u - 1);
             const theta = 2 * Math.PI * v;
-            pos[i * 3]     = radius * Math.sin(phi) * Math.cos(theta);
+            pos[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
             pos[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
             pos[i * 3 + 2] = radius * Math.cos(phi);
         }
@@ -94,7 +94,7 @@ function GlobeSurface() {
             const v = Math.random();
             const phi = Math.acos(2 * u - 1);
             const theta = 2 * Math.PI * v;
-            pos[i * 3]     = radius * Math.sin(phi) * Math.cos(theta);
+            pos[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
             pos[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
             pos[i * 3 + 2] = radius * Math.cos(phi);
         }
@@ -324,6 +324,20 @@ function FAQAccordion() {
     );
 }
 
+// --- RESPONSIVE CAMERA ---
+function ResponsiveCamera() {
+    const { camera, size } = useThree();
+    useEffect(() => {
+        if (size.width < 768) {
+            camera.position.set(0, 0, 100);
+        } else {
+            camera.position.set(0, 0, 65);
+        }
+        camera.updateProjectionMatrix();
+    }, [size.width, camera]);
+    return null;
+}
+
 // --- MAIN PAGE ---
 export default function EventLandingPage() {
     return (
@@ -360,14 +374,14 @@ export default function EventLandingPage() {
                                     </div>
                                 ))}
                             </div>
-                            <span className="text-[10px] font-black text-sky-700 uppercase tracking-[0.2em]">🇮🇳 &nbsp;India&apos;s First Hybrid Investment Summit</span>
+                            <span className="text-[9px] sm:text-[10px] font-black text-sky-700 uppercase tracking-widest sm:tracking-[0.2em]">🇮🇳 &nbsp;India&apos;s First Hybrid Investment Summit</span>
                         </motion.div>
 
                         <motion.h1
                             initial={{ opacity: 0, y: 30 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                            className="text-5xl md:text-6xl lg:text-[68px] font-black tracking-tighter text-slate-900 mb-6 leading-tight uppercase italic"
+                            className="text-[2.25rem] sm:text-5xl md:text-6xl lg:text-[68px] font-black tracking-tighter text-slate-900 mb-6 leading-tight uppercase italic"
                         >
                             <span className="block opacity-80 mb-2">BharatNivesh</span>
                             <span className="text-transparent bg-clip-text bg-gradient-to-br from-sky-500 via-blue-600 to-sky-400 inline-block pb-4 pr-4">
@@ -375,10 +389,10 @@ export default function EventLandingPage() {
                             </span>
                         </motion.h1>
 
-                        <div className="flex items-center gap-4 mb-6">
-                            <div className="h-[2px] w-16 bg-gradient-to-r from-sky-400 to-transparent" />
-                            <p className="text-sm text-slate-500 font-bold uppercase tracking-[0.3em] italic whitespace-nowrap">1st Edition · Hybrid · 2026</p>
-                            <div className="h-[2px] w-16 bg-gradient-to-l from-sky-400 to-transparent" />
+                        <div className="flex items-center gap-2 sm:gap-4 mb-6">
+                            <div className="h-[2px] w-8 sm:w-16 bg-gradient-to-r from-sky-400 to-transparent" />
+                            <p className="text-[10px] sm:text-sm text-slate-500 font-bold uppercase tracking-widest sm:tracking-[0.3em] italic whitespace-nowrap">1st Edition · Hybrid · 2026</p>
+                            <div className="h-[2px] w-8 sm:w-16 bg-gradient-to-l from-sky-400 to-transparent" />
                         </div>
 
                         <motion.p
@@ -396,7 +410,7 @@ export default function EventLandingPage() {
                             transition={{ delay: 0.8 }}
                         >
                             <Link href="/apply/business">
-                                <button className="group relative bg-sky-600 text-white font-black text-xl px-14 py-5 rounded-full overflow-hidden transition-all hover:scale-105 active:scale-95 duration-300 shadow-2xl shadow-sky-200 flex items-center gap-3">
+                                <button className="group relative bg-sky-600 text-white font-black text-lg sm:text-xl px-10 sm:px-14 py-4 sm:py-5 rounded-full overflow-hidden transition-all hover:scale-105 active:scale-95 duration-300 shadow-2xl shadow-sky-200 flex items-center gap-3">
                                     <span className="relative z-10">GET STARTED</span>
                                     <ChevronRight className="relative z-10 group-hover:translate-x-1 transition-transform" />
                                     <div className="absolute inset-0 bg-gradient-to-r from-sky-500 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -405,8 +419,9 @@ export default function EventLandingPage() {
                         </motion.div>
                     </div>
 
-                    <div className="w-full h-[520px] lg:h-[600px] relative z-20">
+                    <div className="w-full h-[500px] sm:h-[450px] md:h-[520px] lg:h-[700px] relative z-20 mt-4 md:mt-0">
                         <Canvas camera={{ position: [0, 0, 65], fov: 42 }}>
+                            <ResponsiveCamera />
                             <ambientLight intensity={1} />
                             <pointLight position={[10, 10, 10]} intensity={200} color="#0ea5e9" />
                             <pointLight position={[-10, -10, 10]} intensity={100} color="#2563eb" />
@@ -424,9 +439,9 @@ export default function EventLandingPage() {
                 <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-slate-900 to-transparent z-20 pointer-events-none" />
                 <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-slate-900 to-transparent z-20 pointer-events-none" />
 
-                <motion.div 
-                    animate={{ x: ["0%", "-50%"] }} 
-                    transition={{ repeat: Infinity, ease: "linear", duration: 80 }} 
+                <motion.div
+                    animate={{ x: ["0%", "-50%"] }}
+                    transition={{ repeat: Infinity, ease: "linear", duration: 80 }}
                     className="flex whitespace-nowrap min-w-max"
                 >
                     {[...MARQUEE_CATEGORIES, ...MARQUEE_CATEGORIES].map((cat, i) => (
@@ -468,7 +483,7 @@ export default function EventLandingPage() {
             {/* About Section */}
             <section className="py-10 px-4 bg-[#f8fafc] relative overflow-hidden">
                 <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
-                <motion.div initial={{ opacity: 0, x: -50 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+                    <motion.div initial={{ opacity: 0, x: -50 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
                         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-50 text-sky-600 text-[10px] font-black uppercase tracking-widest mb-8">
                             <div className="w-1.5 h-1.5 rounded-full bg-sky-600 animate-pulse" />
                             Pre-Registration Open
@@ -500,7 +515,7 @@ export default function EventLandingPage() {
                                 </div>
                             </div>
                         </div>
-                </motion.div>
+                    </motion.div>
 
                     <div className="relative">
                         <div className="absolute -inset-10 bg-sky-200/20 rounded-full blur-[100px] z-0" />
@@ -666,7 +681,7 @@ export default function EventLandingPage() {
                 </div>
             </section>
 
-           
+
 
             {/* Advisory Board */}
             <section className="py-10 px-4 bg-[#1e3a5f] relative overflow-hidden">

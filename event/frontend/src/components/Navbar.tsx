@@ -345,11 +345,22 @@ export default function Navbar() {
               
               <div className="mt-4">
                 <h3 className="text-xl font-black italic uppercase tracking-tighter text-sky-600 mb-4">Key Topics</h3>
-                <div className="grid grid-cols-2 gap-2">
-                    {categories.slice(0, 10).map((cat, idx) => (
-                        <p key={idx} className="text-xs font-bold text-slate-500">{cat}</p>
-                    ))}
-                    <p className="text-xs font-bold text-slate-400 italic">...and {categories.length - 10} more.</p>
+                <div className="max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-sky-300 scrollbar-track-slate-100 rounded-lg border border-slate-100 p-4 bg-slate-50">
+                  <div className="grid grid-cols-2 gap-2">
+                    {categories.map((cat, idx) => {
+                      const slug = cat.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                      return (
+                        <Link
+                          key={idx}
+                          href={`/topics/${slug}`}
+                          onClick={() => setIsOpen(false)}
+                          className="text-xs font-bold text-slate-600 hover:text-sky-600 hover:bg-sky-100 px-3 py-2 rounded-lg transition-all"
+                        >
+                          {cat}
+                        </Link>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             </div>
