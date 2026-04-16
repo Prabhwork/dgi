@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CursorGlow from "@/components/CursorGlow";
-import ParticleNetworkWrapper from "@/components/ParticleNetworkWrapper";
+
 
 const MAIN_API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -265,7 +265,7 @@ export default function WalletPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-[#020631] flex flex-col items-center justify-center text-white">
+            <div className="min-h-screen bg-background flex flex-col items-center justify-center text-foreground">
                 <Loader2 className="w-10 h-10 animate-spin text-primary" />
                 <p className="mt-4 uppercase tracking-widest text-xs opacity-50">Syncing Wallet...</p>
             </div>
@@ -273,8 +273,7 @@ export default function WalletPage() {
     }
 
     return (
-        <div className="min-h-screen relative overflow-hidden bg-[#020631] text-white font-sans">
-            <ParticleNetworkWrapper className="z-0 opacity-40" />
+        <div className="min-h-screen relative overflow-hidden bg-background text-foreground font-sans">
             <CursorGlow />
             <Navbar />
 

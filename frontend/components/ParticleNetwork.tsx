@@ -3,8 +3,15 @@
 import { useEffect, useRef } from "react";
 import { useTheme } from "./ThemeProvider";
 
-export default function ParticleNetwork({ className = "" }: { className?: string }) {
+export default function ParticleNetwork({ 
+    className = "", 
+    isFixed = true 
+}: { 
+    className?: string;
+    isFixed?: boolean;
+}) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
     const { theme } = useTheme();
 
     useEffect(() => {
@@ -16,7 +23,7 @@ export default function ParticleNetwork({ className = "" }: { className?: string
         let animId: number;
         
         // Responsive particle count and connection distance
-        const isMobile = window.innerWidth < 768;
+        const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
         const PARTICLE_COUNT = isMobile ? 25 : 100;
         const CONNECTION_DISTANCE = isMobile ? 180 : 220;
 
@@ -31,8 +38,19 @@ export default function ParticleNetwork({ className = "" }: { className?: string
         const particleRadius = theme === "light" ? 1.5 : 2.0; 
 
         const resize = () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            if (isFixed) {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            } else {
+                const parent = canvas.parentElement;
+                if (parent) {
+                    canvas.width = parent.clientWidth;
+                    canvas.height = parent.clientHeight;
+                } else {
+                    canvas.width = window.innerWidth;
+                    canvas.height = window.innerHeight;
+                }
+            }
         };
         resize();
         window.addEventListener("resize", resize);
@@ -69,7 +87,7 @@ export default function ParticleNetwork({ className = "" }: { className?: string
                 ctx.fill();
                 
                 // Reset shadow for lines
-                ctx.shadowBlur = 0;
+            ctx.shadowBlur = 0;
             });
 
             for (let i = 0; i < particles.length; i++) {
@@ -98,12 +116,12 @@ export default function ParticleNetwork({ className = "" }: { className?: string
             cancelAnimationFrame(animId);
             window.removeEventListener("resize", resize);
         };
-    }, [theme]);
+    }, [theme, isFixed]);
 
     return (
         <canvas
             ref={canvasRef}
-            className={`fixed inset-0 ${className}`}
+            className={`${isFixed ? "fixed" : "absolute"} inset-0 ${className}`}
             style={{ pointerEvents: "none" }}
         />
     );

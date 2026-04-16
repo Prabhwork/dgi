@@ -7,7 +7,7 @@ import Footer from "@/components/Footer";
 import { ArrowRight, Loader2, Sparkles, ChevronLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/components/ThemeProvider";
-import ParticleNetwork from "@/components/ParticleNetwork";
+
 
 function CategorySubcategories() {
     const params = useParams();
@@ -43,12 +43,10 @@ function CategorySubcategories() {
     const isLight = theme === 'light';
 
     return (
-        <div className={`min-h-screen relative transition-colors duration-500 overflow-hidden ${
-            isLight ? 'bg-slate-50' : 'bg-[#020631]'
-        }`}>
+        <div className={`min-h-screen relative transition-colors duration-500 overflow-hidden bg-background text-foreground`}>
             {/* Background elements */}
             <div className={`fixed inset-0 z-0`}>
-                <ParticleNetwork />
+              
             </div>
 
             <div className={`absolute top-0 inset-x-0 h-[600px] bg-gradient-to-b opacity-50 pointer-events-none z-0 ${

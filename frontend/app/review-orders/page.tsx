@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CursorGlow from "@/components/CursorGlow";
-import ParticleNetworkWrapper from "@/components/ParticleNetworkWrapper";
+
 import WalletPinModal from "@/components/WalletPinModal";
 
 const FOOD_BACKEND = process.env.NEXT_PUBLIC_FOOD_API_URL;
@@ -383,7 +383,7 @@ export default function ReviewOrdersPage() {
 
     return (
         <div className="min-h-screen relative overflow-hidden bg-[#020631] text-white">
-            <ParticleNetworkWrapper className="z-0 opacity-40" />
+      
             <CursorGlow />
             <Navbar />
 

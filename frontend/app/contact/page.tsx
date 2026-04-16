@@ -8,7 +8,7 @@ import CursorGlow from "@/components/CursorGlow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import ParticleNetwork from "@/components/ParticleNetwork";
+
 import { useTheme } from "@/components/ThemeProvider";
 import { CheckCircle2, Loader2, Send } from "lucide-react";
 
@@ -59,9 +59,9 @@ export default function ContactPage() {
     };
 
     return (
-        <div className={`min-h-screen relative overflow-hidden font-sans transition-colors duration-500 ${isLight ? 'bg-slate-50' : 'bg-[#020631]'}`}>
+        <div className={`min-h-screen relative overflow-hidden font-sans transition-colors duration-500 bg-background text-foreground`}>
             {/* Background elements */}
-            <ParticleNetwork className="z-0 opacity-80" />
+      
             <CursorGlow />
             <Navbar />
 

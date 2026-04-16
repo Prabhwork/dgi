@@ -34,7 +34,6 @@ export default function PlatformIntro() {
     return (
         <section className="relative pt-12 pb-24 overflow-hidden bg-transparent z-10" id="about" ref={ref}>
             {/* Background decorative elements */}
-            <div className={`absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-50`} />
 
             <div className="container mx-auto px-4">
                 <div className="grid lg:grid-cols-12 gap-12 lg:gap-16 items-center">

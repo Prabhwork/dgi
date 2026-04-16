@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CursorGlow from "@/components/CursorGlow";
-import ParticleNetworkWrapper from "@/components/ParticleNetworkWrapper";
+
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -154,8 +154,8 @@ export default function TwoFactorPage() {
     }
 
     return (
-        <div className="min-h-screen bg-background relative overflow-hidden text-white font-display">
-            <ParticleNetworkWrapper className="z-0 opacity-40" />
+        <div className="min-h-screen bg-background relative overflow-hidden text-foreground font-display">
+     
             <CursorGlow />
             <Navbar />
 

@@ -16,9 +16,11 @@ import ParticleNetworkWrapper from "@/components/ParticleNetworkWrapper";
 
 export default function Home() {
     return (
-        <div className="min-h-screen">
-            {/* Single full-site 3D particle background */}
-            <ParticleNetworkWrapper className="z-0 opacity-80" />
+        <div className="min-h-screen bg-background text-foreground transition-colors duration-500">
+            {/* Restrict 3D particle background to the Hero section */}
+            <div className="absolute inset-x-0 top-0 h-[85vh] md:h-[100vh] overflow-hidden pointer-events-none z-0">
+                <ParticleNetworkWrapper isFixed={false} className="opacity-80" />
+            </div>
             <CursorGlow />
             <ScrollProgress />
             <Navbar />

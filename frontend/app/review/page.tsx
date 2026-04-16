@@ -9,7 +9,7 @@ import { CheckCircle2, ArrowLeft } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useTheme } from "@/components/ThemeProvider";
-import ParticleNetworkWrapper from "@/components/ParticleNetworkWrapper";
+
 
 export default function ReviewPage() {
     const { theme } = useTheme();
@@ -56,7 +56,7 @@ export default function ReviewPage() {
 
     return (
         <main className="min-h-screen flex flex-col relative overflow-hidden bg-background text-foreground">
-            <ParticleNetworkWrapper className="z-0 opacity-80" />
+   
             <Navbar />
             
             {/* Background elements */}

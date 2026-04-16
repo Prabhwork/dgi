@@ -2,7 +2,7 @@
 
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import ParticleNetwork from "@/components/ParticleNetwork";
+
 import { useTheme } from "@/components/ThemeProvider";
 
 export default function VerificationPage() {
@@ -10,8 +10,8 @@ export default function VerificationPage() {
     const isLight = theme === 'light';
 
     return (
-        <div className={`min-h-screen relative overflow-hidden transition-colors ${isLight ? 'bg-slate-50' : 'bg-[#020631]'}`}>
-            <div className="fixed inset-0 z-0"><ParticleNetwork /></div>
+        <div className={`min-h-screen relative overflow-hidden transition-colors bg-background text-foreground`}>
+          
 
             <div className="relative z-10 flex flex-col min-h-screen">
                 <Navbar />

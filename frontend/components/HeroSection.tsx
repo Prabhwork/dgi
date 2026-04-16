@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { animate as animateValue } from "framer-motion";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, MapPin, Store, CheckCircle2, Compass, ChevronDown, Loader2, Trophy, TrendingUp, Zap, ChevronRight, Navigation as NavigationIcon, Tag, Mic } from "lucide-react";
+import { Search, MapPin, Store, CheckCircle2, Compass, ChevronDown, Trophy, TrendingUp, Zap, ChevronRight, Navigation as NavigationIcon, Tag, Mic, Globe, Sparkles } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 import { useRouter } from "next/navigation";
 import {
@@ -651,40 +651,78 @@ export default function HeroSection() {
             {/* Main hero content */}
             <div className="relative z-10 flex-1 flex items-center justify-center px-1 sm:px-4 py-3 sm:py-8">
                 <div className="w-full max-w-[1400px] mx-auto flex flex-col lg:flex-row items-center justify-center lg:justify-between gap-1 sm:gap-6 lg:gap-x-16">
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={`left-${currentSet}`}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 20 }}
-                            transition={{ duration: 0.5 }}
-                            className="hidden lg:grid grid-cols-2 gap-x-12 gap-y-5 shrink-0"
-                        >
-                            {leftCategories.map((cat, i) => (
-                                <motion.div
-                                    key={cat.name}
-                                    initial={{ opacity: 0, scale: 0.9 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{ delay: i * 0.1, duration: 0.3 }}
-                                    onClick={() => router.push(`/search?q=${encodeURIComponent(cat.name)}`)}
-                                    className={`rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:scale-110 transition-all duration-700 w-[140px] h-[130px] group relative overflow-hidden backdrop-blur-[2px] border border-solid ${theme === 'light'
-                                        ? 'bg-transparent border-slate-900/25 hover:border-primary/50 shadow-sm'
-                                        : 'bg-white/[0.02] border-white/10 hover:bg-white/[0.08] hover:border-primary/50 shadow-2xl'
-                                        }`}
-                                >
-                                    <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-                                    <div className={`w-14 h-14 rounded-full overflow-hidden mb-2 border-[1.5px] transition-transform duration-500 group-hover:-translate-y-1 shadow-[0_0_15px_rgba(255,255,255,0.1)] relative z-10 ${theme === 'light' ? 'border-primary/30' : 'border-white/40 group-hover:border-white/80'}`}>
-                                        <img src={cat.img} alt={cat.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                    {/* Left Unified Metrics Dashboard */}
+                    <motion.div
+                        initial={{ opacity: 0, x: -50 }}
+                        animate={{ 
+                            opacity: 1, 
+                            x: 0,
+                            y: [0, -12, 0] 
+                        }}
+                        transition={{ 
+                            opacity: { duration: 0.8 },
+                            x: { duration: 0.8 },
+                            y: { duration: 6, repeat: Infinity, ease: "easeInOut" }
+                        }}
+                        className="hidden lg:flex flex-col gap-0 shrink-0 w-[280px] p-px rounded-[2.5rem] bg-gradient-to-b from-white/10 via-white/5 to-transparent shadow-2xl relative group"
+                    >
+                        <div className={`flex flex-col h-full rounded-[2.5rem] border backdrop-blur-3xl overflow-hidden ${theme === 'light'
+                            ? 'bg-white/90 border-slate-200 shadow-xl'
+                            : 'bg-[#0A0F1E]/80 border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)]'
+                        }`}>
+                            {/* Panel Header */}
+                            <div className="px-6 py-5 border-b border-white/5 bg-white/5">
+                                <div className="flex items-center gap-2">
+                                    <div className="relative flex h-2.5 w-2.5">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
                                     </div>
-                                    <p className={`text-[11px] font-bold text-center transition-colors z-10 ${theme === 'light' ? 'text-slate-900 group-hover:text-primary' : 'text-white/80 group-hover:text-white'}`}>
-                                        {cat.name}
-                                    </p>
-                                </motion.div>
-                            ))}
-                        </motion.div>
-                    </AnimatePresence>
+                                    <span className={`text-[10px] font-black uppercase tracking-[0.3em] ${theme === 'light' ? 'text-slate-500' : 'text-emerald-400/80'}`}>Live Platform Stats</span>
+                                </div>
+                            </div>
 
-                    {/* Center portal — Globe */}
+                            {/* Panel Body */}
+                            <div className="p-8 space-y-10">
+                                {/* Listings Count */}
+                                <div className="space-y-3 group/item">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2.5 rounded-xl bg-primary/10 text-primary border border-primary/20 group-hover/item:scale-110 transition-transform duration-500">
+                                            <Store size={20} />
+                                        </div>
+                                        <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">Verified Listings</span>
+                                    </div>
+                                    <div className="flex items-baseline gap-1.5">
+                                        <span className={`text-5xl font-display font-black tracking-tighter tabular-nums ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>
+                                            {listingDisplay.toLocaleString('en-IN')}
+                                        </span>
+                                        <span className="text-primary font-black text-2xl animate-pulse">+</span>
+                                    </div>
+                                </div>
+
+                                {/* Categories Count */}
+                                <div className="space-y-3 group/item">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20 group-hover/item:scale-110 transition-transform duration-500">
+                                            <Tag size={20} />
+                                        </div>
+                                        <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">Business Sectors</span>
+                                    </div>
+                                    <span className={`text-4xl font-display font-black tracking-tighter ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>
+                                        4000+
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Panel Footer */}
+                            <div className="mt-auto px-6 py-5 border-t border-white/5 bg-white/5">
+                                <div className="flex items-center gap-3">
+                                    <NavigationIcon size={14} className="text-primary animate-bounce" />
+                                    <span className={`text-[9px] font-black uppercase tracking-[0.4em] ${theme === 'light' ? 'text-primary/70' : 'text-primary'}`}>Pan India Presence</span>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+        
                     <div className="w-full flex flex-col items-center text-center mt-8 sm:mt-0 relative">
                         {/* Swadeshi Platform Badge - ROBUST TOP CENTER */}
                         <motion.div
@@ -726,17 +764,17 @@ export default function HeroSection() {
                             <div className="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none select-none px-3">
 
                                 <motion.h1
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
                                     transition={{ delay: 0.5, duration: 0.8 }}
-                                    className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-display font-black text-white tracking-[0.1em] leading-tight uppercase"
+                                    className="text-lg sm:text-xl md:text-2xl lg:text-3.5xl font-display font-black text-white tracking-[0.1em] leading-tight uppercase"
                                     style={{
-                                        textShadow: "0 0 30px rgba(0,157,255,0.5), 0 0 60px rgba(0,157,255,0.2)",
+                                        textShadow: "0 0 30px rgba(0,157,255,0.6), 0 0 60px rgba(0,157,255,0.3)",
                                         letterSpacing: "0.15em"
                                     }}
                                 >
-                                    List Your <br />
-                                    Business Online
+                                    Ready To <br />
+                                    Launch Your <br /><span className="gradient-text">Business</span>?
                                 </motion.h1>
                                 <motion.p
                                     initial={{ opacity: 0 }}
@@ -745,7 +783,7 @@ export default function HeroSection() {
                                     className="mt-1 text-[8px] sm:text-[10px] md:text-xs font-bold tracking-[0.1em] uppercase opacity-90 max-w-[180px] sm:max-w-[220px] mx-auto leading-tight"
                                     style={{ color: "#00d4ff", textShadow: "0 0 15px rgba(0,212,255,0.4)" }}
                                 >
-                                    Grow your business with <br /> Digital Book of India
+                                    Join the Digital Revolution with <br /> Digital Book of India
                                 </motion.p>
                                 <motion.div
                                     initial={{ scaleX: 0 }}
@@ -753,198 +791,124 @@ export default function HeroSection() {
                                     transition={{ delay: 1, duration: 1 }}
                                     className="h-[1px] w-16 bg-gradient-to-r from-transparent via-[#00d4ff]/40 to-transparent my-2"
                                 />
-                                <motion.p
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 1.2 }}
-                                    className="font-black max-w-[180px] sm:max-w-[240px] md:max-w-[300px] mx-auto text-xs sm:text-sm md:text-base leading-relaxed"
-                                    style={{ color: "#ffffff", textShadow: "0 2px 6px rgba(0,0,0,0.8)" }}
-                                >
-                                    ₹365/year <span className="text-[9px] sm:text-xs opacity-80">(₹1/day)</span>
-                                </motion.p>
-
-                                <motion.div
-                                    initial={{ opacity: 0, scale: 0.8 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{ delay: 1.4, duration: 0.5 }}
-                                    className="mt-4 pointer-events-auto relative z-20"
-                                >
-                                    <Link href="/community/register" hrefLang="en">
-                                        <Button asChild className="bg-primary hover:bg-primary/90 text-white font-black px-5 py-4 rounded-full text-[10px] sm:text-xs shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95 uppercase tracking-[0.08em] cursor-pointer">
-                                            <span>List Your Business</span>
-                                        </Button>
-                                    </Link>
-                                </motion.div>
+                               
                             </div>
 
                         </motion.div>
 
-                        {/* Mobile category hybrid scroll strip */}
+                        {/* Mobile Stats Summary (Repositioned for user request) */}
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 1.5 }}
-                            className="flex lg:hidden mt-12 mb-12 w-full overflow-hidden"
+                            transition={{ delay: 1.6 }}
+                            className="flex lg:hidden flex-col items-center gap-4 mt-8 px-4 w-full"
                         >
-                            <div
-                                ref={mobileScrollRef}
-                                onTouchStart={() => {
-                                    setIsInteractingMobile(true);
-                                    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-                                }}
-                                onTouchMove={() => {
-                                    setIsInteractingMobile(true);
-                                    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-                                }}
-                                onTouchEnd={() => {
-                                    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-                                    scrollTimeoutRef.current = setTimeout(() => setIsInteractingMobile(false), 2000);
-                                }}
-                                style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }}
-                                className="flex w-full overflow-x-auto scrollbar-hide px-6 gap-4 select-none cursor-grab active:cursor-grabbing touch-pan-x"
-                            >
-                                {mobilePool.map((cat, i) => (
-                                    <div
-                                        key={`${cat.name}-${i}`}
-                                        onClick={() => router.push(`/search?q=${encodeURIComponent(cat.name)}`)}
-                                        className={`flex-shrink-0 flex flex-col items-center justify-center p-4 rounded-[2rem] border transition-all duration-300 cursor-pointer w-[150px] h-[150px] relative overflow-hidden backdrop-blur-[2px] ${theme === 'light'
-                                            ? 'bg-transparent border-slate-900/40 text-slate-900 active:scale-95 shadow-sm'
-                                            : 'bg-white/5 border-white/20 text-white active:scale-95 shadow-2xl'
-                                            }`}
-                                    >
-                                        <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 active:opacity-100 pointer-events-none transition-opacity" />
-
-                                        <div className={`w-14 h-14 rounded-full overflow-hidden mb-2.5 border-[1.5px] shadow-[0_0_15px_rgba(255,255,255,0.1)] relative z-10 ${theme === 'light' ? 'border-primary/30' : 'border-white/40'}`}>
-                                            <img src={cat.img} alt={cat.name} className="w-full h-full object-cover" />
+                            <div className={`p-5 rounded-3xl border backdrop-blur-3xl w-full max-w-[320px] ${theme === 'light'
+                                ? 'bg-white/80 border-slate-200'
+                                : 'bg-[#0A0F1E]/60 border-white/10'
+                            }`}>
+                                <div className="flex justify-between items-center gap-4">
+                                    <div className="flex flex-col items-center flex-1">
+                                        <div className="flex items-center gap-1.5 mb-1">
+                                            <div className="relative flex h-2 w-2">
+                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                                            </div>
+                                            <span className="text-[8px] font-black uppercase tracking-widest opacity-40">Live</span>
                                         </div>
-                                        <p className="text-[11px] font-black text-center transition-colors z-10 uppercase tracking-wider">
-                                            {cat.name}
-                                        </p>
+                                        <span className="text-xl font-black">{listingDisplay.toLocaleString('en-IN')}+</span>
+                                        <span className="text-[8px] font-bold uppercase tracking-widest opacity-30">Listings</span>
                                     </div>
-                                ))}
+                                    <div className="w-px h-10 bg-white/10" />
+                                    <div className="flex flex-col items-center flex-1">
+                                        <div className="flex items-center gap-1.5 mb-1">
+                                            <Tag size={10} className="text-amber-500" />
+                                            <span className="text-[8px] font-black uppercase tracking-widest opacity-40">Types</span>
+                                        </div>
+                                        <span className="text-xl font-black">4000+</span>
+                                        <span className="text-[8px] font-bold uppercase tracking-widest opacity-30">Categories</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/5 border border-primary/10">
+                                <NavigationIcon size={10} className="text-primary animate-pulse" />
+                                <span className="text-[8px] font-black uppercase tracking-[0.3em] text-primary/70">Across India</span>
                             </div>
                         </motion.div>
+                        {/* Mobile category hybrid scroll strip Hidden as per request */}
+                        {/* <motion.div
+                            ...
+                        </motion.div> */}
                     </div>
 
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={`right-${currentSet}`}
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
-                            transition={{ duration: 0.5 }}
-                            className="hidden lg:grid grid-cols-2 gap-x-12 gap-y-5 shrink-0"
-                        >
-                            {rightCategories.map((cat, i) => (
-                                <motion.div
-                                    key={cat.name}
-                                    initial={{ opacity: 0, scale: 0.9 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{ delay: i * 0.1, duration: 0.3 }}
-                                    onClick={() => router.push(`/search?q=${encodeURIComponent(cat.name)}`)}
-                                    className={`rounded-3xl flex flex-col items-center justify-center cursor-pointer hover:scale-110 transition-all duration-700 w-[140px] h-[130px] group relative overflow-hidden backdrop-blur-[2px] border border-solid ${theme === 'light'
-                                        ? 'bg-transparent border-slate-900/25 hover:border-primary/50 shadow-sm'
-                                        : 'bg-white/[0.02] border-white/10 hover:bg-white/[0.08] hover:border-primary/50 shadow-2xl'
-                                        }`}
-                                >
-                                    <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-                                    <div className={`w-14 h-14 rounded-full overflow-hidden mb-2 border-[1.5px] transition-transform duration-500 group-hover:-translate-y-1 shadow-[0_0_15px_rgba(255,255,255,0.1)] relative z-10 ${theme === 'light' ? 'border-primary/30' : 'border-white/40 group-hover:border-white/80'}`}>
-                                        <img src={cat.img} alt={cat.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                                    </div>
-                                    <p className={`text-[11px] font-bold text-center transition-colors z-10 ${theme === 'light' ? 'text-slate-900 group-hover:text-primary' : 'text-white/80 group-hover:text-white'}`}>
-                                        {cat.name}
+                    {/* Right Unified Mission Dashboard */}
+                    <motion.div
+                        initial={{ opacity: 0, x: 50 }}
+                        animate={{ 
+                            opacity: 1, 
+                            x: 0,
+                            y: [0, 12, 0] 
+                        }}
+                        transition={{ 
+                            opacity: { duration: 0.8 },
+                            x: { duration: 0.8 },
+                            y: { duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1 }
+                        }}
+                        className="hidden lg:flex flex-col gap-0 shrink-0 w-[280px] p-px rounded-[2.5rem] bg-gradient-to-b from-white/10 via-white/5 to-transparent shadow-2xl relative group"
+                    >
+                        <div className={`flex flex-col h-full rounded-[2.5rem] border backdrop-blur-3xl overflow-hidden ${theme === 'light'
+                            ? 'bg-white/90 border-slate-200 shadow-xl'
+                            : 'bg-[#0A0F1E]/80 border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)]'
+                        }`}>
+                            {/* Panel Header */}
+                            <div className="px-6 py-5 border-b border-white/5 bg-white/5">
+                                <div className="flex items-center gap-2">
+                                    <Sparkles size={14} className="text-primary animate-pulse" />
+                                    <span className={`text-[10px] font-black uppercase tracking-[0.3em] ${theme === 'light' ? 'text-slate-500' : 'text-primary'}`}>Platform Mission</span>
+                                </div>
+                            </div>
+
+                            {/* Panel Body */}
+                            <div className="p-8 space-y-10">
+                                <div className="space-y-4">
+                                    <h3 className={`text-2xl font-display font-black leading-tight tracking-tight ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>
+                                        Empowering <br /> 
+                                        <span className="gradient-text tracking-normal">Swadeshi</span> Trade
+                                    </h3>
+                                    <p className={`text-[11px] leading-relaxed font-medium tracking-wide ${theme === 'light' ? 'text-slate-500' : 'text-white/50'}`}>
+                                        Building the largest digital infrastructure dedicated to bringing every local Indian vendor onto the global stage.
                                     </p>
-                                </motion.div>
-                            ))}
-                        </motion.div>
-                    </AnimatePresence>
+                                </div>
+
+                                {/* Feature Pills */}
+                                <div className="space-y-3">
+                                    {[
+                                     
+                                        { icon: NavigationIcon, label: "Local Outreach" },
+                                        { icon: Globe, label: "Digital Identity" }
+                                    ].map((feat, i) => (
+                                        <div key={i} className="flex items-center gap-3 p-2.5 rounded-2xl bg-white/5 border border-white/5 group/feat hover:bg-primary/5 hover:border-primary/20 transition-all duration-300">
+                                            <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-sm shadow-primary/10">
+                                                <feat.icon size={14} />
+                                            </div>
+                                            <span className={`text-[10px] font-black uppercase tracking-widest ${theme === 'light' ? 'text-slate-900' : 'text-white/60 group-hover/feat:text-white'}`}>{feat.label}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Panel Footer */}
+                            <div className="mt-auto px-6 py-5 border-t border-white/5 bg-white/5 text-center">
+                                <span className="text-[8px] font-black uppercase tracking-[0.4em] opacity-30">A Digital Revolution</span>
+                            </div>
+                        </div>
+                    </motion.div>
 
                 </div>
             </div>
 
-            {/* ── Premium Overall Listings Stats Bar ── */}
-            <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1.5, duration: 0.8 }}
-                className="relative z-10 w-full px-4 pb-12"
-            >
-                <div className="max-w-4xl mx-auto relative group">
-                    {/* Animated Outer Glow */}
-                    <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 via-emerald-500/10 to-primary/20 rounded-[2rem] blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-
-                    <div className={`relative flex flex-col md:flex-row items-center justify-between gap-8 md:gap-8 py-10 md:py-6 px-6 md:px-10 rounded-[2rem] border backdrop-blur-3xl transition-all duration-500 ${theme === 'light'
-                        ? 'bg-white/80 border-slate-200 shadow-[0_8px_32px_rgba(0,0,0,0.05)]'
-                        : 'bg-[#0A0F1E]/60 border-white/10 shadow-[0_8px_40px_rgba(0,0,0,0.5)] group-hover:border-primary/30'
-                        }`}>
-
-                        {/* Left: Live Status & Listings */}
-                        <div className="flex flex-col items-center md:items-start gap-4 w-full md:w-auto">
-                            <div className="flex flex-col items-center md:items-start gap-1.5">
-                                <div className="flex items-center gap-2 mb-0.5">
-                                    <div className="relative flex h-2.5 w-2.5">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-                                    </div>
-                                    <span className={`text-[10px] font-black uppercase tracking-[0.25em] ${theme === 'light' ? 'text-slate-400' : 'text-emerald-400/80'}`}>Live Now</span>
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <div className="p-3 rounded-2xl bg-primary/10 border border-primary/20 text-primary group-hover:scale-110 transition-transform duration-500 shadow-[0_0_15px_rgba(59,130,246,0.1)]">
-                                        <Store size={24} strokeWidth={2.5} />
-                                    </div>
-                                    <div className="flex items-baseline gap-1.5">
-                                        <span className={`text-4xl sm:text-5xl font-display font-black tracking-tight tabular-nums transition-all ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>
-                                            {listingDisplay.toLocaleString('en-IN')}
-                                        </span>
-                                        <span className="text-primary font-black text-2xl animate-pulse">+</span>
-                                        <span className={`text-[11px] font-bold uppercase tracking-widest ml-1 ${theme === 'light' ? 'text-slate-500' : 'text-white/40'}`}>Listings</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Divider - hidden on mobile */}
-                        <div className="hidden md:block h-14 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent" />
-                        {/* Mobile Divider */}
-                        <div className="block md:hidden w-full h-px bg-white/5 opacity-50" />
-
-                        {/* Middle: Categories - Perfectly centered vertically under listings on mobile */}
-                        <div className="flex flex-col md:flex-row items-center gap-4 md:gap-5 group/cat">
-                            <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 group-hover:rotate-12 transition-transform duration-500 shadow-[0_0_15px_rgba(245,158,11,0.1)]">
-                                <Tag size={24} strokeWidth={2.5} />
-                            </div>
-                            <div className="flex flex-col items-center md:items-start text-center md:text-left">
-                                <span className={`text-3xl font-black tracking-tight ${theme === 'light' ? 'text-slate-800' : 'text-white/90'}`}>4000+</span>
-                                <span className={`text-[10px] font-bold uppercase tracking-[0.25em] mt-0.5 ${theme === 'light' ? 'text-slate-400' : 'text-white/30'}`}>Business Categories</span>
-                            </div>
-                        </div>
-
-                        {/* Divider - hidden on mobile */}
-                        <div className="hidden md:block h-14 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent" />
-                        {/* Mobile Divider */}
-                        <div className="block md:hidden w-full h-px bg-white/5 opacity-50" />
-
-                        {/* Right: CTA & Location */}
-                        <div className="flex flex-col items-center md:items-end gap-5 w-full md:w-auto">
-
-                            <div className="flex items-center gap-3 px-4 py-2 rounded-full bg-primary/5 border border-primary/10">
-                                <NavigationIcon size={12} className="text-primary animate-pulse" />
-                                <span className={`text-[9px] font-black uppercase tracking-[0.4em] ${theme === 'light' ? 'text-primary/70' : 'text-primary'}`}>Across India</span>
-                            </div>
-                        </div>
-
-                    </div>
-
-                    {/* Bottom Status Decoration */}
-                    <div className="absolute -bottom-px left-1/2 -translate-x-1/2 w-1/2 flex justify-center">
-                        <motion.div
-                            animate={{ opacity: [0.2, 0.5, 0.2], width: ['40%', '80%', '40%'] }}
-                            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                            className="h-px bg-gradient-to-r from-transparent via-primary to-transparent blur-sm"
-                        />
-                    </div>
-                </div>
-            </motion.div>
+            {/* Bottom Section Spacer */}
+            <div className="pb-12" />
 
         </section>
     );

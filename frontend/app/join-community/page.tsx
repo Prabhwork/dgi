@@ -3,7 +3,7 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CursorGlow from "@/components/CursorGlow";
-import ParticleNetworkWrapper from "@/components/ParticleNetworkWrapper";
+
 import {
     Rocket,
     Users,
@@ -33,7 +33,7 @@ import { motion } from "framer-motion";
 export default function JoinCommunityPage() {
     return (
         <div className="min-h-screen bg-background relative overflow-hidden">
-            <ParticleNetworkWrapper className="z-0 opacity-40" />
+      
             <CursorGlow />
             <Navbar />
 

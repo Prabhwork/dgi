@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import ParticleNetwork from "@/components/ParticleNetwork";
+
 import { useTheme } from "@/components/ThemeProvider";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -513,6 +513,7 @@ export default function ProfilePage() {
     const tabs = [
         { id: 'basic', label: 'Basic Info', icon: Building2 },
         { id: 'contact', label: 'Contact', icon: Phone },
+        { id: 'services', label: 'Core Specializations', icon: Briefcase },
         { id: 'hours', label: 'Hours & Status', icon: Clock },
         { id: 'media', label: 'Photos & Media', icon: ImageIcon },
         ...(isFoodRelatedLocal(form.businessCategory) ? [
@@ -536,8 +537,8 @@ export default function ProfilePage() {
     );
 
     return (
-        <div className={`min-h-screen relative overflow-hidden transition-colors ${isLight ? 'bg-slate-50' : 'bg-[#020631]'}`}>
-            <div className="fixed inset-0 z-0"><ParticleNetwork /></div>
+        <div className={`min-h-screen relative overflow-hidden transition-colors bg-background text-foreground`}>
+            
 
             <div className="relative z-10 flex flex-col min-h-screen">
                 <Navbar />
@@ -789,6 +790,44 @@ export default function ProfilePage() {
                                                         required placeholder="Full business address..." />
                                                 </div>
                                             </div>
+                                        </div>
+                                    )}
+
+                                    {/* ─── Core Specializations ─── */}
+                                    {activeTab === 'services' && (
+                                        <div className="space-y-6">
+                                            <div className="flex items-center justify-between">
+                                                <h2 className="text-lg font-bold text-foreground flex items-center gap-2"><Briefcase size={18} />Core Specializations</h2>
+                                                <Button type="button" onClick={() => setServices([...services, { name: '', description: '', price: '' }])} variant="outline" size="sm" className={`gap-2 ${isLight ? 'border-primary text-primary hover:bg-primary/5' : ''}`}>
+                                                    <Plus size={14} /> Add Module
+                                                </Button>
+                                            </div>
+                                            
+                                            {services.length === 0 ? (
+                                                <div className={`text-center py-10 border border-dashed rounded-2xl ${isLight ? 'bg-slate-50 border-slate-300' : 'bg-white/5 border-white/10'}`}>
+                                                    <Briefcase size={32} className="mx-auto mb-3 opacity-20" />
+                                                    <p className={`text-sm ${isLight ? 'text-slate-600' : 'text-muted-foreground'}`}>No specializations added.</p>
+                                                    <p className={`text-xs mt-1 ${isLight ? 'text-slate-500' : 'text-muted-foreground/60'}`}>Add your core services to auto-populate your digital terminal.</p>
+                                                </div>
+                                            ) : (
+                                                <div className="grid gap-6">
+                                                    {services.map((s, idx) => (
+                                                        <div key={idx} className={`p-5 rounded-xl border relative group ${isLight ? 'bg-slate-50/50 border-slate-200' : 'bg-white/5 border-white/10'}`}>
+                                                            <button title="Remove" type="button" onClick={() => setServices(services.filter((_, i) => i !== idx))} className="absolute top-4 right-4 text-red-400 opacity-60 hover:opacity-100 transition"><X size={16}/></button>
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                <div>
+                                                                    <label className="block text-xs font-bold text-muted-foreground mb-1.5 uppercase tracking-wider">Module/Service Name</label>
+                                                                    <Input value={s.name} onChange={e => { const ns = [...services]; ns[idx].name = e.target.value; setServices(ns); }} className={inputClass} placeholder="e.g. Web Development" />
+                                                                </div>
+                                                                <div className="md:col-span-2">
+                                                                    <label className="block text-xs font-bold text-muted-foreground mb-1.5 uppercase tracking-wider">Description (Short)</label>
+                                                                    <textarea value={s.description} onChange={e => { const ns = [...services]; ns[idx].description = e.target.value; setServices(ns); }} rows={2} className={`w-full rounded-lg border px-3 py-2 text-sm resize-none transition-colors ${inputClass}`} placeholder="Brief explanation of this integration/service..." />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     )}
 

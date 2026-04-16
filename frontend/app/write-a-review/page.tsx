@@ -3,7 +3,7 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CursorGlow from "@/components/CursorGlow";
-import ParticleNetworkWrapper from "@/components/ParticleNetworkWrapper";
+
 import { CheckCircle2, Target, XCircle, Camera, MessageSquare, Award, Clock, ShieldCheck, Zap } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { motion } from "framer-motion";
 export default function WriteAReviewPage() {
     return (
         <div className="min-h-screen bg-background relative overflow-hidden">
-            <ParticleNetworkWrapper className="z-0 opacity-40" />
+          
             <CursorGlow />
             <Navbar />
 

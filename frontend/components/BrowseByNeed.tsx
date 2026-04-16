@@ -82,7 +82,7 @@ export default function BrowseByNeed() {
     if (categories.length === 0) return null;
 
     return (
-        <section className="pt-4 pb-10 overflow-hidden relative z-10 -mt-4" id="categories">
+        <section className="pt-2 pb-8 overflow-hidden relative z-10 -mt-2" id="categories">
             <div className="container mx-auto px-4 mb-8 text-center">
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
@@ -95,10 +95,10 @@ export default function BrowseByNeed() {
                         : 'bg-white/10 border-white/30 text-white'}`}>
                         Explore categories
                     </span>
-                    <h2 className="text-4xl sm:text-6xl font-display font-black text-foreground mt-4 tracking-tight">
+                    <h2 className="text-3xl sm:text-5xl font-display font-black text-foreground mt-4 tracking-tight">
                         Browse By <span className="gradient-text">Need</span>
                     </h2>
-                    <p className="text-muted-foreground mt-2 max-w-2xl mx-auto text-sm sm:text-base">
+                    <p className="text-muted-foreground mt-2 max-w-2xl mx-auto text-xs sm:text-sm">
                         Quickly find the most essential services in your location with our verified digital directory.
                     </p>
                 </motion.div>
@@ -124,10 +124,10 @@ export default function BrowseByNeed() {
                     {allCategories.map((cat, i) => (
                         <motion.div
                             key={`${cat.title}-${i}`}
-                            whileHover={{ y: -15 }}
+                            whileHover={{ y: -10 }}
                             whileTap={{ scale: 0.98 }}
                             onClick={() => router.push(`/search?q=${encodeURIComponent(cat.title)}`)}
-                            className={`w-[280px] sm:w-[350px] flex-shrink-0 rounded-[2.5rem] cursor-pointer transition-all duration-500 group relative isolate overflow-hidden backdrop-blur-md border border-solid ${theme === 'light'
+                            className={`w-[240px] sm:w-[300px] flex-shrink-0 rounded-[2rem] cursor-pointer transition-all duration-500 group relative isolate overflow-hidden backdrop-blur-md border border-solid ${theme === 'light'
                                 ? 'bg-transparent border-slate-900/30 hover:border-blue-500/50 shadow-sm'
                                 : 'bg-white/[0.01] border-white/20 hover:bg-white/[0.05] hover:border-white/40 shadow-[0_4px_24px_rgba(0,0,0,0.2)] hover:shadow-[0_8px_32px_rgba(255,255,255,0.15)]'
                                 }`}
@@ -135,7 +135,7 @@ export default function BrowseByNeed() {
                            
                             <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none z-10" />
 
-                            <div className="relative h-48 sm:h-64 overflow-hidden z-0">
+                            <div className="relative h-40 sm:h-52 overflow-hidden z-0">
                                 <img
                                     src={cat.img}
                                     alt={cat.title}
@@ -146,17 +146,17 @@ export default function BrowseByNeed() {
                                     <div className="absolute inset-0 bg-gradient-to-t from-card via-card/20 to-transparent transition-all z-10" />
                                 )}
                             </div>
-                            <div className="p-6 sm:p-8 -mt-6 relative z-20">
+                            <div className="pt-12 pb-5 px-5 sm:pt-14 sm:pb-6 sm:px-6 -mt-12 relative z-20">
                                 <div className="flex items-end justify-between">
                                     <div className="space-y-1">
                                         <p className={`text-[10px] font-black uppercase tracking-[0.25em] ${theme === 'light' ? 'text-primary/80' : 'text-primary'}`}>Services</p>
-                                        <h3 className={`font-display font-bold text-xl sm:text-2xl transition-colors ${theme === 'light' ? 'text-slate-900 group-hover:text-primary' : 'text-foreground group-hover:text-primary'}`}>{cat.title}</h3>
+                                        <h3 className={`font-display font-bold text-lg sm:text-xl transition-colors ${theme === 'light' ? 'text-slate-900 group-hover:text-primary' : 'text-foreground group-hover:text-primary'}`}>{cat.title}</h3>
                                     </div>
-                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 ${theme === 'light'
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 ${theme === 'light'
                                         ? 'bg-blue-600/10 border border-blue-600/20 text-blue-600 group-hover:bg-blue-600 group-hover:text-white shadow-none'
                                         : 'bg-muted border border-border text-foreground group-hover:bg-primary group-hover:border-primary group-hover:text-white group-hover:shadow-primary/40'
                                         }`}>
-                                        <ArrowRight size={20} className="group-hover:translate-x-1 transition-all" />
+                                        <ArrowRight size={18} className="group-hover:translate-x-1 transition-all" />
                                     </div>
                                 </div>
                             </div>

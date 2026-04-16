@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import ParticleNetworkWrapper from "@/components/ParticleNetworkWrapper";
+
 import { useRouter } from "next/navigation";
 
 export default function StatusPage() {
@@ -132,8 +132,8 @@ export default function StatusPage() {
     };
 
     return (
-        <div className="min-h-screen bg-background relative overflow-hidden text-white">
-            <ParticleNetworkWrapper className="z-0 opacity-40" />
+        <div className="min-h-screen bg-background relative overflow-hidden text-foreground">
+           
             <Navbar />
             <main className="pt-32 pb-24 relative z-10 px-4 flex items-center justify-center text-center">
                 <div className="max-w-xl w-full">

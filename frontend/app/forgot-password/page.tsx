@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CursorGlow from "@/components/CursorGlow";
-import ParticleNetworkWrapper from "@/components/ParticleNetworkWrapper";
+
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -332,8 +332,8 @@ function ForgotPasswordContent() {
 
 export default function ForgotPasswordPage() {
     return (
-        <div className="min-h-screen bg-background relative overflow-hidden text-white">
-            <ParticleNetworkWrapper className="z-0 opacity-40" />
+        <div className="min-h-screen bg-background relative overflow-hidden text-foreground">
+          
             <CursorGlow />
             <Navbar />
 

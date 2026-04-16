@@ -368,13 +368,13 @@ export default function Navbar() {
             animate={{ y: 0 }}
             transition={{ duration: 0.6 }}
             className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled
-                ? isLight ? "bg-[#FFFFF0]/80 border-b border-blue-100 backdrop-blur-md shadow-lg shadow-blue-500/5" : "bg-background/80 border-b border-white/5 backdrop-blur-xl shadow-2xl"
+                ? "bg-background/80 border-b border-border/20 backdrop-blur-xl shadow-lg"
                 : "bg-transparent border-b border-white/0"
                 }`}
         >
-            <div className="container mx-auto flex items-center justify-between h-20 px-4">
+            <div className="container mx-auto flex items-center justify-between h-16 px-4">
                 <Link href="/" className="flex items-center gap-3 min-w-0 flex-shrink hover:opacity-80 transition-opacity">
-                    <div className="relative w-20 h-10 sm:w-32 sm:h-16 shrink-0 flex items-center justify-center overflow-hidden">
+                    <div className="relative w-20 h-10 sm:w-28 sm:h-12 shrink-0 flex items-center justify-center overflow-hidden">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                             src={isLight ? "/assets/DLOGO1.png" : "/assets/DLOGO.png"}
@@ -549,7 +549,6 @@ export default function Navbar() {
                         </div>
                     ) : (
                         <div className="flex items-center gap-3">
-                            <NotificationBell />
                             <div className={`flex items-center rounded-full p-1 border transition-all ${isLight ? 'bg-[#FFFFF0]/30 border-black/10' : 'bg-white/5 border-white/10'}`}>
                                 <Link
                                     href="/login"

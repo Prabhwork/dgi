@@ -14,7 +14,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Link from "next/link";
 import CursorGlow from "@/components/CursorGlow";
-import ParticleNetworkWrapper from "@/components/ParticleNetworkWrapper";
+
 import { useSearchParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -419,8 +419,8 @@ function UserProfileContent() {
     ];
 
     return (
-        <div className="min-h-screen bg-background relative overflow-hidden text-white">
-            <ParticleNetworkWrapper className="z-0 opacity-30" />
+        <div className="min-h-screen bg-background relative overflow-hidden text-foreground">
+
             <CursorGlow />
             <Navbar />
 

@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CursorGlow from "@/components/CursorGlow";
-import ParticleNetworkWrapper from "@/components/ParticleNetworkWrapper";
+
 import BusinessGrowthFunnel from "@/components/BusinessGrowthFunnel";
 import { Loader2, ArrowRight, ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -80,7 +80,7 @@ export default function DetailPage() {
 
     return (
         <div className="min-h-screen bg-[#010638] text-white selection:bg-primary/30 selection:text-white">
-            <ParticleNetworkWrapper className="z-0 opacity-80" />
+          
             <CursorGlow />
             <Navbar />
 
@@ -157,7 +157,7 @@ export default function DetailPage() {
                                         alt={title}
                                         width={1400}
                                         height={800}
-                                        className="w-full h-auto object-cover transform scale-100 group-hover:scale-105 transition-transform duration-[2s]"
+                                        className="w-full h-auto object-cover transform scale-100 group-hover:scale-105 transition-transform duration-[2000ms]"
                                         priority
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-[#010638] via-transparent to-transparent opacity-60" />

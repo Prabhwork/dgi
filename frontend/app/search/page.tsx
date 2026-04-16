@@ -4,12 +4,12 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Search, MapPin, Star, Clock, Phone, Globe, ArrowRight, Loader2, Filter, BadgeCheck, MessageCircle, Navigation } from "lucide-react";
+import { Search, MapPin, Star, Clock, Phone, Globe, ArrowRight, Loader2, Filter, BadgeCheck, MessageCircle, Navigation, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/components/ThemeProvider";
-import ParticleNetwork from "@/components/ParticleNetwork";
+
 import Link from "next/link";
 import EmptyState from "@/components/EmptyState";
 
@@ -238,16 +238,14 @@ function SearchResults() {
     const isLight = theme === 'light';
 
     return (
-        <div className={`min-h-screen relative transition-colors duration-500 overflow-hidden ${
-            isLight ? 'bg-slate-50' : 'bg-background'
-        }`}>
+        <div className={`min-h-screen relative transition-colors duration-500 overflow-hidden bg-background text-foreground`}>
             {/* Background elements */}
             <div className={`absolute top-0 inset-x-0 h-[500px] bg-gradient-to-b opacity-50 pointer-events-none transition-colors duration-500 ${
                 isLight ? 'from-blue-100/50 to-transparent' : 'from-[#1a3a8f]/20 to-transparent'
             }`} />
             
             <div className="fixed inset-0 z-0">
-                <ParticleNetwork />
+             
             </div>
 
             <div className="relative z-10 flex flex-col min-h-screen">
@@ -351,169 +349,308 @@ function SearchResults() {
                     </AnimatePresence>
 
                     {/* Results Grid */}
-                    {loading ? (
-                        <div className="flex flex-col items-center justify-center py-20 gap-4">
-                            <Loader2 size={40} className="text-primary animate-spin" />
-                            <p className="text-muted-foreground font-medium">Connecting you to local experts...</p>
-                        </div>
-                    ) : error ? (
-                        <div className="text-center py-20">
-                            <p className="text-red-500 mb-4">{error}</p>
-                            <Button onClick={() => window.location.reload()} className="bg-primary text-white hover:bg-primary/90">Try Again</Button>
-                        </div>
-                    ) : results.length === 0 ? (
-                        <EmptyState categoryName={categoryParam || searchInput} />
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {results.map((item, idx) => (
-                                <motion.div
-                                    key={item._id}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: idx * 0.05 }}
-                                    className={`group flex flex-col rounded-none overflow-hidden backdrop-blur-2xl border transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(0,0,0,0.3)] cursor-pointer ${
-                                        isLight 
-                                            ? 'bg-white/95 border-slate-200 hover:border-primary/30' 
-                                            : 'bg-card/80 border-white/10 hover:border-primary/40'
-                                    }`}
-                                    onClick={() => router.push(`/business/${item._id}`)}
-                                >
-                                    {/* Card Header Image */}
-                                    <div className="h-44 overflow-hidden relative">
-                                        <CardImageSlider item={item} />
-                                        {/* Removed overlay to show photo clearly */}
-                                    </div>
-                                    
-                                    {/* Card Body */}
-                                    <div className="p-4 flex-1 flex flex-col">
-                                        
-                                        {/* Business Name & Verified Badge - Moved here from image overlay */}
-                                        <div className="mb-4">
-                                            <div className="flex items-start justify-between gap-2 mb-1.5">
-                                                <h3 className={`text-lg font-black leading-tight truncate font-display ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                                                    {item.brandName || item.businessName}
-                                                </h3>
-                                                {(item.isVerified || item.aadhaarVerified || item.approvalStatus === 'approved') && (
-                                                    <div className="flex items-center gap-1 text-[10px] text-emerald-400 font-bold uppercase tracking-wider bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 shrink-0">
-                                                        <BadgeCheck size={12} className="fill-emerald-500 text-black" />
-                                                        Verified
+                    {/* Main Content Area: Results + Filters */}
+                    <div className="flex flex-col lg:flex-row gap-8 items-start">
+                        {/* Results Column */}
+                        <div className="flex-1 w-full order-2 lg:order-1">
+                            {loading ? (
+                                <div className="flex flex-col items-center justify-center py-20 gap-4">
+                                    <Loader2 size={48} className="text-primary animate-spin" />
+                                    <p className="text-muted-foreground animate-pulse font-medium">Fetching verified listings...</p>
+                                </div>
+                            ) : error ? (
+                                <div className="text-center py-20 p-8 rounded-3xl bg-red-500/5 border border-red-500/20">
+                                    <p className="text-red-500 mb-6 font-medium">{error}</p>
+                                    <Button onClick={() => window.location.reload()} className="bg-primary text-white hover:bg-primary/90 rounded-xl px-8">Try Again</Button>
+                                </div>
+                            ) : results.length === 0 ? (
+                                <EmptyState categoryName={categoryParam || searchInput} />
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-20">
+                                    {results.map((item, idx) => (
+                                        <motion.div
+                                            key={item._id}
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ duration: 0.5, delay: idx * 0.05 }}
+                                            onClick={() => router.push(`/business/${item._id}`)}
+                                            className={`group relative flex flex-col rounded-3xl overflow-hidden transition-all duration-300 border hover:shadow-xl cursor-pointer ${
+                                                isLight 
+                                                    ? 'bg-white border-slate-200 shadow-sm' 
+                                                    : 'bg-[#0f172a]/80 backdrop-blur-xl border-white/5 shadow-2xl shadow-black/20'
+                                            }`}
+                                        >
+
+                                            {/* Card Header Image */}
+                                            <div className="h-40 overflow-hidden relative">
+                                                <CardImageSlider item={item} />
+                                                
+                                                {/* Floating Badge Overlay */}
+                                                <div className="absolute top-3 left-3 z-20">
+                                                    {(item.isVerified || item.aadhaarVerified || item.approvalStatus === 'approved') && (
+                                                        <div className="flex items-center gap-1 text-[9px] text-white font-black uppercase tracking-wider px-2 py-1 rounded-lg bg-emerald-500/90 backdrop-blur-md shadow-lg border border-emerald-400/20">
+                                                            <BadgeCheck size={12} className="fill-white text-emerald-600" />
+                                                            Verified
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            
+                                            {/* Card Content Body */}
+                                            <div className="p-4 flex-1 flex flex-col gap-3">
+                                                {/* Name & Title */}
+                                                <div>
+                                                    <div className="flex items-center justify-between gap-2 mb-1">
+                                                        <h3 className={`text-base font-bold font-display leading-tight line-clamp-1 group-hover:text-primary transition-colors ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                                                            {item.brandName || item.businessName}
+                                                        </h3>
+                                                    </div>
+                                                    <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">
+                                                        {item.mainCategoryName}
+                                                    </div>
+                                                </div>
+                                                
+                                                {/* Essential Info */}
+                                                <div className="space-y-2 pointer-events-none">
+                                                    <div className="flex items-start gap-2 text-[12px] text-muted-foreground">
+                                                        <MapPin size={14} className="shrink-0 mt-0.5 text-primary" />
+                                                        <span className="line-clamp-2 leading-relaxed">{item.registeredOfficeAddress || 'No address provided'}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
+                                                        <Clock size={14} className="shrink-0 text-emerald-500" />
+                                                        <span className="font-bold">{item.openingTime || '09:00 AM'} - {item.closingTime || '07:00 PM'}</span>
+                                                    </div>
+                                                </div>
+ 
+                                                {/* Description Snippet */}
+                                                <p className="text-[11px] leading-relaxed line-clamp-2 text-muted-foreground opacity-80 pointer-events-none">
+                                                    {item.description || "Browse details, reviews, and latest offerings from this verified provider."}
+                                                </p>
+ 
+                                                {/* Keywords / Tags */}
+                                                {item.keywords && item.keywords.length > 0 && (
+                                                    <div className="flex flex-wrap gap-1.5 line-clamp-1 pointer-events-none">
+                                                        {item.keywords.slice(0, 2).map((kw: string, kIdx: number) => (
+                                                            <span key={kIdx} className="text-[9px] px-2 py-0.5 rounded-md border border-border/40 bg-muted/10 text-muted-foreground font-medium">
+                                                                #{kw}
+                                                            </span>
+                                                        ))}
                                                     </div>
                                                 )}
-                                            </div>
-                                            {/* Rating removed per request */}
-                                        </div>
-                                        
-                                        <div className="space-y-3 mb-4">
-                                            <div className="flex items-start gap-3 text-[13px] text-foreground/70 group/loc">
-                                                <div className={`p-1.5 rounded-lg transition-colors ${isLight ? 'bg-primary/5 text-primary' : 'bg-primary/10 text-primary'}`}>
-                                                    <MapPin size={16} className="shrink-0" />
-                                                </div>
-                                                <span className="line-clamp-2 leading-snug pt-0.5">{item.registeredOfficeAddress || 'No address provided'}</span>
-                                            </div>
-                                            <div className="flex items-start gap-3 text-[13px] text-foreground/70">
-                                                <div className={`p-1.5 rounded-lg transition-colors ${isLight ? 'bg-slate-100 text-slate-500' : 'bg-white/5 text-slate-400'}`}>
-                                                    <Clock size={16} className="shrink-0" />
-                                                </div>
-                                                <div className="flex flex-col pt-0.5">
-                                                    <span className="font-bold text-foreground">
-                                                        {(() => {
-                                                            const formatTime = (timeStr: string) => {
-                                                                if (!timeStr) return '';
-                                                                const [hours, minutes] = timeStr.split(':');
-                                                                const h = parseInt(hours, 10);
-                                                                const ampm = h >= 12 ? 'PM' : 'AM';
-                                                                const h12 = h % 12 || 12;
-                                                                return `${h12.toString().padStart(2, '0')}:${minutes} ${ampm}`;
-                                                            };
-
-                                                            // NEW: Use businessHours if available
-                                                            if (item.businessHours) {
-                                                                const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-                                                                const today = days[new Date().getDay()];
-                                                                const todayData = item.businessHours[today];
-                                                                
-                                                                if (todayData) {
-                                                                    if (!todayData.isOpen) return "Closed Today";
-                                                                    if (todayData.slots && todayData.slots.length > 0) {
-                                                                        const slot = todayData.slots[0];
-                                                                        return `${formatTime(slot.open)} - ${formatTime(slot.close)}`;
-                                                                    }
+                                                
+                                                    {/* Interactive Buttons */}
+                                                    <div className="mt-auto space-y-2 pt-1 relative z-10">
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <a 
+                                                            href={`tel:${item.primaryContactNumber}`}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            className="flex items-center justify-center gap-2 h-9 rounded-xl bg-primary text-white text-[10px] font-bold transition-all shadow-md active:scale-95 px-1 hover:brightness-110"
+                                                        >
+                                                            <motion.span
+                                                                animate={{ rotate: [0, -15, 15, -15, 15, 0] }}
+                                                                transition={{ repeat: Infinity, duration: 0.5, repeatDelay: 2 }}
+                                                            >
+                                                                <Phone size={12} />
+                                                            </motion.span>
+                                                            {item.primaryContactNumber ? `${item.primaryContactNumber.slice(0, -2)}XX` : ''}
+                                                        </a>
+                                                        <a 
+                                                            href={`https://wa.me/${item.officialWhatsAppNumber || item.primaryContactNumber}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            className="flex items-center justify-center gap-2 h-9 rounded-xl bg-emerald-500 text-white text-[10px] font-bold transition-all shadow-md active:scale-95 hover:brightness-110"
+                                                        >
+                                                            <MessageCircle size={14} /> WhatsApp
+                                                        </a>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <Link 
+                                                            href={`/nearby-map?lat=${item.gpsCoordinates?.lat || ''}&lng=${item.gpsCoordinates?.lng || ''}&id=${item._id}`}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            className="flex-1 flex items-center justify-center gap-2 h-9 rounded-xl bg-sky-500 hover:bg-sky-600 text-white text-[11px] font-bold transition-all shadow-md active:scale-95"
+                                                        >
+                                                            <Navigation size={14} /> Map
+                                                        </Link>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                const url = `${window.location.origin}/business/${item._id}`;
+                                                                if (navigator.share) {
+                                                                    navigator.share({ title: item.brandName, url });
+                                                                } else {
+                                                                    navigator.clipboard.writeText(url);
+                                                                    alert("Link copied!");
                                                                 }
-                                                            }
-
-                                                            // Fallback to legacy fields
-                                                            return `${formatTime(item.openingTime || '09:00')} - ${formatTime(item.closingTime || '18:00')}`;
-                                                        })()}
-                                                    </span>
-                                                    {(() => {
-                                                        const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-                                                        const today = days[new Date().getDay()];
-                                                        
-                                                        // Check if currently closed due to weeklyOff (legacy) or businessHours (new)
-                                                        const isWeeklyOffLegacy = item.weeklyOff && item.weeklyOff.toLowerCase() === today;
-                                                        const isClosedNew = item.businessHours?.[today]?.isOpen === false;
-                                                        
-                                                        if (isClosedNew || isWeeklyOffLegacy) {
-                                                            return (
-                                                                <span className="text-[10px] font-black uppercase text-red-500 tracking-wider mt-0.5">
-                                                                    Closed Now
-                                                                </span>
-                                                            );
-                                                        }
-                                                        return null;
-                                                    })()}
+                                                            }}
+                                                            className="w-9 h-9 flex items-center justify-center rounded-xl bg-amber-500 hover:bg-amber-600 text-white shadow-md transition-all active:scale-95"
+                                                        >
+                                                            <Share2 size={16} />
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Filter Sidebar (Right) */}
+                        <aside className="w-full lg:w-80 order-1 lg:order-2 sticky top-32 h-fit mb-8 lg:mb-0">
+                            <div className={`p-6 rounded-[2.5rem] border backdrop-blur-3xl transition-all duration-500 overflow-hidden relative ${
+                                isLight ? 'bg-white border-slate-200 shadow-xl' : 'bg-[#0f172a]/80 border-white/10 shadow-2xl'
+                            }`}>
+                                {/* Decorative Gradient */}
+                                <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 blur-[80px] rounded-full pointer-events-none" />
+                                
+                                <div className="flex items-center justify-between mb-8 relative z-10">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="p-2 rounded-xl bg-primary/10 text-primary">
+                                            <Filter size={20} />
                                         </div>
+                                        <h2 className="font-bold text-xl font-display">Filters</h2>
+                                    </div>
+                                    <button 
+                                        onClick={() => router.push('/search')}
+                                        className="text-[12px] text-primary font-bold hover:underline transition-all"
+                                    >
+                                        Clear All
+                                    </button>
+                                </div>
 
-                                        <p className={`text-sm leading-relaxed mb-4 line-clamp-3 md:line-clamp-4 ${isLight ? 'text-slate-600' : 'text-foreground/80'}`}>
-                                            {item.description || "No description available for this business."}
-                                        </p>
-
-                                        {/* Keywords */}
-                                        {item.keywords && item.keywords.length > 0 && (
-                                            <div className="flex flex-wrap gap-1.5 mb-4">
-                                                {item.keywords.slice(0, 3).map((kw: string, kIdx: number) => (
-                                                    <span key={kIdx} className={`text-[10px] px-2 py-0.5 rounded-md border ${isLight ? 'bg-blue-50/50 border-blue-100 text-blue-600' : 'bg-white/5 border-white/10 text-white/50'}`}>
-                                                        #{kw}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        )}
-                                        
-                                        {/* Action Buttons - Compact Row */}
-                                        <div className="flex gap-2 h-10 mt-auto">
-                                            <a 
-                                                href={`tel:${item.primaryContactNumber}`}
-                                                onClick={(e) => e.stopPropagation()}
-                                                className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-[12px] font-bold transition-all"
-                                                title="Call Now"
-                                            >
-                                                <Phone size={14} /> Call
-                                            </a>
-                                            <a 
-                                                href={`https://wa.me/${item.officialWhatsAppNumber || item.primaryContactNumber}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                onClick={(e) => e.stopPropagation()}
-                                                className="flex-1 flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#22c35e] text-white rounded-lg text-[12px] font-bold transition-all shadow-lg shadow-[#25D366]/20"
-                                            >
-                                                <MessageCircle size={14} /> WhatsApp
-                                            </a>
+                                {/* Ad Banner - Premium Image Version */}
+                                <div className="mb-10 rounded-[2rem] h-48 relative overflow-hidden group shadow-2xl shadow-primary/20 border border-white/10">
+                                    <img 
+                                        src="/ad-banner.png" 
+                                        alt="Ad Banner" 
+                                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-5">
+                                        <span className="absolute top-3 right-3 text-[9px] font-black uppercase tracking-widest bg-black/40 backdrop-blur-md px-2 py-0.5 rounded-md text-white/70 border border-white/5">Sponsored</span>
+                                        <div className="relative z-20 backdrop-blur-md bg-white/10 p-4 rounded-2xl border border-white/10">
+                                            <h4 className="font-bold text-base text-white mb-1 leading-tight">Boost Your Visibility</h4>
+                                            <p className="text-[10px] text-white/80 mb-3 line-clamp-2">Get featured at the top of search results and reach 10x more customers.</p>
                                             <Link 
-                                                href={`/nearby-map?lat=${item.gpsCoordinates?.lat || ''}&lng=${item.gpsCoordinates?.lng || ''}&id=${item._id}`}
-                                                onClick={(e) => e.stopPropagation()}
-                                                className="flex-1 flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[12px] font-bold transition-all shadow-lg shadow-blue-600/20"
-                                                title="Map View"
+                                                href="/community/register"
+                                                className="w-full flex items-center justify-center py-2.5 bg-primary text-white rounded-xl text-[11px] font-bold shadow-lg shadow-primary/20 transition-all hover:bg-primary/90 cursor-pointer relative z-30"
                                             >
-                                                <Navigation size={14} /> Map
+                                                Get Listed Now
                                             </Link>
                                         </div>
                                     </div>
-                                </motion.div>
-                            ))}
-                        </div>
-                    )}
+                                </div>
+
+                                {/* Section: City Search */}
+                                <div className="mb-10 relative z-10">
+                                    <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 mb-4 px-1">Location / City</h3>
+                                    <div className="relative mb-4">
+                                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-primary" size={16} />
+                                        <Input 
+                                            placeholder="Search city in India..."
+                                            value={locationInput}
+                                            onChange={(e) => {
+                                                setLocationInput(e.target.value);
+                                                // Optional: add debounce and update URL
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    const p = new URLSearchParams(searchParams.toString());
+                                                    p.set('location', locationInput);
+                                                    router.push(`/search?${p.toString()}`);
+                                                }
+                                            }}
+                                            className={`pl-10 h-11 rounded-2xl border-border/40 focus-visible:ring-primary/20 ${isLight ? 'bg-slate-50' : 'bg-white/5'}`}
+                                        />
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {['Delhi', 'Mumbai', 'Bangalore', 'Noida', 'Pune'].map((city) => (
+                                            <button
+                                                key={city}
+                                                onClick={() => {
+                                                    const p = new URLSearchParams(searchParams.toString());
+                                                    p.set('location', city);
+                                                    router.push(`/search?${p.toString()}`);
+                                                }}
+                                                className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all border ${
+                                                    locationInput.toLowerCase() === city.toLowerCase()
+                                                        ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
+                                                        : 'bg-muted/30 border-border/20 text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                                                }`}
+                                            >
+                                                {city}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Section: Price Range */}
+                                <div className="mb-10 relative z-10">
+                                    <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 mb-4 px-1">Price Tiers</h3>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {['Economy', 'Standard', 'Premium', 'Luxury'].map((pType) => (
+                                            <button 
+                                                key={pType}
+                                                className={`px-4 py-3 rounded-2xl text-[12px] font-bold transition-all border ${
+                                                    searchParams.get('price') === pType 
+                                                        ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20' 
+                                                        : 'bg-muted/20 hover:bg-muted/40 border-border/40 text-muted-foreground'
+                                                }`}
+                                                onClick={() => {
+                                                    const p = new URLSearchParams(searchParams.toString());
+                                                    if (searchParams.get('price') === pType) p.delete('price');
+                                                    else p.set('price', pType);
+                                                    router.push(`/search?${p.toString()}`);
+                                                }}
+                                            >
+                                                {pType}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Section: Trust & Status */}
+                                <div className="space-y-6 relative z-10 pt-4 border-t border-border/40">
+                                    <div className="flex items-center justify-between group cursor-pointer" onClick={() => {
+                                        const p = new URLSearchParams(searchParams.toString());
+                                        const newVal = searchParams.get('verified') === 'true' ? 'false' : 'true';
+                                        p.set('verified', newVal);
+                                        router.push(`/search?${p.toString()}`);
+                                    }}>
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-bold flex items-center gap-1.5">
+                                                Verified Only 
+                                                <BadgeCheck size={14} className="text-emerald-500 fill-emerald-500/20" />
+                                            </span>
+                                            <span className="text-[10px] text-muted-foreground">Show only DBI experts</span>
+                                        </div>
+                                        <div className={`w-10 h-6 rounded-full p-1 transition-colors duration-300 ${searchParams.get('verified') === 'true' ? 'bg-emerald-500' : 'bg-muted'}`}>
+                                            <div className={`w-4 h-4 bg-white rounded-full transition-transform duration-300 ${searchParams.get('verified') === 'true' ? 'translate-x-4' : 'translate-x-0'}`} />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between group cursor-pointer" onClick={() => {
+                                        const p = new URLSearchParams(searchParams.toString());
+                                        const newVal = searchParams.get('openNow') === 'true' ? 'false' : 'true';
+                                        p.set('openNow', newVal);
+                                        router.push(`/search?${p.toString()}`);
+                                    }}>
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-bold flex items-center gap-1.5">
+                                                Open Now
+                                                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                            </span>
+                                            <span className="text-[10px] text-muted-foreground">Available at this moment</span>
+                                        </div>
+                                        <div className={`w-10 h-6 rounded-full p-1 transition-colors duration-300 ${searchParams.get('openNow') === 'true' ? 'bg-primary' : 'bg-muted'}`}>
+                                            <div className={`w-4 h-4 bg-white rounded-full transition-transform duration-300 ${searchParams.get('openNow') === 'true' ? 'translate-x-4' : 'translate-x-0'}`} />
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </aside>
+                    </div>
                 </main>
                 
                 <Footer />

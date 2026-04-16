@@ -12,14 +12,14 @@ import { Label } from "@/components/ui/label";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CursorGlow from "@/components/CursorGlow";
-import ParticleNetworkWrapper from "@/components/ParticleNetworkWrapper";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
     return (
-        <div className="min-h-screen bg-[#020631] relative overflow-hidden text-white">
-            <ParticleNetworkWrapper className="z-0 opacity-40" />
+        <div className="min-h-screen bg-background relative overflow-hidden text-foreground">
+           
             <CursorGlow />
             <Navbar />
 

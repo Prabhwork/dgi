@@ -3,7 +3,7 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CursorGlow from "@/components/CursorGlow";
-import ParticleNetworkWrapper from "@/components/ParticleNetworkWrapper";
+
 import {
     ShieldCheck,
     Bell,
@@ -100,7 +100,6 @@ const comparison = [
 export default function WhyDBIPage() {
     return (
         <div className="min-h-screen bg-background relative overflow-hidden">
-            <ParticleNetworkWrapper className="z-0 opacity-30" />
             <CursorGlow />
             <Navbar />
 

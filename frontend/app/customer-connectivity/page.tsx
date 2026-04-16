@@ -2,7 +2,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CustomerConnectivitySection from "@/components/CustomerConnectivitySection";
 import CursorGlow from "@/components/CursorGlow";
-import ParticleNetworkWrapper from "@/components/ParticleNetworkWrapper";
+
 
 export const metadata = {
     title: "Customer Connectivity | Digital Book of India",
@@ -12,7 +12,7 @@ export const metadata = {
 export default function CustomerConnectivityPage() {
     return (
         <div className="min-h-screen pt-20">
-            <ParticleNetworkWrapper className="z-0 opacity-80" />
+   
             <CursorGlow />
             <Navbar />
             

@@ -8,12 +8,12 @@ import {
     MapPin, Star, Clock, Phone, Globe, ArrowLeft, Loader2,
     MessageCircle, ShieldCheck, Mail, Edit3, Image as ImageIcon,
     Info, Share2, BadgeCheck, Briefcase, Package,
-    ShoppingBag
+    ShoppingBag, Layers, HelpCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { useTheme } from "@/components/ThemeProvider";
-import ParticleNetwork from "@/components/ParticleNetwork";
+
 import RestaurantMenu from "@/components/RestaurantMenu";
 import { useCart } from "@/context/CartContext";
 
@@ -103,6 +103,17 @@ function BusinessDetail() {
     };
 
     useEffect(() => {
+        const checkAuth = () => {
+            const uToken = localStorage.getItem("userToken");
+            const bToken = localStorage.getItem("businessToken");
+            if (!uToken && !bToken) {
+                router.push(`/login?redirect=/business/${id}`);
+            }
+        };
+        checkAuth();
+    }, [id, router]);
+
+    useEffect(() => {
         const fetchBusiness = async () => {
             try {
                 // Fetch using admin route for full details (or search public route)
@@ -139,7 +150,7 @@ function BusinessDetail() {
 
     if (loading) {
         return (
-            <div className={`min-h-screen flex items-center justify-center transition-colors ${isLight ? 'bg-slate-50' : 'bg-[#020631]'}`}>
+            <div className={`min-h-screen flex items-center justify-center transition-colors bg-background text-foreground`}>
                 <Loader2 size={40} className="text-primary animate-spin" />
             </div>
         );
@@ -147,7 +158,7 @@ function BusinessDetail() {
 
     if (error || !business) {
         return (
-            <div className={`min-h-screen flex flex-col items-center justify-center transition-colors ${isLight ? 'bg-slate-50 text-slate-900' : 'bg-[#020631] text-white'}`}>
+            <div className={`min-h-screen flex flex-col items-center justify-center transition-colors bg-background text-foreground`}>
                 <h2 className="text-2xl font-bold mb-4">{error || "Business not found"}</h2>
                 <Button onClick={() => router.back()} variant="outline-glow">Go Back</Button>
             </div>
@@ -161,336 +172,322 @@ function BusinessDetail() {
             : '/assets/business-placeholder.jpg';
 
     return (
-        <div className={`min-h-screen relative transition-colors duration-500 overflow-x-hidden ${isLight ? 'bg-slate-100 text-slate-900' : 'bg-[#020631] text-white'
-            }`}>
+        <div className={`min-h-screen relative transition-colors duration-500 overflow-x-hidden bg-background text-foreground`}>
             {/* Background elements */}
             <div className={`absolute top-0 inset-x-0 h-[500px] bg-gradient-to-b opacity-50 pointer-events-none transition-colors duration-500 ${isLight ? 'from-blue-100/50 to-transparent' : 'from-[#1a3a8f]/20 to-transparent'
                 }`} />
 
-            <div className="fixed inset-0 z-0">
-                <ParticleNetwork />
-            </div>
-
-            {/* Subtle overlay to soften particles behind content */}
-            <div className={`fixed inset-0 z-[1] pointer-events-none ${isLight ? 'bg-slate-100/40' : 'bg-[#020631]/40'}`} />
-
             <div className="relative z-[2] flex flex-col min-h-screen">
                 <Navbar />
 
-                <main className="container mx-auto px-4 pt-24 pb-20 flex-1 max-w-6xl">
-                    <button
-                        onClick={() => router.back()}
-                        className={`flex items-center gap-2 mb-8 text-sm font-black uppercase tracking-widest transition-all hover:gap-3 ${isLight ? 'text-slate-500 hover:text-primary' : 'text-slate-400 hover:text-primary'}`}
-                    >
-                        <ArrowLeft size={16} /> Back
-                    </button>
+                <main className="flex-1 pt-16">
+                    {/* Immersive Backdrop Container */}
+                    <div className="relative h-[300px] md:h-[400px] w-full overflow-hidden">
+                        <motion.img
+                            initial={{ scale: 1.2 }}
+                            animate={{ scale: 1 }}
+                            transition={{ duration: 2, ease: "easeOut" }}
+                            src={bannerImageUrl}
+                            alt={business.brandName || business.businessName}
+                            className="absolute inset-0 w-full h-full object-cover"
+                            onError={(e) => { (e.target as HTMLImageElement).src = '/assets/business-placeholder.jpg'; }}
+                        />
+                        {/* Soft bottom gradient so text is readable, removed heavy black shadows */}
+                        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-slate-950 to-transparent z-[1]" />
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        {/* Main Details */}
-                        <div className="lg:col-span-2 space-y-8">
-
-                            {/* Header Card */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                                className={`rounded-[2.5rem] overflow-hidden backdrop-blur-3xl border border-solid shadow-2xl ${isLight ? 'bg-white/95 border-slate-200' : 'bg-slate-900/90 border-white/10'
-                                    }`}
+                        {/* Back to Results - Float over image */}
+                        <div className="container mx-auto px-4 relative z-10 pt-8">
+                            <motion.button
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                onClick={() => router.back()}
+                                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900/50 backdrop-blur-md border border-white/10 text-white hover:bg-cyan-500 hover:text-slate-950 transition-all font-black uppercase tracking-widest text-[10px]"
                             >
-                                <div className="h-72 md:h-96 w-full relative">
-                                    <img
-                                        src={bannerImageUrl}
-                                        alt={business.brandName || business.businessName}
-                                        className="w-full h-full object-cover"
-                                        onError={(e) => { (e.target as HTMLImageElement).src = '/assets/business-placeholder.jpg'; }}
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+                                <ArrowLeft size={14} />
+                                <span>Back</span>
+                            </motion.button>
+                        </div>
 
-                                    <div className="absolute bottom-8 left-8 right-8">
-                                        <h1 className="text-4xl md:text-6xl font-black text-white drop-shadow-2xl mb-4 font-display leading-tight">
-                                            {business.brandName || business.businessName}
-                                        </h1>
-                                        <div className="flex flex-wrap items-center gap-4">
-
-                                            {(business.isVerified || business.aadhaarVerified || business.approvalStatus === 'approved') && (
-                                                <div className="flex items-center gap-2 text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-xl backdrop-blur-md border border-emerald-500/20 font-black uppercase text-[10px] tracking-widest shadow-[0_0_20px_rgba(16,185,129,0.15)]">
-                                                    <BadgeCheck size={18} className="fill-emerald-500 text-black" />
-                                                    Verified
-                                                </div>
-                                            )}
-                                        </div>
+                        {/* Floating Identity Card */}
+                        <div className="container mx-auto px-4 absolute bottom-4 md:bottom-6 left-0 right-0 z-20">
+                            <motion.div
+                                initial={{ opacity: 0, y: 40 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className={`w-fit max-w-full md:max-w-lg p-3.5 md:p-5 rounded-2xl md:rounded-[1.5rem] backdrop-blur-3xl border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] ${
+                                    isLight ? 'bg-slate-900/80' : 'bg-slate-950/80'
+                                }`}
+                            >
+                                <div className="flex flex-wrap items-center gap-3 mb-2">
+                                    <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 font-bold uppercase text-[8px] tracking-[0.15em]">
+                                        <BadgeCheck size={12} className="fill-cyan-500 text-slate-950" />
+                                        Verified
                                     </div>
+                                    <span className="text-white/30 font-bold uppercase text-[9px] tracking-[0.15em]">
+                                        {business.category || business.type || "Global Enterprise"}
+                                    </span>
                                 </div>
 
-                                <div className="p-8">
-                                    {/* Action row */}
-                                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-                                        <a
-                                            href={`tel:${business.primaryContactNumber}`}
-                                            className="flex items-center justify-center gap-2 p-3 rounded-xl bg-emerald-500 text-white hover:bg-emerald-600 transition-all hover:-translate-y-1 shadow-md shadow-emerald-500/20 group h-14"
-                                        >
-                                            <Phone size={20} className="group-hover:scale-110 transition-transform" />
-                                            <span className="text-[10px] font-black uppercase tracking-[0.05em]">Call Now</span>
-                                        </a>
-                                        <a
-                                            href={`https://wa.me/${business.officialWhatsAppNumber || business.primaryContactNumber}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex items-center justify-center gap-2 p-3 rounded-xl bg-[#25D366] text-white hover:bg-[#22c35e] transition-all hover:-translate-y-1 shadow-md shadow-[#25D366]/20 group h-14"
-                                        >
-                                            <MessageCircle size={20} className="group-hover:scale-110 transition-transform" />
-                                            <span className="text-[10px] font-black uppercase tracking-[0.05em]">WhatsApp</span>
-                                        </a>
-                                        <a
-                                            href={`/nearby-map?id=${business._id || id}`}
-                                            className="flex items-center justify-center gap-2 p-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all hover:-translate-y-1 shadow-md shadow-blue-600/20 group h-14"
-                                        >
-                                            <MapPin size={20} className="group-hover:scale-110 transition-transform" />
-                                            <span className="text-[10px] font-black uppercase tracking-[0.05em]">Direction</span>
-                                        </a>
-                                        <button
-                                            onClick={handleShare}
-                                            className={`flex items-center justify-center gap-2 p-3 rounded-xl transition-all hover:-translate-y-1 shadow-md group h-14 ${isLight
-                                                    ? 'bg-slate-800 text-white hover:bg-slate-900 shadow-slate-900/10'
-                                                    : 'bg-slate-700 text-white hover:bg-slate-600 shadow-black/20'
-                                                }`}
-                                        >
-                                            <Share2 size={20} className="group-hover:scale-110 transition-transform" />
-                                            <span className="text-[10px] font-black uppercase tracking-[0.05em]">Share</span>
-                                        </button>
-                                    </div>
+                                <h1 className="text-xl md:text-3xl font-black text-white mb-0 tracking-tight leading-tight font-display">
+                                    {business.brandName || business.businessName}
+                                </h1>
 
-                                    <div className="space-y-8">
-                                        <div>
-                                            <h3 className={`text-2xl font-black mb-5 flex items-center gap-3 font-display ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                                                <div className="p-2.5 rounded-2xl bg-primary/10 text-primary">
-                                                    <Info size={24} />
-                                                </div>
-                                                About Business
-                                            </h3>
-                                            <div className={`leading-relaxed text-base font-medium mb-6 ${isLight ? 'text-slate-600' : 'text-white/80'}`}>
-                                                {business.description || "No detailed description provided by the business."}
+               
+                            </motion.div>
+                        </div>
+                    </div>
+
+                    <div className="container mx-auto px-4 py-12 max-w-7xl">
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+                            {/* Main Details Column */}
+                            <div className="lg:col-span-2 space-y-16">
+                                {/* Action Bar - Futuristic Line Row */}
+                                <div className="flex flex-wrap gap-4">
+                                    <motion.a
+                                        whileHover={{ y: -3, scale: 1.02 }}
+                                        href={`tel:${business.primaryContactNumber}`}
+                                        className="flex items-center gap-3 px-8 py-4 rounded-2xl bg-cyan-400 text-slate-950 font-black uppercase tracking-widest text-[11px] hover:bg-white transition-all shadow-lg shadow-cyan-400/20"
+                                    >
+                                        <Phone size={18} />
+                                        Call Now
+                                    </motion.a>
+                                    
+                                    <motion.a
+                                        whileHover={{ y: -3, scale: 1.02 }}
+                                        href={`https://wa.me/${business.officialWhatsAppNumber || business.primaryContactNumber}`}
+                                        className="flex items-center gap-3 px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-emerald-400 font-black uppercase tracking-widest text-[11px] hover:bg-[#25D366] hover:text-white transition-all"
+                                    >
+                                        <MessageCircle size={18} />
+                                        WhatsApp
+                                    </motion.a>
+                                    
+                                    <motion.a
+                                        whileHover={{ y: -3, scale: 1.02 }}
+                                        href={`/nearby-map?id=${business._id || id}`}
+                                        className="flex items-center gap-3 px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-blue-400 font-black uppercase tracking-widest text-[11px] hover:bg-blue-600 hover:text-white transition-all"
+                                    >
+                                        <MapPin size={18} />
+                                        Get Direction
+                                    </motion.a>
+                                    
+                                    <motion.button
+                                        whileHover={{ y: -3, scale: 1.02 }}
+                                        onClick={handleShare}
+                                        className="flex items-center gap-3 px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-white/60 font-black uppercase tracking-widest text-[11px] hover:bg-white hover:text-slate-900 transition-all"
+                                    >
+                                        <Share2 size={18} />
+                                        Share
+                                    </motion.button>
+                                </div>
+
+                                    <div className="space-y-16">
+                                        <section>
+                                            <div className="flex items-center gap-4 mb-8">
+                                                <div className="h-[2px] w-12 bg-cyan-400" />
+                                                <h3 className="text-xl font-black uppercase tracking-[0.3em] text-white">About Business</h3>
+                                            </div>
+                                            <div className={`leading-[1.8] text-lg font-medium opacity-80 max-w-none ${isLight ? 'text-slate-300' : 'text-slate-400'}`}>
+                                                {business.description || "Synthesizing complex enterprise solutions for the digital age."}
                                             </div>
 
-                                            {/* Integrated Keywords */}
                                             {business.keywords && business.keywords.length > 0 && (
-                                                <div className="flex flex-wrap gap-2.5 mt-6">
+                                                <div className="flex flex-wrap gap-2 mt-8">
                                                     {business.keywords.map((kw: string, i: number) => (
-                                                        <span key={i} className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all hover:scale-105 cursor-default ${isLight ? 'bg-slate-50 border-slate-200 text-slate-500 hover:border-primary/30' : 'bg-white/5 border-white/5 text-white/50 hover:border-white/20'
-                                                            }`}>
+                                                        <span key={i} className="px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border border-white/5 bg-white/5 text-cyan-400/60">
                                                             #{kw.replace(/^#/, '')}
                                                         </span>
                                                     ))}
                                                 </div>
                                             )}
-                                        </div>
+                                        </section>
 
-                                        {/* Gallery */}
-                                        {business.gallery && business.gallery.length > 0 && (
-                                            <div>
-                                                <h3 className={`text-xl font-black mb-4 flex items-center gap-3 font-display ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                                                    <div className="p-2 rounded-xl bg-primary/10 text-primary">
-                                                        <ImageIcon size={22} />
-                                                    </div>
-                                                    Photo Gallery
-                                                </h3>
-                                                <div className="flex gap-4 overflow-x-auto pb-6 snap-x scrollbar-hide">
-                                                    {business.gallery.map((img: string, i: number) => (
+                                        {/* Core Specializations - Screenshot Style */}
+                                        <section>
+                                            <div className="flex items-center gap-4 mb-8">
+                                                <div className="h-[2px] w-12 bg-cyan-400" />
+                                                <h3 className="text-xl font-black uppercase tracking-[0.3em] text-white">Core Specializations</h3>
+                                            </div>
+                                            
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                {business.services && business.services.length > 0 ? (
+                                                    business.services.map((service: any, i: number) => (
                                                         <motion.div
                                                             key={i}
-                                                            whileHover={{ scale: 1.05 }}
-                                                            className="min-w-[180px] h-[180px] rounded-3xl overflow-hidden shrink-0 snap-start border border-slate-200 dark:border-white/10 shadow-lg"
+                                                            whileHover={{ scale: 1.02 }}
+                                                            className="p-6 rounded-2xl bg-white/5 border border-white/10 group cursor-pointer"
                                                         >
-                                                            <img
-                                                                src={`${(process.env.NEXT_PUBLIC_API_URL || '').replace('/api', '')}/${img}`}
-                                                                alt="Gallery"
-                                                                className="w-full h-full object-cover"
-                                                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                                                            />
-                                                        </motion.div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </motion.div>
-
-
-
-
-                        </div>
-
-                        {/* Sidebar */}
-                        <div className="space-y-6">
-
-                            {/* Contact Info Card */}
-                            <motion.div
-                                initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
-                                className={`rounded-3xl p-6 backdrop-blur-xl border border-solid ${isLight ? 'bg-white/95 border-slate-200 shadow-xl shadow-blue-900/5' : 'bg-slate-900/90 border-white/10 shadow-black/50'
-                                    }`}
-                            >
-                                <h3 className={`text-lg font-bold mb-5 flex items-center gap-2 border-b pb-4 ${isLight ? 'text-slate-900 border-slate-100' : 'text-white border-white/10'
-                                    }`}>
-                                    Contact Details
-                                </h3>
-
-                                <div className="space-y-6">
-                                    <div className="flex items-start gap-5">
-                                        <div className={`mt-0.5 p-3 rounded-2xl shrink-0 transition-transform hover:rotate-12 ${isLight ? 'bg-blue-50 text-blue-600 shadow-sm' : 'bg-blue-500/10 text-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.1)]'}`}>
-                                            <MapPin size={22} />
-                                        </div>
-                                        <div>
-                                            <p className={`text-[10px] font-black uppercase tracking-[0.15em] mb-1.5 ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>Registered Office</p>
-                                            <p className={`text-sm font-bold leading-relaxed ${isLight ? 'text-slate-800' : 'text-white/90'}`}>
-                                                {business.registeredOfficeAddress || 'Address not listed'}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-start gap-5">
-                                        <div className={`p-3 rounded-2xl shrink-0 transition-transform hover:rotate-12 ${isLight ? 'bg-emerald-50 text-emerald-600 shadow-sm' : 'bg-emerald-500/10 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.1)]'}`}>
-                                            <Phone size={22} />
-                                        </div>
-                                        <div>
-                                            <p className={`text-[10px] font-black uppercase tracking-[0.15em] mb-1.5 ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>Official Hotline</p>
-                                            <p className={`text-base font-black tracking-tight ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                                                {business.primaryContactNumber}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {business.officialWhatsAppNumber && (
-                                        <div className="flex items-start gap-5">
-                                            <div className={`p-3 rounded-2xl shrink-0 transition-transform hover:rotate-12 ${isLight ? 'bg-green-50 text-green-600 shadow-sm' : 'bg-green-500/10 text-green-400 shadow-[0_0_20px_rgba(34,197,94,0.1)]'}`}>
-                                                <MessageCircle size={22} />
-                                            </div>
-                                            <div>
-                                                <p className={`text-[10px] font-black uppercase tracking-[0.15em] mb-1.5 ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>WhatsApp Support</p>
-                                                <p className={`text-base font-black tracking-tight ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                                                    {business.officialWhatsAppNumber}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {business.website && (
-                                        <div className="flex items-start gap-5">
-                                            <div className={`p-3 rounded-2xl shrink-0 transition-transform hover:rotate-12 ${isLight ? 'bg-purple-50 text-purple-600 shadow-sm' : 'bg-purple-500/10 text-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.1)]'}`}>
-                                                <Globe size={22} />
-                                            </div>
-                                            <div>
-                                                <p className={`text-[10px] font-black uppercase tracking-[0.15em] mb-1.5 ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>Digital Portal</p>
-                                                <a href={business.website.startsWith('http') ? business.website : `https://${business.website}`} target="_blank" rel="noopener noreferrer" className="text-sm font-black text-primary hover:underline hover:text-primary/80 truncate block max-w-[180px]">
-                                                    {business.website}
-                                                </a>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </motion.div>
-
-                            {/* Timings Card */}
-                            <motion.div
-                                initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}
-                                className={`rounded-3xl p-6 backdrop-blur-xl border border-solid ${isLight ? 'bg-white/95 border-slate-200 shadow-xl shadow-blue-900/5' : 'bg-slate-900/90 border-white/10 shadow-black/50'
-                                    }`}
-                            >
-                                <h3 className={`text-lg font-bold mb-5 flex items-center gap-2 border-b pb-4 ${isLight ? 'text-slate-900 border-slate-100' : 'text-white border-white/10'
-                                    }`}>
-                                    Business Hours
-                                </h3>
-
-                                <div className="space-y-1">
-                                    {(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']).map((day) => {
-                                        const dayKey = day.toLowerCase();
-
-                                        // NEW: Use businessHours if available
-                                        if (business.businessHours && business.businessHours[dayKey]) {
-                                            const dayData = business.businessHours[dayKey];
-                                            return (
-                                                <div key={day} className="flex justify-between items-center py-1">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`w-1 h-1 rounded-full ${!dayData.isOpen ? 'bg-red-500' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]'}`} />
-                                                        <span className={`text-[13px] font-bold ${isLight ? 'text-slate-700' : 'text-slate-400'}`}>{day}</span>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        {!dayData.isOpen ? (
-                                                            <span className="text-[10px] font-black text-red-500 uppercase tracking-widest px-2 py-0.5 rounded-md bg-red-500/10 border border-red-500/10">
-                                                                Closed
-                                                            </span>
-                                                        ) : (
-                                                            <div className="flex flex-col items-end">
-                                                                {(dayData.slots || [{ open: "09:00", close: "18:00" }]).map((slot: any, sIdx: number) => (
-                                                                    <span key={sIdx} className={`text-[11px] font-black tracking-tight ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                                                                        {format12Hour(slot.open)} - {format12Hour(slot.close)}
-                                                                    </span>
-                                                                ))}
+                                                            <div className="w-12 h-12 rounded-xl bg-cyan-500/10 flex items-center justify-center text-cyan-400 mb-6 group-hover:bg-cyan-500 group-hover:text-slate-950 transition-all">
+                                                                <Layers size={24} />
                                                             </div>
-                                                        )}
+                                                            <h4 className="text-white font-black text-lg mb-2">{typeof service === 'string' ? service : service.name || `Service Module ${i+1}`}</h4>
+                                                            <p className="text-white/40 text-sm leading-relaxed">
+                                                                {typeof service === 'string' ? 'Specialized service offered by this entity.' : service.description || 'High-performance integration for regional markets and digital ecosystems.'}
+                                                            </p>
+                                                        </motion.div>
+                                                    ))
+                                                ) : (
+                                                    <div className="col-span-full p-8 rounded-2xl bg-white/5 border border-white/10 text-center border-dashed">
+                                                        <p className="text-white/40 font-bold uppercase tracking-widest text-[11px]">No Core Specializations Added</p>
+                                                        <p className="text-white/20 text-[10px] mt-2">Verified Owner can update this intel from the Command Center.</p>
                                                     </div>
-                                                </div>
-                                            );
-                                        }
+                                                )}
+                                            </div>
+                                        </section>
 
-                                        // Fallback to legacy logic
-                                        const isOff = business.weeklyOff?.toLowerCase() === day.toLowerCase();
-                                        const opens = (business.openingTime || "09:00").split(',');
-                                        const closes = (business.closingTime || "18:00").split(',');
-                                        const openFmt = format12Hour(opens[0]) || '09:00 AM';
-                                        const closeFmt = format12Hour(closes[0]) || '07:00 PM';
+                                        {/* Image Gallery */}
+                                        <section>
+                                            <div className="flex items-center gap-4 mb-8">
+                                                <div className="h-[2px] w-12 bg-cyan-400" />
+                                                <h3 className="text-xl font-black uppercase tracking-[0.3em] text-white">Visual Intelligence</h3>
+                                            </div>
+                                            <div className="flex overflow-x-auto gap-4 pb-6 custom-scrollbar snap-x snap-mandatory">
+                                                {business.gallery && business.gallery.filter((img: string) => img && img.trim() !== "").length > 0 ? (
+                                                    business.gallery.filter((img: string) => img && img.trim() !== "").map((img: string, i: number) => (
+                                                        <motion.div
+                                                            key={i}
+                                                            whileHover={{ scale: 1.02 }}
+                                                            className="relative w-[75vw] sm:w-[300px] shrink-0 aspect-[4/3] rounded-2xl overflow-hidden border border-white/10 group snap-center shadow-lg"
+                                                        >
+                                                            <img 
+                                                                src={img} 
+                                                                alt={`Gallery Intel ${i+1}`} 
+                                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                                                                onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/600x400/0f172a/38bdf8?text=Image+Not+Available'; }}
+                                                            />
+                                                            <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-slate-950 flex items-end p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                                                                <span className="text-[10px] font-black text-white/50 uppercase tracking-[0.2em]">{business.brandName || business.businessName} • {i+1}/10</span>
+                                                            </div>
+                                                        </motion.div>
+                                                    ))
+                                                ) : (
+                                                    <div className="col-span-full p-8 rounded-2xl bg-white/5 border border-white/10 text-center border-dashed">
+                                                        <p className="text-white/40 font-bold uppercase tracking-widest text-[11px]">No Visual Data Available</p>
+                                                        <p className="text-white/20 text-[10px] mt-2">Verified Owner can upload gallery assets upon login.</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </section>
+                                    </div>
+                                </div>
 
-                                        return (
-                                            <div key={day} className="flex justify-between items-center py-1">
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`w-1 h-1 rounded-full ${isOff ? 'bg-red-500' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]'}`} />
-                                                    <span className={`text-[13px] font-bold ${isLight ? 'text-slate-700' : 'text-slate-400'}`}>{day}</span>
+                            {/* Sidebar Column */}
+                            <div className="space-y-8">
+                                {/* Reach Us Card - Clone of Screenshot */}
+                                <motion.div
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    className="rounded-[2.5rem] bg-slate-900/40 backdrop-blur-3xl border border-white/10 overflow-hidden shadow-2xl"
+                                >
+                                    <div className="p-10 space-y-10">
+                                        <h3 className="text-xl font-black text-white flex items-center gap-3">
+                                            <HelpCircle size={22} className="text-cyan-400" />
+                                            Reach Us
+                                        </h3>
+
+                                        <div className="space-y-10">
+                                            <div className="flex items-start gap-6">
+                                                <div className="w-12 h-12 rounded-xl bg-cyan-500/10 flex items-center justify-center text-cyan-400">
+                                                    <Phone size={24} />
                                                 </div>
-                                                <div className="text-right">
-                                                    {isOff ? (
-                                                        <span className="text-[10px] font-black text-red-500 uppercase tracking-widest px-2 py-0.5 rounded-md bg-red-500/10 border border-red-500/10">
-                                                            Closed
-                                                        </span>
-                                                    ) : (
-                                                        <span className={`text-[11px] font-black tracking-tight ${isLight ? 'text-slate-900' : 'text-white'}`}>
-                                                            {openFmt} - {closeFmt}
-                                                        </span>
-                                                    )}
+                                                <div>
+                                                    <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] mb-1">Encrypted Line</p>
+                                                    <p className="text-lg font-black text-white tracking-tight">{business.primaryContactNumber}</p>
                                                 </div>
                                             </div>
-                                        );
-                                    })}
-                                </div>
-                            </motion.div>
 
-                            <motion.div
-                                initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}
-                                className={`rounded-3xl p-6 backdrop-blur-xl border border-solid text-center ${isLight ? 'bg-primary/5 border-primary/20' : 'bg-primary/10 border-primary/20'
-                                    }`}
-                            >
-                                <ShieldCheck size={36} className="text-primary mx-auto mb-3" />
-                                <h4 className={`font-bold mb-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>Is this your business?</h4>
-                                <p className={`text-xs mb-4 ${isLight ? 'text-slate-600' : 'text-white/60'}`}>
-                                    Claim this listing to update information, respond to reviews, and reach more customers.
-                                </p>
-                                <Button
-                                    onClick={() => setIsClaimModalOpen(true)}
-                                    className="w-full bg-primary text-white hover:bg-primary/90 rounded-xl"
+                                            {business.website && (
+                                                <div className="flex items-start gap-6">
+                                                    <div className="w-12 h-12 rounded-xl bg-cyan-500/10 flex items-center justify-center text-cyan-400">
+                                                        <Globe size={24} />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] mb-1">Global Terminal</p>
+                                                        <a href={business.website.startsWith('http') ? business.website : `https://${business.website}`} target="_blank" rel="noopener noreferrer" className="text-base font-black text-cyan-400 hover:text-white transition-colors truncate block max-w-[180px]">
+                                                            {business.website.replace('https://', '').replace('http://', '')}
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <div className="flex items-start gap-6">
+                                                <div className="w-12 h-12 rounded-xl bg-cyan-500/10 flex items-center justify-center text-cyan-400">
+                                                    <MapPin size={24} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em] mb-1">Physical Coordinates</p>
+                                                    <p className="text-sm font-bold text-white/70 leading-relaxed">
+                                                        {business.registeredOfficeAddress || 'Coordinates Classified'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Operational Cycles (Business Hours) */}
+                                        <div className="pt-6 border-t border-white/10 space-y-4">
+                                            <div className="flex items-center gap-3 mb-4">
+                                                <div className="w-8 h-8 rounded-lg bg-cyan-500/10 flex items-center justify-center text-cyan-400">
+                                                    <Clock size={16} />
+                                                </div>
+                                                <p className="text-[10px] font-black text-white/50 uppercase tracking-[0.2em]">Operational Cycles</p>
+                                            </div>
+                                            <div className="grid grid-cols-1 gap-2">
+                                                {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => {
+                                                    const schedule = business.businessHours?.[day.toLowerCase()];
+                                                    const isOff = !schedule || !schedule.isOpen;
+                                                    const openFmt = schedule?.slots?.[0]?.open ? new Date(`1970-01-01T${schedule.slots[0].open}:00`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+                                                    const closeFmt = schedule?.slots?.[0]?.close ? new Date(`1970-01-01T${schedule.slots[0].close}:00`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
+                                                    return (
+                                                        <div key={day} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0 hover:bg-white/5 px-2 rounded-lg transition-colors">
+                                                            <span className="text-[11px] font-bold text-white/60 uppercase tracking-widest">{day.substring(0, 3)}</span>
+                                                            {isOff ? (
+                                                                <span className="text-[9px] font-black text-red-500 uppercase tracking-widest px-2 py-0.5 rounded-md bg-red-500/10 border border-red-500/20">
+                                                                    Offline
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-[11px] font-black text-white tracking-widest">
+                                                                    {openFmt} <span className="text-white/30 mx-1">-</span> {closeFmt}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+
+
+                                    </div>
+                                </motion.div>
+
+                                {/* Claim Portal */}
+                                <motion.div
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: 0.2 }}
+                                    className="p-8 rounded-[2.5rem] bg-white/5 border border-white/10 text-center"
                                 >
-                                    Claim Business
-                                </Button>
-                            </motion.div>
-
+                                    <ShieldCheck size={40} className="text-cyan-400 mx-auto mb-4" />
+                                    <h4 className="text-lg font-black text-white mb-2 uppercase tracking-widest">Ownership Proxy</h4>
+                                    <p className="text-[11px] text-white/40 mb-6 leading-relaxed px-4">
+                                        Establish direct uplink to manage this entity's digital presence.
+                                    </p>
+                                    <Button
+                                        onClick={() => setIsClaimModalOpen(true)}
+                                        className="w-full bg-cyan-400 text-slate-950 hover:bg-white rounded-xl h-14 font-black uppercase tracking-widest text-[11px] shadow-lg shadow-cyan-400/10"
+                                    >
+                                        Claim Terminal
+                                    </Button>
+                                </motion.div>
+                            </div>
                         </div>
-                    </div>
 
-                    {/* Services & Products - Full Width Below Info */}
-                    <div className="mt-10 space-y-10">
-
-                        {/* Dynamic Restaurant Menu Integration */}
-                        <RestaurantMenu 
-                            partnerId={id} 
-                            businessName={business.brandName || business.businessName}
-                            isLight={isLight}
-                        />
+                        {/* Specializations / Menu Section - Full Width Below info grid */}
+                        <div className="mt-20">
+                            <RestaurantMenu 
+                                partnerId={id} 
+                                businessName={business.brandName || business.businessName}
+                                isLight={isLight}
+                            />
+                        </div>
                     </div>
                 </main>
 

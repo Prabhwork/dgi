@@ -4,7 +4,7 @@ import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CursorGlow from "@/components/CursorGlow";
-import ParticleNetworkWrapper from "@/components/ParticleNetworkWrapper";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -71,7 +71,6 @@ export default function BecomeAPartPage() {
 
     return (
         <div className="min-h-screen bg-background relative overflow-hidden">
-            <ParticleNetworkWrapper className="z-0 opacity-40" />
             <CursorGlow />
             <Navbar />
 

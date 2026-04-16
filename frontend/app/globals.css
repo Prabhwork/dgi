@@ -6,7 +6,7 @@
 
 @layer base {
   :root {
-    --background: 235 70% 15%;
+    --background: 220 80% 20%;
     --foreground: 210 40% 98%;
     --card: 225 45% 15%;
     --card-foreground: 210 40% 98%;
@@ -79,7 +79,6 @@
 /* ── Light mode component overrides ─────────────────────── */
 .light html,
 .light body {
-  background: rgb(252, 248, 235) !important;
   min-height: 100vh;
 }
 
@@ -271,7 +270,6 @@
 
   html {
     scroll-behavior: smooth;
-    background-color: #020631;
   }
 }
 
@@ -721,4 +719,4 @@ textarea:-webkit-autofill:focus {
   -webkit-box-shadow: 0 0 0px 1000px #020631 inset !important;
   transition: background-color 5000s ease-in-out 0s;
   caret-color: white;
-}
+}

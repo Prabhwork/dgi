@@ -25,7 +25,7 @@ import Navbar from "@/components/Navbar";
 import { useRouter, useSearchParams } from "next/navigation";
 import Footer from "@/components/Footer";
 import CursorGlow from "@/components/CursorGlow";
-import ParticleNetworkWrapper from "@/components/ParticleNetworkWrapper";
+
 
 const loadRazorpayScript = () => {
     return new Promise((resolve) => {
@@ -2316,7 +2316,7 @@ function RegisterPageContent() {
 export default function RegisterPage() {
     return (
         <div className="min-h-screen bg-[#020631] relative overflow-hidden text-white font-sans">
-            <ParticleNetworkWrapper className="z-0 opacity-40" />
+       
             <CursorGlow />
             <Navbar />
 

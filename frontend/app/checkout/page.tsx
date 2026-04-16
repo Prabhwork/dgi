@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CursorGlow from "@/components/CursorGlow";
-import ParticleNetworkWrapper from "@/components/ParticleNetworkWrapper";
+
 import { useTheme } from "@/components/ThemeProvider";
 import OrderSuccess from "@/components/OrderSuccess";
 import WalletPinModal from "@/components/WalletPinModal";
@@ -632,7 +632,7 @@ export default function CheckoutPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-background flex flex-col items-center justify-center text-white">
+            <div className="min-h-screen bg-background flex flex-col items-center justify-center text-foreground">
                 <Loader2 className="w-10 h-10 animate-spin text-primary" />
                 <p className="mt-4 uppercase tracking-widest text-xs opacity-50">Loading Checkout...</p>
             </div>
@@ -642,8 +642,8 @@ export default function CheckoutPage() {
 
 
     return (
-        <div className={`min-h-screen relative overflow-hidden ${isLight ? 'bg-slate-50 text-slate-900' : 'bg-[#020631] text-white'}`}>
-            <ParticleNetworkWrapper className="z-0 opacity-40" />
+        <div className={`min-h-screen relative overflow-hidden bg-background text-foreground`}>
+          
             <CursorGlow />
             <Navbar />
 

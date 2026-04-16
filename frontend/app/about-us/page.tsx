@@ -3,7 +3,7 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import CursorGlow from "@/components/CursorGlow";
-import ParticleNetworkWrapper from "@/components/ParticleNetworkWrapper";
+
 import { MapPin, Users, Star, Navigation, Shield, Zap, TrendingUp, Eye, Compass } from "lucide-react";
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -51,7 +51,7 @@ export default function AboutUsPage() {
 
     return (
         <div className="min-h-screen bg-background relative overflow-hidden transition-colors duration-500">
-            <ParticleNetworkWrapper className={`z-0 transition-opacity duration-700 ${isLight ? 'opacity-20' : 'opacity-40'}`} />
+          
             <CursorGlow />
             <Navbar />
 

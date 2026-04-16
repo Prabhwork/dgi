@@ -2,7 +2,7 @@
 
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import ParticleNetwork from "@/components/ParticleNetwork";
+
 import { useTheme } from "@/components/ThemeProvider";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -140,15 +140,15 @@ export default function TwoFactorAuthPage() {
 
     if (loading) {
         return (
-            <div className={`min-h-screen flex items-center justify-center ${isLight ? 'bg-slate-50' : 'bg-[#020631]'}`}>
+            <div className={`min-h-screen flex items-center justify-center bg-background text-foreground`}>
                 <div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
             </div>
         );
     }
 
     return (
-        <div className={`min-h-screen relative overflow-hidden transition-colors ${isLight ? 'bg-slate-50' : 'bg-[#020631]'}`}>
-            <div className="fixed inset-0 z-0"><ParticleNetwork /></div>
+        <div className={`min-h-screen relative overflow-hidden transition-colors bg-background text-foreground`}>
+           
 
             <div className="relative z-10 flex flex-col min-h-screen">
                 <Navbar />

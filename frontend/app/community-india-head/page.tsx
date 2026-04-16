@@ -2,7 +2,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import LeadershipProposal from "@/components/LeadershipProposal";
 import CursorGlow from "@/components/CursorGlow";
-import ParticleNetworkWrapper from "@/components/ParticleNetworkWrapper";
+
 import { Heart, Target, Users, Zap, TrendingUp, ShieldCheck, Star, Handshake, Globe } from "lucide-react";
 
 export const metadata = {
@@ -44,7 +44,7 @@ const details = {
 export default function IndiaHeadPage() {
     return (
         <div className="min-h-screen pt-20">
-            <ParticleNetworkWrapper className="z-0 opacity-80" />
+          
             <CursorGlow />
             <Navbar />
             <main className="relative z-10">
