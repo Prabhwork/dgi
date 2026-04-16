@@ -7,27 +7,27 @@ import { Phone, Mail } from "lucide-react";
 const CONTACTS = [
   {
     label: "Sponsor & Exhibitor Reach Out",
-    name: "Ms. Kavitha Jayaraman",
-    phone: "+91 7022250709",
-    email: "kavitha@urdhvamanagement.com",
+    name: "Sponsorship Team",
+    phone: "+91 98765 43210",
+    email: "sponsor@digitalbookofindia.com",
   },
   {
     label: "Speaker Acquisition Reach Out",
-    name: "Ms. Shruti D S",
-    phone: "+91 7338674799",
-    email: "shruthi@urdhvamanagement.com",
+    name: "Speaker Relations",
+    phone: "+91 98765 43211",
+    email: "speakers@digitalbookofindia.com",
   },
   {
     label: "Delegates Reach Out",
-    name: "Ms. Poorvika K L",
-    phone: "+91 7338674793",
-    email: "poorvika@urdhvamanagement.com",
+    name: "Delegate Services",
+    phone: "+91 98765 43212",
+    email: "delegates@digitalbookofindia.com",
   },
   {
     label: "Media & Association Partner Reach Out",
-    name: "Ms. Kavyashree M",
-    phone: "+91 9606025446",
-    email: "kavya@urdhvamanagement.com",
+    name: "Media Relations",
+    phone: "+91 98765 43213",
+    email: "media@digitalbookofindia.com",
   },
 ];
 

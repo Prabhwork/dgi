@@ -245,7 +245,7 @@ export default function Navbar() {
         </Link>
         
         {/* Desktop Links */}
-        <div className="hidden lg:flex items-center gap-8 mr-auto ml-12">
+        <div className="hidden xl:flex items-center gap-8 mr-auto ml-8 lg:ml-12">
           {navLinks.map((link) => (
             <Link key={link.name} href={link.href} className="text-slate-600 hover:text-sky-600 font-bold transition-colors text-sm uppercase tracking-wider">
               {link.name}
@@ -269,7 +269,7 @@ export default function Navbar() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 15 }}
                   transition={{ duration: 0.2 }}
-                  className="absolute top-[80px] -left-64 lg:-left-96 w-[1000px] bg-white rounded-3xl shadow-2xl shadow-sky-900/10 border border-slate-100 p-8 mt-2 cursor-default pointer-events-auto"
+                  className="absolute top-[80px] -left-64 xl:-left-96 w-[1000px] bg-white rounded-3xl shadow-2xl shadow-sky-900/10 border border-slate-100 p-8 mt-2 cursor-default pointer-events-auto"
                 >
                   <div className="grid grid-cols-8 gap-x-2 gap-y-3">
                     {categories.map((cat, idx) => {
@@ -297,13 +297,13 @@ export default function Navbar() {
           {/* Enquiry Button - Desktop */}
           <button
             onClick={() => setIsEnquiryOpen(true)}
-            className="hidden sm:flex items-center gap-2 text-sky-600 border border-sky-200 hover:bg-sky-50 font-black text-sm px-4 py-2 rounded-full transition-all hover:scale-105 uppercase tracking-wide"
+            className="hidden md:flex items-center gap-2 text-sky-600 border border-sky-200 hover:bg-sky-50 font-black text-sm px-4 py-2 rounded-full transition-all hover:scale-105 uppercase tracking-wide"
           >
             <MessageSquare size={14} />
             Enquiry
           </button>
 
-          <div className="hidden sm:flex items-center gap-2 md:gap-3">
+          <div className="hidden md:flex items-center gap-2 md:gap-3">
             <Link href="/apply/investor" className="text-slate-700 hover:text-sky-600 text-sm md:text-base font-bold px-4 py-2 hover:bg-sky-50 rounded-full transition-all tracking-wide">
               Investor
             </Link>
@@ -315,7 +315,7 @@ export default function Navbar() {
           {/* Mobile Toggle */}
           <button 
             onClick={() => setIsOpen(!isOpen)}
-            className="lg:hidden p-2 text-slate-900 hover:bg-slate-100 rounded-xl transition-colors z-[101]"
+            className="xl:hidden p-2 text-slate-900 hover:bg-slate-100 rounded-xl transition-colors z-[101]"
           >
             {isOpen ? <X size={28} /> : <Menu size={28} />}
           </button>
@@ -329,7 +329,7 @@ export default function Navbar() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="fixed inset-0 z-[90] bg-white pt-24 px-6 lg:hidden flex flex-col justify-between pb-12 overflow-y-auto"
+            className="fixed inset-0 z-[90] bg-white pt-[120px] md:pt-[140px] px-6 xl:hidden flex flex-col justify-between pb-12 overflow-y-auto"
           >
             <div className="flex flex-col gap-4">
               {navLinks.map((link) => (
@@ -365,7 +365,7 @@ export default function Navbar() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-4 mt-8">
+            <div className="flex md:hidden flex-col gap-4 mt-8">
               {/* Enquiry - Mobile */}
               <button
                 onClick={() => { setIsOpen(false); setIsEnquiryOpen(true); }}

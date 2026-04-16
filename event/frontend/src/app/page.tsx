@@ -344,7 +344,7 @@ export default function EventLandingPage() {
         <div className="bg-[#f8fafc] text-slate-900 selection:bg-sky-500/30 overflow-x-hidden min-h-screen">
 
             {/* Hero Section */}
-            <section className="relative min-h-screen flex flex-col justify-center pt-28 pb-16 overflow-hidden">
+            <section className="relative flex flex-col justify-start pt-[80px] lg:pt-[100px] pb-10 overflow-hidden min-h-screen">
 
                 {/* Background dot grid */}
                 <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
@@ -357,7 +357,7 @@ export default function EventLandingPage() {
                 <div className="relative z-10 max-w-7xl mx-auto w-full px-8 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
 
                     {/* LEFT: Text Content */}
-                    <div className="flex flex-col items-start">
+                    <div className="flex flex-col items-start lg:-mt-12 xl:-mt-20">
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -419,7 +419,7 @@ export default function EventLandingPage() {
                         </motion.div>
                     </div>
 
-                    <div className="w-full h-[500px] sm:h-[450px] md:h-[520px] lg:h-[700px] relative z-20 mt-4 md:mt-0">
+                    <div className="w-full h-[350px] sm:h-[450px] md:h-[500px] lg:h-[550px] xl:h-[600px] relative z-20 mt-4 md:mt-0">
                         <Canvas camera={{ position: [0, 0, 65], fov: 42 }}>
                             <ResponsiveCamera />
                             <ambientLight intensity={1} />
