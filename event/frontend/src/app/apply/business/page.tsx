@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Briefcase, Building2, FileText, CheckCircle, 
@@ -9,7 +10,9 @@ import {
   Globe, Trash2, ChevronRight, ChevronLeft
 } from "lucide-react";
 
-export default function BusinessApplyPage() {
+function BusinessFormContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
@@ -29,8 +32,43 @@ export default function BusinessApplyPage() {
     { title: "Security", icon: Camera },
   ];
 
-  const handleNext = () => setStep(step + 1);
-  const handleBack = () => setStep(step - 1);
+  // Sync step with URL
+  useEffect(() => {
+    const s = searchParams.get('step');
+    if (s) {
+      const stepNum = parseInt(s);
+      if (stepNum >= 1 && stepNum <= 6) {
+        setStep(stepNum);
+      }
+    }
+  }, [searchParams]);
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('business_registration_draft');
+    if (saved) {
+      try {
+        setFormData(JSON.parse(saved));
+      } catch (e) {
+        console.error("Failed to parse saved draft");
+      }
+    }
+  }, []);
+
+  // Save to localStorage on change
+  useEffect(() => {
+    if (Object.keys(formData).length > 0) {
+      localStorage.setItem('business_registration_draft', JSON.stringify(formData));
+    }
+  }, [formData]);
+
+  const updateStep = (newStep: number) => {
+    setStep(newStep);
+    router.push(`?step=${newStep}`);
+  };
+
+  const handleNext = () => updateStep(step + 1);
+  const handleBack = () => updateStep(step - 1);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,8 +111,9 @@ export default function BusinessApplyPage() {
 
         setShowPopup(true);
         setFormData({});
+        localStorage.removeItem('business_registration_draft');
         setSelfie(null);
-        setStep(1);
+        updateStep(1);
     } catch (err: any) {
         setStatus({ type: 'error', message: err.message || 'Something went wrong. Please try again.' });
     } finally {
@@ -422,6 +461,18 @@ export default function BusinessApplyPage() {
   );
 }
 
+export default function BusinessApplyPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-sky-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <BusinessFormContent />
+    </Suspense>
+  );
+}
+
 function InputField({ label, name, value, onChange, placeholder, type = "text", required = false, icon: Icon }: any) {
   return (
     <div className="space-y-2 group">
@@ -447,7 +498,7 @@ function InputField({ label, name, value, onChange, placeholder, type = "text", 
 function TextAreaField({ label, name, value, onChange, placeholder, required = false }: any) {
   return (
     <div className="space-y-2 group">
-      <label className="text-[10px] font-black uppercase tracking-widest text_slate-400 ml-2 group-focus-within:text-sky-600 transition-colors">
+      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2 group-focus-within:text-sky-600 transition-colors">
         {label}
       </label>
       <textarea 

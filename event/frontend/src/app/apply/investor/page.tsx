@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   TrendingUp, UserCheck, Wallet, CheckCircle, 
@@ -9,7 +10,9 @@ import {
   Target, Award, Clock, ExternalLink, Video, Globe
 } from "lucide-react";
 
-export default function InvestorApplyPage() {
+function InvestorFormContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
@@ -32,8 +35,43 @@ export default function InvestorApplyPage() {
     { title: "Security", icon: Camera },
   ];
 
-  const handleNext = () => setStep(step + 1);
-  const handleBack = () => setStep(step - 1);
+  // Sync step with URL
+  useEffect(() => {
+    const s = searchParams.get('step');
+    if (s) {
+      const stepNum = parseInt(s);
+      if (stepNum >= 1 && stepNum <= 6) {
+        setStep(stepNum);
+      }
+    }
+  }, [searchParams]);
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('investor_registration_draft');
+    if (saved) {
+      try {
+        setFormData(JSON.parse(saved));
+      } catch (e) {
+        console.error("Failed to parse saved draft");
+      }
+    }
+  }, []);
+
+  // Save to localStorage on change
+  useEffect(() => {
+    if (Object.keys(formData).length > 2 || (formData.preferredCategories?.length > 0) || (formData.investmentType?.length > 0)) {
+      localStorage.setItem('investor_registration_draft', JSON.stringify(formData));
+    }
+  }, [formData]);
+
+  const updateStep = (newStep: number) => {
+    setStep(newStep);
+    router.push(`?step=${newStep}`);
+  };
+
+  const handleNext = () => updateStep(step + 1);
+  const handleBack = () => updateStep(step - 1);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,8 +113,9 @@ export default function InvestorApplyPage() {
 
         setShowPopup(true);
         setFormData({ preferredCategories: [], investmentType: [] });
+        localStorage.removeItem('investor_registration_draft');
         setSelfie(null);
-        setStep(1);
+        updateStep(1);
     } catch (err: any) {
         setStatus({ type: 'error', message: err.message || 'Something went wrong.' });
     } finally {
@@ -242,10 +281,10 @@ export default function InvestorApplyPage() {
                         <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Preferred Categories (multi-select)</label>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                             {["Technology", "FMCG", "Healthcare", "EdTech", "FinTech", "AgriTech", "Real Estate", "Manufacturing", "E-Commerce", "Sustainability"].map((cat) => (
-                                <label key={cat} className={`flex items-center gap-3 p-4 rounded-2xl border cursor-pointer transition-all ${formData.preferredCategories.includes(cat) ? "bg-sky-50 border-sky-200" : "bg-slate-50 border-slate-100 hover:bg-slate-100"}`}>
+                                <label key={cat} className={`flex items-center gap-3 p-4 rounded-2xl border cursor-pointer transition-all ${formData.preferredCategories?.includes(cat) ? "bg-sky-50 border-sky-200" : "bg-slate-50 border-slate-100 hover:bg-slate-100"}`}>
                                     <input 
                                         type="checkbox" 
-                                        checked={formData.preferredCategories.includes(cat)}
+                                        checked={formData.preferredCategories?.includes(cat)}
                                         onChange={() => toggleArrayItem('preferredCategories', cat)}
                                         className="w-4 h-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500" 
                                     />
@@ -268,11 +307,11 @@ export default function InvestorApplyPage() {
                         <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Investment Type</label>
                         <div className="flex flex-wrap gap-4">
                             {["Equity", "Partnership", "Loan"].map((type) => (
-                                <label key={type} className={`flex-1 min-w-[120px] flex items-center justify-center gap-2 p-4 rounded-2xl border cursor-pointer transition-all ${formData.investmentType.includes(type) ? "bg-sky-600 text-white border-sky-600" : "bg-slate-50 border-slate-100 hover:bg-slate-50"}`}>
+                                <label key={type} className={`flex-1 min-w-[120px] flex items-center justify-center gap-2 p-4 rounded-2xl border cursor-pointer transition-all ${formData.investmentType?.includes(type) ? "bg-sky-600 text-white border-sky-600" : "bg-slate-50 border-slate-100 hover:bg-slate-50"}`}>
                                     <input 
                                         type="checkbox" 
                                         className="hidden" 
-                                        checked={formData.investmentType.includes(type)}
+                                        checked={formData.investmentType?.includes(type)}
                                         onChange={() => toggleArrayItem('investmentType', type)}
                                     />
                                     <span className="text-xs font-bold">{type}</span>
@@ -444,6 +483,18 @@ export default function InvestorApplyPage() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+export default function InvestorApplyPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-sky-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <InvestorFormContent />
+    </Suspense>
   );
 }
 

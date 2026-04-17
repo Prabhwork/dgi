@@ -235,31 +235,35 @@ export default function Navbar() {
             <img 
               src="/assets/DLOGO1.png" 
               alt="Digital Book of India" 
-              className="relative h-12 md:h-16 w-auto object-contain p-1 transition-transform group-hover:scale-105" 
+              className="relative h-12 md:h-14 w-auto object-contain p-1 transition-transform group-hover:scale-105" 
             />
           </div>
-          <div className="flex flex-col">
-            <span className="text-slate-900 text-[10px] md:text-xs font-black tracking-[0.2em] uppercase leading-none mb-0.5">Digital Book</span>
-            <span className="text-sky-600 text-[8px] md:text-[10px] font-bold uppercase tracking-widest leading-none">Of India</span>
+          <div className="flex flex-col justify-center">
+            <span className="text-slate-900 text-[10px] md:text-xs font-black tracking-[0.2em] uppercase leading-tight">Digital Book</span>
+            <span className="text-sky-600 text-[8px] md:text-[10px] font-bold uppercase tracking-widest leading-tight">Of India</span>
           </div>
         </Link>
         
         {/* Desktop Links */}
-        <div className="hidden xl:flex items-center gap-8 mr-auto ml-8 lg:ml-12">
+        <div className="hidden min-[1290px]:flex items-center gap-2 2xl:gap-6 mr-auto ml-8 lg:ml-12 h-full">
           {navLinks.map((link) => (
-            <Link key={link.name} href={link.href} className="text-slate-600 hover:text-sky-600 font-bold transition-colors text-sm uppercase tracking-wider">
+            <Link 
+              key={link.name} 
+              href={link.href} 
+              className="text-slate-600 hover:text-sky-600 font-bold transition-colors text-sm uppercase tracking-wider h-10 flex items-center px-3 hover:bg-sky-50 rounded-lg"
+            >
               {link.name}
             </Link>
           ))}
           
           {/* Mega Menu Trigger */}
           <div 
-            className="relative"
+            className="relative h-10 flex items-center"
             onMouseEnter={() => setIsMegaMenuOpen(true)}
             onMouseLeave={() => setIsMegaMenuOpen(false)}
           >
-            <button className="flex items-center gap-1 text-slate-600 hover:text-sky-600 font-bold transition-colors text-sm uppercase tracking-wider py-8 -my-8">
-              Key Topics <ChevronDown size={16} className={`transition-transform duration-300 ${isMegaMenuOpen ? 'rotate-180' : ''}`} />
+            <button className="flex items-center gap-1 text-slate-600 hover:text-sky-600 font-bold transition-colors text-sm uppercase tracking-wider h-full px-3 hover:bg-sky-50 rounded-lg">
+              Key Topics <ChevronDown size={14} className={`transition-transform duration-300 ${isMegaMenuOpen ? 'rotate-180' : ''}`} />
             </button>
             
             <AnimatePresence>
@@ -269,7 +273,7 @@ export default function Navbar() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 15 }}
                   transition={{ duration: 0.2 }}
-                  className="absolute top-[80px] -left-64 xl:-left-96 w-[1000px] bg-white rounded-3xl shadow-2xl shadow-sky-900/10 border border-slate-100 p-8 mt-2 cursor-default pointer-events-auto"
+                  className="absolute top-full -left-64 xl:-left-96 w-[1000px] bg-white rounded-3xl shadow-2xl shadow-sky-900/10 border border-slate-100 p-8 mt-2 cursor-default pointer-events-auto"
                 >
                   <div className="grid grid-cols-8 gap-x-2 gap-y-3">
                     {categories.map((cat, idx) => {
@@ -297,17 +301,23 @@ export default function Navbar() {
           {/* Enquiry Button - Desktop */}
           <button
             onClick={() => setIsEnquiryOpen(true)}
-            className="hidden md:flex items-center gap-2 text-sky-600 border border-sky-200 hover:bg-sky-50 font-black text-sm px-4 py-2 rounded-full transition-all hover:scale-105 uppercase tracking-wide"
+            className="hidden md:flex items-center gap-2 text-sky-600 border border-sky-200 hover:bg-sky-50 font-black text-sm h-10 px-5 rounded-full transition-all hover:scale-105 uppercase tracking-wide"
           >
             <MessageSquare size={14} />
             Enquiry
           </button>
 
           <div className="hidden md:flex items-center gap-2 md:gap-3">
-            <Link href="/apply/investor" className="text-slate-700 hover:text-sky-600 text-sm md:text-base font-bold px-4 py-2 hover:bg-sky-50 rounded-full transition-all tracking-wide">
+            <Link 
+              href="/apply/investor" 
+              className="text-slate-700 hover:text-sky-600 text-sm md:text-sm font-bold h-10 flex items-center px-4 hover:bg-sky-50 rounded-full transition-all tracking-wide"
+            >
               Investor
             </Link>
-            <Link href="/apply/business" className="bg-sky-600 hover:bg-sky-500 text-white font-black text-sm md:text-base px-6 py-2.5 md:px-8 md:py-2.5 rounded-full shadow-lg shadow-sky-200 transition-all hover:scale-105 active:scale-95 border border-sky-400/30 tracking-wide uppercase">
+            <Link 
+              href="/apply/business" 
+              className="bg-sky-600 hover:bg-sky-500 text-white font-black text-sm md:text-sm h-10 flex items-center px-6 md:px-8 rounded-full shadow-lg shadow-sky-200 transition-all hover:scale-105 active:scale-95 border border-sky-400/30 tracking-wide uppercase"
+            >
               Business
             </Link>
           </div>
@@ -315,7 +325,7 @@ export default function Navbar() {
           {/* Mobile Toggle */}
           <button 
             onClick={() => setIsOpen(!isOpen)}
-            className="xl:hidden p-2 text-slate-900 hover:bg-slate-100 rounded-xl transition-colors z-[101]"
+            className="min-[1290px]:hidden p-2 text-slate-900 hover:bg-slate-100 rounded-xl transition-colors z-[101]"
           >
             {isOpen ? <X size={28} /> : <Menu size={28} />}
           </button>
@@ -329,7 +339,7 @@ export default function Navbar() {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="fixed inset-0 z-[90] bg-white pt-[120px] md:pt-[140px] px-6 xl:hidden flex flex-col justify-between pb-12 overflow-y-auto"
+            className="fixed inset-0 z-[90] bg-white pt-[120px] md:pt-[140px] px-6 min-[1290px]:hidden flex flex-col justify-between pb-12 overflow-y-auto"
           >
             <div className="flex flex-col gap-4">
               {navLinks.map((link) => (
